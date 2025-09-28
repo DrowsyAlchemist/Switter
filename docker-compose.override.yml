@@ -1,4 +1,5 @@
 services:
+
   apigateway:
     build:
       context: .  
@@ -26,7 +27,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
-      - ConnectionStrings:PostgreSQL=Host=postgres;Database=switter;Username=postgres;Password=password
+      - ConnectionStrings:PostgreSQL=Host=postgres;Database=switter;Username=postgres;Password=DevPassword123!
       - Redis:ConnectionString=redis:6379
       - Jwt:Secret=YourSuperSecretKeyForDevelopmentOnlyChangeInProduction
       - Jwt:Issuer=switter-dev
@@ -47,7 +48,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
-      - ConnectionStrings:PostgreSQL=Host=postgres;Database=switter;Username=postgres;Password=password
+      - ConnectionStrings:PostgreSQL=Host=postgres;Database=switter;Username=postgres;Password=DevPassword123!
       - Redis:ConnectionString=redis:6379
       - Kafka:BootstrapServers=kafka:9092
     ports:
@@ -67,7 +68,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
-      - ConnectionStrings:PostgreSQL=Host=postgres;Database=switter;Username=postgres;Password=password
+      - ConnectionStrings:PostgreSQL=Host=postgres;Database=switter;Username=postgres;Password=DevPassword123!
       - Redis:ConnectionString=redis:6379
       - Kafka:BootstrapServers=kafka:9092
     ports:
@@ -105,7 +106,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
-      - ConnectionStrings:PostgreSQL=Host=postgres;Database=switter;Username=postgres;Password=password
+      - ConnectionStrings:PostgreSQL=Host=postgres;Database=switter;Username=postgres;Password=DevPassword123!
       - Redis:ConnectionString=redis:6379,allowAdmin=true
       - Kafka:BootstrapServers=kafka:9092
     ports:
