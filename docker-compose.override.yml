@@ -1,22 +1,17 @@
-# docker-compose.override.yml
-# Этот файл автоматически подхватывается docker-compose и добавляет настройки для РАЗРАБОТКИ
-version: '3.8'
-
 services:
-  # 1. API Gateway - единая точка входа
   apigateway:
     build:
-      context: .  # Сборка из корня проекта
+      context: .  
       dockerfile: src/ApiGateway/Dockerfile
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
       - Logging:LogLevel:Default=Information
     ports:
-      - "5000:80"  # Пробрасываем порт на хост для доступа с локальной машины
+      - "5000:80"  
     volumes:
-      - ./src/ApiGateway:/app  # Mount исходного кода для горячей перезагрузки
-      - ~/.aspnet/https:/https:ro  # Для HTTPS сертификатов
+      - ./src/ApiGateway:/app  
+      - ~/.aspnet/https:/https:ro  
     depends_on:
       - authservice
       - userservice
@@ -24,7 +19,6 @@ services:
       - chatservice
     restart: unless-stopped
 
-  # 2. Сервис аутентификации
   authservice:
     build:
       context: .
@@ -32,11 +26,11 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
-      - ConnectionStrings:PostgreSQL=Host=postgres;Database=twitter_clone;Username=postgres;Password=password
+      - ConnectionStrings:PostgreSQL=Host=postgres;Database=switter;Username=postgres;Password=password
       - Redis:ConnectionString=redis:6379
       - Jwt:Secret=YourSuperSecretKeyForDevelopmentOnlyChangeInProduction
-      - Jwt:Issuer=twitter-clone-dev
-      - Jwt:Audience=twitter-clone-dev
+      - Jwt:Issuer=switter-dev
+      - Jwt:Audience=switter-dev
     ports:
       - "5001:80"
     volumes:
@@ -46,7 +40,6 @@ services:
       - redis
     restart: unless-stopped
 
-  # 3. Сервис пользователей
   userservice:
     build:
       context: .
@@ -54,7 +47,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
-      - ConnectionStrings:PostgreSQL=Host=postgres;Database=twitter_clone;Username=postgres;Password=password
+      - ConnectionStrings:PostgreSQL=Host=postgres;Database=switter;Username=postgres;Password=password
       - Redis:ConnectionString=redis:6379
       - Kafka:BootstrapServers=kafka:9092
     ports:
@@ -67,7 +60,6 @@ services:
       - kafka
     restart: unless-stopped
 
-  # 4. Сервис твитов
   tweetservice:
     build:
       context: .
@@ -75,7 +67,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
-      - ConnectionStrings:PostgreSQL=Host=postgres;Database=twitter_clone;Username=postgres;Password=password
+      - ConnectionStrings:PostgreSQL=Host=postgres;Database=switter;Username=postgres;Password=password
       - Redis:ConnectionString=redis:6379
       - Kafka:BootstrapServers=kafka:9092
     ports:
@@ -88,7 +80,6 @@ services:
       - kafka
     restart: unless-stopped
 
-  # 5. Сервис ленты новостей
   feedservice:
     build:
       context: .
@@ -107,7 +98,6 @@ services:
       - kafka
     restart: unless-stopped
 
-  # 6. Сервис чата
   chatservice:
     build:
       context: .
@@ -115,12 +105,12 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
-      - ConnectionStrings:PostgreSQL=Host=postgres;Database=twitter_clone;Username=postgres;Password=password
+      - ConnectionStrings:PostgreSQL=Host=postgres;Database=switter;Username=postgres;Password=password
       - Redis:ConnectionString=redis:6379,allowAdmin=true
       - Kafka:BootstrapServers=kafka:9092
     ports:
       - "5005:80"
-      - "5006:5006"  # Для SignalR WebSocket соединений
+      - "5006:5006"  
     volumes:
       - ./src/ChatService:/app
     depends_on:
@@ -129,7 +119,6 @@ services:
       - kafka
     restart: unless-stopped
 
-  # 7. Сервис уведомлений
   notificationservice:
     build:
       context: .
@@ -148,48 +137,44 @@ services:
       - kafka
     restart: unless-stopped
 
-  # 8. Настройки для PostgreSQL (разработка)
   postgres:
     environment:
-      - POSTGRES_DB=twitter_clone
+      - POSTGRES_DB=switter
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
-      - POSTGRES_HOST_AUTH_METHOD=trust  # Упрощаем доступ в разработке
+      - POSTGRES_HOST_AUTH_METHOD=trust
     ports:
-      - "5432:5432"  # Пробрасываем порт для подключения из IDE
+      - "5432:5432" 
     command: >
       postgres
       -c shared_preload_libraries=pg_stat_statements
       -c pg_stat_statements.track=all
-      -c max_connections=100  # Увеличиваем лимит для разработки
+      -c max_connections=100 
 
-  # 9. Настройки для Redis (разработка)
   redis:
     command: >
       redis-server
-      --appendonly yes  # Включаем persistence
-      --maxmemory 256mb  # Лимит памяти
-      --maxmemory-policy allkeys-lru  # Политика вытеснения
+      --appendonly yes 
+      --maxmemory 256mb 
+      --maxmemory-policy allkeys-lru  
     ports:
       - "6379:6379"
 
-  # 10. Настройки для Kafka (разработка)
   kafka:
     environment:
       - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
       - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
       - KAFKA_DELETE_TOPIC_ENABLE=true
-      - KAFKA_NUM_PARTITIONS=3  # Увеличиваем партиции для разработки
+      - KAFKA_NUM_PARTITIONS=3  
     ports:
       - "9092:9092"
       - "9093:9093"
 
-  # 11. Seq для логов (опционально, но очень полезно)
   seq:
     environment:
       - ACCEPT_EULA=Y
       - SEQ_FIRSTRUN_ADMINUSERNAME=admin
-      - SEQ_FIRSTRUN_ADMINPASSWORDHASH=  # Оставляем пустым для разработки
+      - SEQ_FIRSTRUN_ADMINPASSWORDHASH=
     ports:
       - "5341:5341"   # Web UI
       - "5342:5342"   # Ingestion port

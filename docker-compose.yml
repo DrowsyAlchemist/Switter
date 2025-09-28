@@ -1,5 +1,3 @@
-version: '3.8'
-
 networks:
   switter-network:
     driver: bridge
@@ -9,9 +7,9 @@ services:
 
   postgres:
     image: postgres:15-alpine
-    container_name: twitter-postgres
+    container_name: switter-postgres
     environment:
-      POSTGRES_DB: twitter_clone
+      POSTGRES_DB: switter
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-DevPassword123!}
       POSTGRES_HOST_AUTH_METHOD: scram-sha-256
@@ -21,7 +19,7 @@ services:
     ports:
       - "5432:5432"
     networks:
-      - twitter-network
+      - switter-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -31,7 +29,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: twitter-redis
+    container_name: switter-redis
     command: >
       redis-server
       --appendonly yes
@@ -44,7 +42,7 @@ services:
     ports:
       - "6379:6379"
     networks:
-      - twitter-network
+      - switter-network
     healthcheck:
       test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
       interval: 10s
@@ -53,49 +51,40 @@ services:
     restart: unless-stopped
 
   zookeeper:
-    image: bitnami/zookeeper:latest
-    container_name: twitter-zookeeper
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: switter-zookeeper
     environment:
-      ALLOW_ANONYMOUS_LOGIN: "yes"
-      ZOO_MAX_CLIENT_CNXNS: 100
-      ZOO_TICK_TIME: 2000
-    volumes:
-      - zookeeper_data:/bitnami/zookeeper
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
     ports:
       - "2181:2181"
     networks:
-      - twitter-network
+      - switter-network
     healthcheck:
-      test: echo "ruok" | nc localhost 2181
+      test: echo stat | nc localhost 2181
       interval: 10s
       timeout: 5s
       retries: 3
     restart: unless-stopped
 
   kafka:
-    image: bitnami/kafka:latest
-    container_name: twitter-kafka
+    image: confluentinc/cp-kafka:7.3.0
+    container_name: switter-kafka
     depends_on:
-      zookeeper:
-        condition: service_healthy
+        - zookeeper
     environment:
-      KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,PLAINTEXT_HOST://:9093
-      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9093
-      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
-      KAFKA_CFG_NUM_PARTITIONS: 3
-      KAFKA_CFG_DEFAULT_REPLICATION_FACTOR: 1
-      KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_CFG_DELETE_TOPIC_ENABLE: "true"
+        KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+        KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+        KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+        KAFKA_NUM_PARTITIONS: 3
+        KAFKA_DEFAULT_REPLICATION_FACTOR: 1
     volumes:
-      - kafka_data:/bitnami/kafka
+      - kafka_data:/var/lib/kafka/data
     ports:
       - "9092:9092"
       - "9093:9093"
     networks:
-      - twitter-network
+      - switter-network
     healthcheck:
       test: kafka-topics.sh --bootstrap-server localhost:9092 --list
       interval: 15s
@@ -105,7 +94,7 @@ services:
 
   seq:
     image: datalust/seq:latest
-    container_name: twitter-seq
+    container_name: switter-seq
     environment:
       ACCEPT_EULA: Y
       SEQ_FIRSTRUN_ADMINUSERNAME: admin
@@ -116,7 +105,7 @@ services:
       - "5341:5341"   # Web UI
       - "5342:5342"   # Ingestion API
     networks:
-      - twitter-network
+      - switter-network
     healthcheck:
       test: wget --no-verbose --tries=1 --spider http://localhost:5341/api || exit 1
       interval: 10s
@@ -125,4 +114,62 @@ services:
     restart: unless-stopped
 
   redis-commander:
-    image: rediscomm
+    image: rediscommander/redis-commander:latest
+    container_name: switter-redis-commander
+    environment:
+      REDIS_HOSTS: local:redis:6379:0:${REDIS_PASSWORD:-RedisDevPass123!}
+    depends_on:
+      - redis
+    ports:
+      - "8081:8081"
+    networks:
+      - switter-network
+    restart: unless-stopped
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: switter-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@twitterclone.local
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-PgAdmin123!}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    ports:
+      - "8082:80"
+    networks:
+      - switter-network
+    restart: unless-stopped
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: switter-kafka-ui
+    environment:
+        KAFKA_CLUSTERS_0_NAME: switter-cluster
+        KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+        KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    depends_on:
+        - kafka
+        - zookeeper
+    ports:
+        - "8083:8080"
+    networks:
+        - switter-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+    name: switter-postgres-data
+  redis_data:
+    driver: local
+    name: switter-redis-data
+  kafka_data:
+    driver: local
+    name: switter-kafka-data
+  seq_data:
+    driver: local
+    name: switter-seq-data
+  pgadmin_data:
+    driver: local
+    name: switter-pgadmin-data
