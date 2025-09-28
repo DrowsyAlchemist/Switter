@@ -9,14 +9,14 @@ services:
     image: postgres:15-alpine
     container_name: switter-postgres
     environment:
-      POSTGRES_DB: switter
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: DevPassword123!
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT}:5432"
     networks:
       - switter-network
     healthcheck:
@@ -35,11 +35,11 @@ services:
       --appendfsync everysec
       --maxmemory 512mb
       --maxmemory-policy allkeys-lru
-      --requirepass ${REDIS_PASSWORD:-RedisDevPass123!}
+      --requirepass ${REDIS_PASSWORD}
     volumes:
       - redis_data:/data
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT}:6379"
     networks:
       - switter-network
     healthcheck:
@@ -97,7 +97,7 @@ services:
     environment:
       ACCEPT_EULA: Y
       SEQ_FIRSTRUN_ADMINUSERNAME: admin
-      SEQ_FIRSTRUN_ADMINPASSWORD: ${SEQ_PASSWORD:-SeqDevPass123!}
+      SEQ_FIRSTRUN_ADMINPASSWORD: ${SEQ_PASSWORD}
     volumes:
       - seq_data:/data
     ports:
@@ -129,7 +129,7 @@ services:
     image: dpage/pgadmin4:latest
     container_name: switter-pgadmin
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@twitterclone.local
+      PGADMIN_DEFAULT_EMAIL: admin@switter.local
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-PgAdmin123!}
       PGADMIN_CONFIG_SERVER_MODE: "False"
     volumes:
