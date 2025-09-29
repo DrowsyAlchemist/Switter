@@ -2,6 +2,7 @@
 using AuthService.DTOs;
 using AuthService.Interfaces;
 using AuthService.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace AuthService.Services
 {
@@ -43,9 +44,22 @@ namespace AuthService.Services
             return await GenerateAuthResponseAsync(user, request.IpAddress);
         }
 
-        public Task<AuthResponse> LoginAsync(LoginRequest request)
+        public async Task<AuthResponse> LoginAsync(LoginRequest request)
         {
-            throw new NotImplementedException();
+            var user = await _userService.GetUserByEmailAsync(request.Login)
+                  ?? await _userService.GetUserByUsernameAsync(request.Login);
+
+            if (user == null)
+                throw new Exception($"User with login {request.Login} in not found");
+
+            if (BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash) == false)
+                throw new UnauthorizedAccessException("Invalid password");
+
+            if (!user.IsActive)
+                throw new UnauthorizedAccessException("Account is deactivated");
+
+            _logger.LogInformation("User logged in: {Username}", user.Username);
+            return await GenerateAuthResponseAsync(user, request.IpAddress);
         }
 
         public Task<AuthResponse> RefreshTokenAsync(RefreshTokenRequest request)
