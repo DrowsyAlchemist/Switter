@@ -24,5 +24,7 @@ namespace AuthService.DTOs
 
         [Compare("Password")]
         public string ConfirmPassword { get; set; } = string.Empty;
+
+        public string IpAddress = "Unknown";
     }
 }

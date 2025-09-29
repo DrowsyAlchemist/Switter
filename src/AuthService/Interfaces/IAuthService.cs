@@ -2,11 +2,11 @@
 
 namespace AuthService.Interfaces
 {
-    interface IAuthService
+    public interface IAuthService
     {
-        Task<LoginResponse> RegisterAsync(RegisterRequest request);
-        Task<LoginResponse> LoginAsync(LoginRequest request);
-        Task<LoginResponse> RefreshTokenAsync(RefreshTokenRequest request);
+        Task<AuthResponse> RegisterAsync(RegisterRequest request);
+        Task<AuthResponse> LoginAsync(LoginRequest request);
+        Task<AuthResponse> RefreshTokenAsync(RefreshTokenRequest request);
         Task RevokeTokenAsync(string refreshToken, string ipAddress);
         Task<bool> ValidateTokenAsync(string token);
 

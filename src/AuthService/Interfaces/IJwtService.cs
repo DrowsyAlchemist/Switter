@@ -1,12 +1,12 @@
-﻿using AuthService.Models;
+﻿using AuthService.DTOs.Jwt;
+using AuthService.Models;
 
 namespace AuthService.Interfaces
 {
-    interface IJwtService
+    public interface IJwtService
     {
-        string GenerateAccessToken(User user);
-        string GenerateRefreshToken();
+        AccessTokenData GenerateAccessToken(User user);
+        RefreshTokenData GenerateRefreshToken();
         Guid? ValidateToken(string token);
-
     }
 }

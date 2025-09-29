@@ -2,7 +2,7 @@
 
 namespace AuthService.Interfaces
 {
-    interface IUserService
+    public interface IUserService
     {
         Task<User?> GetUserByIdAsync(Guid id);
         Task<User?> GetUserByEmailAsync(string email);

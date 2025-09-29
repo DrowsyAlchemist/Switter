@@ -1,4 +1,5 @@
-﻿using AuthService.Interfaces;
+﻿using AuthService.DTOs.Jwt;
+using AuthService.Interfaces;
 using AuthService.Models;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -10,16 +11,16 @@ namespace AuthService.Services
 {
     public class JwtService : IJwtService
     {
-        private readonly JwtSettings _jwtSettings;
+        private readonly JwtSettings _settings;
         private readonly ILogger<JwtService> _logger;
 
         public JwtService(IOptions<JwtSettings> jwtSettings, ILogger<JwtService> logger)
         {
-            _jwtSettings = jwtSettings.Value;
+            _settings = jwtSettings.Value;
             _logger = logger;
         }
 
-        public string GenerateAccessToken(User user)
+        public AccessTokenData GenerateAccessToken(User user)
         {
             var claims = new[]
             {
@@ -29,22 +30,32 @@ namespace AuthService.Services
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret));
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Secret));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-            var token = new JwtSecurityToken(
-                issuer: _jwtSettings.Issuer,
-                audience: _jwtSettings.Audience,
+            var jwtSecurityToken = new JwtSecurityToken(
+                issuer: _settings.Issuer,
+                audience: _settings.Audience,
                 claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpiryMinutes),
+                expires: DateTime.UtcNow.AddMinutes(_settings.AccessTokenExpiryMinutes),
                 signingCredentials: creds
             );
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            string token = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
+
+            return new AccessTokenData
+            {
+                Token = token,
+                Expires = DateTime.UtcNow.AddMinutes(_settings.AccessTokenExpiryMinutes)
+            };
         }
 
-        public string GenerateRefreshToken()
+        public RefreshTokenData GenerateRefreshToken()
         {
-            return Convert.ToBase64String(Guid.NewGuid().ToByteArray());
+            return new RefreshTokenData
+            {
+                Token = Convert.ToBase64String(Guid.NewGuid().ToByteArray()),
+                Expires = DateTime.UtcNow.AddDays(_settings.RefreshTokenExpiryDays)
+            };
         }
 
         public Guid? ValidateToken(string token)
@@ -52,7 +63,7 @@ namespace AuthService.Services
             try
             {
                 var tokenHandler = new JwtSecurityTokenHandler();
-                var key = Encoding.UTF8.GetBytes(_jwtSettings.Secret);
+                var key = Encoding.UTF8.GetBytes(_settings.Secret);
 
                 tokenHandler.ValidateToken(token, new TokenValidationParameters
                 {
@@ -60,8 +71,8 @@ namespace AuthService.Services
                     IssuerSigningKey = new SymmetricSecurityKey(key),
                     ValidateIssuer = true,
                     ValidateAudience = true,
-                    ValidIssuer = _jwtSettings.Issuer,
-                    ValidAudience = _jwtSettings.Audience,
+                    ValidIssuer = _settings.Issuer,
+                    ValidAudience = _settings.Audience,
                     ClockSkew = TimeSpan.Zero
                 }, out SecurityToken validatedToken);
 
