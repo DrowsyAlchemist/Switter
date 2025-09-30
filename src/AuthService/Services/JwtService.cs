@@ -9,7 +9,7 @@ using System.Text;
 
 namespace AuthService.Services
 {
-    public class JwtService : IJwtService
+    internal class JwtService : IJwtService
     {
         private readonly JwtSettings _settings;
         private readonly ILogger<JwtService> _logger;

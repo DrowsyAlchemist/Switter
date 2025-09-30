@@ -7,7 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace AuthService.Services
 {
-    public class AuthService : IAuthService
+    internal class AuthService : IAuthService
     {
         private readonly AuthDbContext _context;
         private readonly IJwtService _jwtService;
@@ -77,7 +77,7 @@ namespace AuthService.Services
                 .FirstOrDefaultAsync(rt => rt.Token == request.RefreshToken && rt.UserId == userId);
             if (refreshToken == null)
                 throw new SecurityTokenException("Refresh token not found");
-            if(refreshToken.IsExpired)
+            if (refreshToken.IsExpired)
                 throw new SecurityTokenException("Refresh token expired");
             if (refreshToken.IsRevoked)
                 throw new SecurityTokenException("Refresh token revoked");
