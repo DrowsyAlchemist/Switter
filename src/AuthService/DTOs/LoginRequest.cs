@@ -10,6 +10,6 @@ namespace AuthService.DTOs
         [Required]
         public string Password { get; set; } = string.Empty;
 
-        public string IpAddress { get; set; } = "Unknown";
+        public required string IpAddress { get; set; }
     }
 }

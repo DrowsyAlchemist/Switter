@@ -7,6 +7,6 @@ namespace AuthService.Interfaces
     {
         AccessTokenData GenerateAccessToken(User user);
         RefreshTokenData GenerateRefreshToken();
-        Guid? ValidateToken(string token);
+        Guid? ValidateAccessToken(string token);
     }
 }

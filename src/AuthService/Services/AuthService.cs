@@ -3,6 +3,7 @@ using AuthService.DTOs;
 using AuthService.Interfaces;
 using AuthService.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 namespace AuthService.Services
 {
@@ -62,19 +63,48 @@ namespace AuthService.Services
             return await GenerateAuthResponseAsync(user, request.IpAddress);
         }
 
-        public Task<AuthResponse> RefreshTokenAsync(RefreshTokenRequest request)
+        public async Task<AuthResponse> RefreshTokenAsync(RefreshTokenRequest request)
         {
-            throw new NotImplementedException();
+            var userId = _jwtService.ValidateAccessToken(request.AccessToken);
+            if (userId == null)
+                throw new SecurityTokenException("Invalid access token");
+
+            var user = await _userService.GetUserByIdAsync(userId.Value);
+            if (user == null)
+                throw new ArgumentException("User not found");
+
+            var refreshToken = await _context.RefreshTokens
+                .FirstOrDefaultAsync(rt => rt.Token == request.RefreshToken && rt.UserId == userId);
+            if (refreshToken == null)
+                throw new SecurityTokenException("Refresh token not found");
+            if(refreshToken.IsExpired)
+                throw new SecurityTokenException("Refresh token expired");
+            if (refreshToken.IsRevoked)
+                throw new SecurityTokenException("Refresh token revoked");
+
+            var authResponse = await GenerateAuthResponseAsync(user, request.IpAddress);
+
+            refreshToken.Revoked = DateTime.UtcNow;
+            refreshToken.RevokedByIp = request.IpAddress;
+            refreshToken.ReplacedByToken = authResponse.RefreshToken;
+
+            _context.RefreshTokens.Update(refreshToken);
+            await _context.SaveChangesAsync();
+
+            return authResponse;
         }
 
-        public Task RevokeTokenAsync(string refreshToken, string ipAddress)
+        public async Task RevokeTokenAsync(string refreshToken, string ipAddress)
         {
-            throw new NotImplementedException();
-        }
+            var token = await _context.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == refreshToken);
+            if (token == null || !token.IsActive)
+                throw new ArgumentException("Invalid token");
 
-        public Task<bool> ValidateTokenAsync(string token)
-        {
-            throw new NotImplementedException();
+            token.Revoked = DateTime.UtcNow;
+            token.RevokedByIp = ipAddress;
+
+            _context.RefreshTokens.Update(token);
+            await _context.SaveChangesAsync();
         }
 
         private async Task<AuthResponse> GenerateAuthResponseAsync(User user, string ipAddress)
@@ -103,6 +133,5 @@ namespace AuthService.Services
                 ExpiresAt = accessToken.Expires
             };
         }
-
     }
 }

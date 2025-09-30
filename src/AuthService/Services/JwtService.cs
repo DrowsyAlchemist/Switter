@@ -58,7 +58,7 @@ namespace AuthService.Services
             };
         }
 
-        public Guid? ValidateToken(string token)
+        public Guid? ValidateAccessToken(string token)
         {
             try
             {

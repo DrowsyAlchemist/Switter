@@ -8,7 +8,5 @@ namespace AuthService.Interfaces
         Task<AuthResponse> LoginAsync(LoginRequest request);
         Task<AuthResponse> RefreshTokenAsync(RefreshTokenRequest request);
         Task RevokeTokenAsync(string refreshToken, string ipAddress);
-        Task<bool> ValidateTokenAsync(string token);
-
     }
 }
