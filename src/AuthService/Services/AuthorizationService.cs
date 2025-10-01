@@ -7,7 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace AuthService.Services
 {
-    internal class AuthorizationService : IAuthService
+    internal class AuthorizationService : IAuthorizationService
     {
         private readonly AuthDbContext _context;
         private readonly IJwtService _jwtService;
@@ -42,7 +42,7 @@ namespace AuthService.Services
 
             _logger.LogInformation("User registered: {Username} ({Email})", user.Username, user.Email);
 
-            return await GenerateAuthResponseAsync(user, request.IpAddress);
+            return await GenerateAuthResponseAsync(user, request.RemoteIp);
         }
 
         public async Task<AuthResponse> LoginAsync(LoginRequest request)
@@ -60,7 +60,7 @@ namespace AuthService.Services
                 throw new UnauthorizedAccessException("Account is deactivated");
 
             _logger.LogInformation("User logged in: {Username}", user.Username);
-            return await GenerateAuthResponseAsync(user, request.IpAddress);
+            return await GenerateAuthResponseAsync(user, request.RemoteIp);
         }
 
         public async Task<AuthResponse> RefreshTokenAsync(RefreshTokenRequest request)
@@ -82,10 +82,10 @@ namespace AuthService.Services
             if (refreshToken.IsRevoked)
                 throw new SecurityTokenException("Refresh token revoked");
 
-            var authResponse = await GenerateAuthResponseAsync(user, request.IpAddress);
+            var authResponse = await GenerateAuthResponseAsync(user, request.RemoteIp);
 
             refreshToken.Revoked = DateTime.UtcNow;
-            refreshToken.RevokedByIp = request.IpAddress;
+            refreshToken.RevokedByIp = request.RemoteIp;
             refreshToken.ReplacedByToken = authResponse.RefreshToken;
 
             _context.RefreshTokens.Update(refreshToken);
