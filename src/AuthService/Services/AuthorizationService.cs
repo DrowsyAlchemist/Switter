@@ -7,15 +7,15 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace AuthService.Services
 {
-    internal class AuthService : IAuthService
+    internal class AuthorizationService : IAuthService
     {
         private readonly AuthDbContext _context;
         private readonly IJwtService _jwtService;
         private readonly IUserService _userService;
-        private readonly ILogger<AuthService> _logger;
+        private readonly ILogger<AuthorizationService> _logger;
 
-        public AuthService(AuthDbContext context, IJwtService jwtService,
-                          IUserService userService, ILogger<AuthService> logger)
+        public AuthorizationService(AuthDbContext context, IJwtService jwtService,
+                          IUserService userService, ILogger<AuthorizationService> logger)
         {
             _context = context;
             _jwtService = jwtService;
@@ -51,7 +51,7 @@ namespace AuthService.Services
                   ?? await _userService.GetUserByUsernameAsync(request.Login);
 
             if (user == null)
-                throw new Exception($"User with login {request.Login} in not found");
+                throw new UnauthorizedAccessException($"User with login {request.Login} in not found");
 
             if (BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash) == false)
                 throw new UnauthorizedAccessException("Invalid password");
