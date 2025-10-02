@@ -7,14 +7,14 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-namespace AuthService.Services
+namespace AuthService.Services.Jwt
 {
-    internal class JwtService : IJwtService
+    internal class AccessTokenService : IAccessTokenService
     {
         private readonly JwtSettings _settings;
-        private readonly ILogger<JwtService> _logger;
+        private readonly ILogger<AccessTokenService> _logger;
 
-        public JwtService(IOptions<JwtSettings> jwtSettings, ILogger<JwtService> logger)
+        public AccessTokenService(IOptions<JwtSettings> jwtSettings, ILogger<AccessTokenService> logger)
         {
             _settings = jwtSettings.Value;
             _logger = logger;
@@ -30,11 +30,11 @@ namespace AuthService.Services
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Secret));
+            var key = GetSecurityKey();
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var jwtSecurityToken = new JwtSecurityToken(
-                issuer: _settings.Issuer,
+            issuer: _settings.Issuer,
                 audience: _settings.Audience,
                 claims: claims,
                 expires: DateTime.UtcNow.AddMinutes(_settings.AccessTokenExpiryMinutes),
@@ -49,26 +49,17 @@ namespace AuthService.Services
             };
         }
 
-        public RefreshTokenData GenerateRefreshToken()
-        {
-            return new RefreshTokenData
-            {
-                Token = Convert.ToBase64String(Guid.NewGuid().ToByteArray()),
-                Expires = DateTime.UtcNow.AddDays(_settings.RefreshTokenExpiryDays)
-            };
-        }
-
         public Guid? ValidateAccessToken(string token)
         {
             try
             {
                 var tokenHandler = new JwtSecurityTokenHandler();
-                var key = Encoding.UTF8.GetBytes(_settings.Secret);
+                var key = GetSecurityKey();
 
                 tokenHandler.ValidateToken(token, new TokenValidationParameters
                 {
                     ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    IssuerSigningKey = key,
                     ValidateIssuer = true,
                     ValidateAudience = true,
                     ValidIssuer = _settings.Issuer,
@@ -86,6 +77,11 @@ namespace AuthService.Services
                 _logger.LogWarning(ex, "Token validation failed");
                 return null;
             }
+        }
+
+        private SymmetricSecurityKey GetSecurityKey()
+        {
+            return new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Secret));
         }
     }
 }

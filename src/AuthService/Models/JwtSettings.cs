@@ -7,6 +7,7 @@
         public string Audience { get; set; } = string.Empty;
         public int AccessTokenExpiryMinutes { get; set; } = 15;
         public int RefreshTokenExpiryDays { get; set; } = 7;
+        public int RefreshTokenDbLifetimeInDays { get; set; } = 14;
     }
 
 }

@@ -14,6 +14,14 @@ namespace AuthService.Services
             _context = context;
         }
 
+        public async Task<User?> CreateUserAsync(User user)
+        {
+            ArgumentNullException.ThrowIfNull(user);
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+            return user;
+        }
+
         public async Task<User?> GetUserByEmailAsync(string email)
         {
             ArgumentNullException.ThrowIfNull(email);

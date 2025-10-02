@@ -3,10 +3,9 @@ using AuthService.Models;
 
 namespace AuthService.Interfaces
 {
-    public interface IJwtService
+    public interface IAccessTokenService
     {
         AccessTokenData GenerateAccessToken(User user);
-        RefreshTokenData GenerateRefreshToken();
         Guid? ValidateAccessToken(string token);
     }
 }
