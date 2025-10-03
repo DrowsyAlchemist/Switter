@@ -34,9 +34,10 @@ namespace AuthService.Services
                 Email = request.Email,
                 PasswordHash = passwordHash
             };
-            await _userService.CreateUserAsync(user);
 
             var authResponse = await GenerateAuthResponseAsync(user, remoteIp);
+
+            await _userService.CreateUserAsync(user);
             _logger.LogInformation("User registered: {Username} ({Email})", user.Username, user.Email);
             return authResponse;
         }

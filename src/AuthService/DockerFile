@@ -4,7 +4,7 @@ EXPOSE 80
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
-COPY ["AuthService.csproj", "."]
+COPY ["./AuthService.csproj", "."]
 RUN dotnet restore "AuthService.csproj"
 COPY . .
 RUN dotnet build "AuthService.csproj" -c Release -o /app/build

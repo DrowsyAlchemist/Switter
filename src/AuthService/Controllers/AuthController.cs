@@ -7,7 +7,7 @@ namespace AuthService.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    internal class AuthController : Controller
+    public class AuthController : ControllerBase
     {
         private readonly IAuthorizationService _authorizationService;
         private readonly ILogger<AuthController> _logger;

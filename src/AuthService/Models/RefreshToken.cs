@@ -13,8 +13,6 @@
         public bool IsExpired => DateTime.UtcNow >= Expires;
         public bool IsRevoked => Revoked != null;
         public bool IsActive => !IsRevoked && !IsExpired;
-
         public Guid UserId { get; set; }
-        public virtual User User { get; set; } = null!;
     }
 }
