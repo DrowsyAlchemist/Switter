@@ -24,18 +24,19 @@ namespace AuthService.Controllers
             try
             {
                 var authResponse = await _authorizationService.RegisterAsync(registerRequest, GetRemoteIp());
+                _logger.LogInformation("User registered: {Username} ({Email})", registerRequest.Username, registerRequest.Email);
                 return Ok(authResponse);
             }
             catch (ArgumentException ex)
             {
+                _logger.LogWarning(ex, "Registration failed. User: {email}", registerRequest.Email);
                 return BadRequest(new { message = ex.Message });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error during registration");
+                _logger.LogError(ex, "Error during registration. User: {email}", registerRequest.Email);
                 return StatusCode(500, new { message = "Internal server error" });
             }
-
         }
 
         [HttpPost("login")]
@@ -44,11 +45,13 @@ namespace AuthService.Controllers
             try
             {
                 var response = await _authorizationService.LoginAsync(authRequest, GetRemoteIp());
+                _logger.LogInformation("User logged in: {Login})", authRequest.Login);
                 return Ok(response);
             }
             catch (UnauthorizedAccessException ex)
             {
-                return Unauthorized(new { message = ex.Message });
+                _logger.LogWarning(ex, "Login failed. User: {userName}", authRequest.Login);
+                return Unauthorized(new { message = "Invalid credentials" });
             }
             catch (Exception ex)
             {
@@ -63,11 +66,13 @@ namespace AuthService.Controllers
             try
             {
                 var response = await _authorizationService.RefreshTokenAsync(request, GetRemoteIp());
+                _logger.LogInformation("User refreshed: {Login})", response.Email);
                 return Ok(response);
             }
             catch (SecurityTokenException ex)
             {
-                return Unauthorized(new { message = ex.Message });
+                _logger.LogWarning(ex, "Refresh failed");
+                return Unauthorized();
             }
             catch (Exception ex)
             {
@@ -82,11 +87,18 @@ namespace AuthService.Controllers
             try
             {
                 await _authorizationService.RevokeTokenAsync(refreshToken, GetRemoteIp());
+                _logger.LogInformation("Token revoked.");
                 return Ok(new { message = "Token revoked successfully" });
             }
-            catch (ArgumentException ex)
+            catch (SecurityTokenException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                _logger.LogWarning(ex, "Revoke failed");
+                return BadRequest(new { message = "Invalid RefreshToken" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during token Revoke");
+                return StatusCode(500, new { message = "Internal server error" });
             }
         }
 

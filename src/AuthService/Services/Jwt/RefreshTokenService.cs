@@ -51,12 +51,12 @@ namespace AuthService.Services.Jwt
             var tokenJson = await _redisService.GetAsync(refreshToken);
 
             if (string.IsNullOrEmpty(tokenJson))
-                throw new Exception("RefreshToken is not found.");
+                throw new SecurityTokenException("RefreshToken is not found in db.");
 
             var token = JsonSerializer.Deserialize<RefreshToken>(tokenJson);
 
             if (token == null)
-                throw new SecurityTokenException("Invalid refresh token");
+                throw new Exception($"Deserialize failed. Token: {tokenJson}");
             if (token.IsExpired)
                 throw new SecurityTokenException("Refresh token expired");
             if (token.IsRevoked)

@@ -38,7 +38,6 @@ namespace AuthService.Services
             var authResponse = await GenerateAuthResponseAsync(user, remoteIp);
 
             await _userService.CreateUserAsync(user);
-            _logger.LogInformation("User registered: {Username} ({Email})", user.Username, user.Email);
             return authResponse;
         }
 
@@ -51,10 +50,10 @@ namespace AuthService.Services
                 throw new UnauthorizedAccessException($"User with login {request.Login} in not found");
 
             if (BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash) == false)
-                throw new UnauthorizedAccessException("Invalid password");
+                throw new UnauthorizedAccessException($"Invalid password. Login: {request.Login}");
 
             if (!user.IsActive)
-                throw new UnauthorizedAccessException("Account is deactivated");
+                throw new UnauthorizedAccessException($"Account is deactivated. Login: {request.Login}");
 
             var authResponse = await GenerateAuthResponseAsync(user, remoteIp);
             _logger.LogInformation("User logged in: {Username}", user.Username);
