@@ -1,15 +1,19 @@
 ﻿using AuthService.Interfaces;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using StackExchange.Redis;
+using System.Composition;
 
 namespace AuthService.Services
 {
     public class RedisService : IRedisService
     {
         private readonly IConnectionMultiplexer _redis;
+        private readonly ILogger _logger;
 
-        public RedisService(IConnectionMultiplexer redis)
+        public RedisService(IConnectionMultiplexer redis, ILogger<RedisService> logger)
         {
             _redis = redis;
+            _logger = logger;
         }
 
         public async Task<string?> GetAsync(string key)
@@ -17,8 +21,16 @@ namespace AuthService.Services
             if (string.IsNullOrWhiteSpace(key))
                 throw new ArgumentException("Key cannot be null or empty", nameof(key));
 
-            var db = _redis.GetDatabase();
-            return await db.StringGetAsync(key);
+            try
+            {
+                var db = _redis.GetDatabase();
+                return await db.StringGetAsync(key);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Redis is unavailable");
+                throw new Exception("Redis is unavailable" + ex);
+            }
         }
 
         public async Task RemoveAsync(string key)
@@ -26,8 +38,16 @@ namespace AuthService.Services
             if (string.IsNullOrWhiteSpace(key))
                 throw new ArgumentException("Key cannot be null or empty", nameof(key));
 
-            var db = _redis.GetDatabase();
-            await db.KeyDeleteAsync(key);
+            try
+            {
+                var db = _redis.GetDatabase();
+                await db.KeyDeleteAsync(key);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Redis is unavailable");
+                throw new Exception("Redis is unavailable" + ex);
+            }
         }
 
         public async Task<bool> KeyExistsAsync(string key)
@@ -35,8 +55,16 @@ namespace AuthService.Services
             if (string.IsNullOrWhiteSpace(key))
                 throw new ArgumentException("Key cannot be null or empty", nameof(key));
 
-            var db = _redis.GetDatabase();
-            return await db.KeyExistsAsync(key);
+            try
+            {
+                var db = _redis.GetDatabase();
+                return await db.KeyExistsAsync(key);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Redis is unavailable");
+                throw new Exception("Redis is unavailable" + ex);
+            }
         }
 
         public async Task SetAsync(string key, string value, TimeSpan? expiry = null)
@@ -47,8 +75,16 @@ namespace AuthService.Services
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
 
-            var db = _redis.GetDatabase();
-            await db.StringSetAsync(key, value, expiry);
+            try
+            {
+                var db = _redis.GetDatabase();
+                await db.StringSetAsync(key, value, expiry);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Redis is unavailable");
+                throw new Exception("Redis is unavailable" + ex);
+            }
         }
     }
 }

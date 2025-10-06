@@ -27,12 +27,11 @@ namespace AuthService.Services
             try
             {
                 var result = await _producer.ProduceAsync(topic, new Message<Null, string> { Value = message });
-                _logger.LogInformation("Message sent to {Topic} [Partition: {Partition}]",
-                    result.Topic, result.Partition);
+                _logger.LogInformation("Message sent to {Topic} [Partition: {Partition}]", result.Topic, result.Partition);
             }
             catch (ProduceException<Null, string> ex)
             {
-                _logger.LogError(ex, "Failed to deliver message to {Topic}", topic);
+                _logger.LogError(ex, "Kafka failed to deliver message to {Topic}", topic);
             }
         }
 
