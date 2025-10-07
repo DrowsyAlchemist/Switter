@@ -5,10 +5,10 @@ namespace AuthService.Services.Jwt
 {
     internal class TokenService : ITokenService
     {
-        private readonly AccessTokenService _accessTokenService;
-        private readonly RefreshTokenService _refreshTokenService;
+        private readonly IAccessTokenService _accessTokenService;
+        private readonly IRefreshTokenService _refreshTokenService;
 
-        public TokenService(AccessTokenService accessTokenService, RefreshTokenService refreshTokenService)
+        public TokenService(IAccessTokenService accessTokenService, IRefreshTokenService refreshTokenService)
         {
             _accessTokenService = accessTokenService;
             _refreshTokenService = refreshTokenService;
