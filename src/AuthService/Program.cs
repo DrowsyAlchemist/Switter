@@ -1,4 +1,5 @@
 using AuthService.Data;
+using AuthService.HealthChecks;
 using AuthService.Interfaces;
 using AuthService.Interfaces.Jwt;
 using AuthService.Models;
@@ -35,7 +36,8 @@ builder.Services.AddSingleton<IKafkaProducerService, KafkaProducerService>();
 // Health Checks
 builder.Services.AddHealthChecks()
     .AddNpgSql(builder.Configuration.GetConnectionString("PostgreSQL")!)
-    .AddRedis(builder.Configuration["Redis:ConnectionString"]!);
+    .AddRedis(builder.Configuration["Redis:ConnectionString"]!)
+    .AddCheck<TokenServiceHealthCheck>("JwtService");
 
 var app = builder.Build();
 
