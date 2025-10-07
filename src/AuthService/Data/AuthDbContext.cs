@@ -23,7 +23,6 @@ namespace AuthService.Data
                 entity.Property(u => u.CreatedAt).HasColumnType("timestamp with time zone");
                 entity.Property(u => u.UpdatedAt).HasColumnType("timestamp with time zone");
             });
-
             //modelBuilder.Entity<RefreshToken>(entity =>
             //{
             //    entity.HasKey(rt => rt.Id);
@@ -34,8 +33,12 @@ namespace AuthService.Data
             //    .HasForeignKey(u => u.UserId)
             //    .OnDelete(DeleteBehavior.Cascade);
             //});
-
             base.OnModelCreating(modelBuilder);
+        }
+
+        public async Task<bool> CanConnectAsync()
+        {
+            return await Database.CanConnectAsync();
         }
     }
 }

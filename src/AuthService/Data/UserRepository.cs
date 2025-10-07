@@ -94,5 +94,10 @@ namespace AuthService.Data
                 throw new Exception("Db is unavailable" + ex);
             }
         }
+
+        public async Task<bool> CanConnectAsync()
+        {
+            return await _context.CanConnectAsync();
+        }
     }
 }
