@@ -11,13 +11,11 @@ namespace AuthService.Services
     {
         private readonly ITokenService _tokenService;
         private readonly IUserService _userService;
-        private readonly ILogger<AuthorizationService> _logger;
 
-        public AuthorizationService(ITokenService tokenService, IUserService userService, ILogger<AuthorizationService> logger)
+        public AuthorizationService(ITokenService tokenService, IUserService userService)
         {
             _tokenService = tokenService;
             _userService = userService;
-            _logger = logger;
         }
 
         public async Task<AuthResponse> RegisterAsync(RegisterRequest request, string remoteIp)
@@ -55,7 +53,6 @@ namespace AuthService.Services
                 throw new UnauthorizedAccessException($"Account is deactivated. Login: {request.Login}");
 
             var authResponse = await GenerateAuthResponseAsync(user, remoteIp);
-            _logger.LogInformation("User logged in: {Username}", user.Username);
             return authResponse;
         }
 
@@ -73,7 +70,6 @@ namespace AuthService.Services
             var newAccessToken = _tokenService.GenerateAccessToken(userClaims);
             var newRefreshToken = await _tokenService.RefreshAsync(request.RefreshToken, userId.Value, remoteIp);
 
-            _logger.LogInformation("Token refreshed for {Username}", user.Username);
             return new AuthResponse
             {
                 UserId = user.Id,
