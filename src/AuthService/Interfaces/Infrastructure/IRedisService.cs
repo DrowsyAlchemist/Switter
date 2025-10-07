@@ -1,4 +1,4 @@
-﻿namespace AuthService.Interfaces
+﻿namespace AuthService.Interfaces.Infrastructure
 {
     public interface IRedisService
     {

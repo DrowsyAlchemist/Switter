@@ -1,4 +1,4 @@
-﻿namespace AuthService.DTOs
+﻿namespace AuthService.DTOs.Auth
 {
     public class AuthResponse
     {

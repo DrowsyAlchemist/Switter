@@ -1,9 +1,9 @@
-﻿using AuthService.Interfaces;
+﻿using AuthService.Interfaces.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using StackExchange.Redis;
 using System.Composition;
 
-namespace AuthService.Services
+namespace AuthService.Services.Infrastructure
 {
     public class RedisService : IRedisService
     {

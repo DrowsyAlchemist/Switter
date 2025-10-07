@@ -1,18 +1,19 @@
-﻿using AuthService.DTOs;
+﻿using AuthService.DTOs.Auth;
 using AuthService.DTOs.Jwt;
-using AuthService.Interfaces;
+using AuthService.Interfaces.Auth;
+using AuthService.Interfaces.Infrastructure;
 using AuthService.Interfaces.Jwt;
 using AuthService.Models;
 using Microsoft.IdentityModel.Tokens;
 
-namespace AuthService.Services
+namespace AuthService.Services.Auth
 {
     internal class AuthorizationService : IAuthorizationService
     {
         private readonly ITokenService _tokenService;
-        private readonly IUserService _userService;
+        private readonly IUserRepository _userService;
 
-        public AuthorizationService(ITokenService tokenService, IUserService userService)
+        public AuthorizationService(ITokenService tokenService, IUserRepository userService)
         {
             _tokenService = tokenService;
             _userService = userService;
@@ -56,7 +57,7 @@ namespace AuthService.Services
             return authResponse;
         }
 
-        public async Task<AuthResponse> RefreshTokenAsync(RefreshTokenRequest request, string remoteIp)
+        public async Task<AuthResponse> RefreshTokenAsync(RefreshRequest request, string remoteIp)
         {
             var userId = _tokenService.ValidateAccessToken(request.AccessToken);
             if (userId == null)

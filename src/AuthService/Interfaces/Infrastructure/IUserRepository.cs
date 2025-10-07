@@ -1,8 +1,8 @@
 ﻿using AuthService.Models;
 
-namespace AuthService.Interfaces
+namespace AuthService.Interfaces.Infrastructure
 {
-    internal interface IUserService
+    internal interface IUserRepository
     {
         Task<User?> CreateUserAsync(User user);
         Task<User?> GetUserByIdAsync(Guid id);

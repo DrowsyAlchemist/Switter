@@ -1,16 +1,15 @@
-﻿using AuthService.Data;
-using AuthService.Interfaces;
+﻿using AuthService.Interfaces.Infrastructure;
 using AuthService.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace AuthService.Services
+namespace AuthService.Data
 {
-    internal class UserService : IUserService
+    internal class UserRepository : IUserRepository
     {
         private readonly AuthDbContext _context;
-        private readonly ILogger<UserService> _logger;
+        private readonly ILogger<UserRepository> _logger;
 
-        public UserService(AuthDbContext context, ILogger<UserService> logger)
+        public UserRepository(AuthDbContext context, ILogger<UserRepository> logger)
         {
             _context = context;
             _logger = logger;

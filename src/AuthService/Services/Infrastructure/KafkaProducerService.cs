@@ -1,7 +1,7 @@
-﻿using AuthService.Interfaces;
+﻿using AuthService.Interfaces.Infrastructure;
 using Confluent.Kafka;
 
-namespace AuthService.Services
+namespace AuthService.Services.Infrastructure
 {
     public class KafkaProducerService : IKafkaProducerService
     {

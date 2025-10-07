@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace AuthService.DTOs
+namespace AuthService.DTOs.Auth
 {
-    public class RefreshTokenRequest
+    public class RefreshRequest
     {
         [Required]
         public string AccessToken { get; set; } = string.Empty;

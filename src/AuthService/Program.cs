@@ -1,9 +1,11 @@
 using AuthService.Data;
 using AuthService.HealthChecks;
-using AuthService.Interfaces;
+using AuthService.Interfaces.Auth;
+using AuthService.Interfaces.Infrastructure;
 using AuthService.Interfaces.Jwt;
 using AuthService.Models;
-using AuthService.Services;
+using AuthService.Services.Auth;
+using AuthService.Services.Infrastructure;
 using AuthService.Services.Jwt;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
@@ -29,7 +31,7 @@ builder.Services.AddScoped<IAccessTokenService, AccessTokenService>();
 builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
-builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IRedisService, RedisService>();
 builder.Services.AddSingleton<IKafkaProducerService, KafkaProducerService>();
 

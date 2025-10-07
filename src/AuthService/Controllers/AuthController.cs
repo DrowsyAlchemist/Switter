@@ -1,5 +1,5 @@
-﻿using AuthService.DTOs;
-using AuthService.Interfaces;
+﻿using AuthService.DTOs.Auth;
+using AuthService.Interfaces.Auth;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 
@@ -61,7 +61,7 @@ namespace AuthService.Controllers
         }
 
         [HttpPost("refresh")]
-        public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request)
+        public async Task<IActionResult> Refresh([FromBody] RefreshRequest request)
         {
             try
             {
