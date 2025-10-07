@@ -1,5 +1,5 @@
 ﻿using AuthService.DTOs.Jwt;
-using AuthService.Interfaces;
+using AuthService.Interfaces.Jwt;
 using AuthService.Models;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -20,12 +20,12 @@ namespace AuthService.Services.Jwt
             _logger = logger;
         }
 
-        public AccessTokenData GenerateAccessToken(User user)
+        public AccessTokenData GenerateAccessToken(UserClaims user)
         {
             var claims = new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Name, user.Username),
+                new Claim(ClaimTypes.Name, user.Name),
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };

@@ -1,5 +1,7 @@
 ﻿using AuthService.DTOs;
+using AuthService.DTOs.Jwt;
 using AuthService.Interfaces;
+using AuthService.Interfaces.Jwt;
 using AuthService.Models;
 using Microsoft.IdentityModel.Tokens;
 
@@ -7,16 +9,13 @@ namespace AuthService.Services
 {
     internal class AuthorizationService : IAuthorizationService
     {
-        private readonly IAccessTokenService _accessTokenService;
-        private readonly IRefreshTokenService _refreshTokenService;
+        private readonly ITokenService _tokenService;
         private readonly IUserService _userService;
         private readonly ILogger<AuthorizationService> _logger;
 
-        public AuthorizationService(IAccessTokenService accessTokenService, IRefreshTokenService refreshTokenService,
-                          IUserService userService, ILogger<AuthorizationService> logger)
+        public AuthorizationService(ITokenService tokenService, IUserService userService, ILogger<AuthorizationService> logger)
         {
-            _accessTokenService = accessTokenService;
-            _refreshTokenService = refreshTokenService;
+            _tokenService = tokenService;
             _userService = userService;
             _logger = logger;
         }
@@ -62,7 +61,7 @@ namespace AuthService.Services
 
         public async Task<AuthResponse> RefreshTokenAsync(RefreshTokenRequest request, string remoteIp)
         {
-            var userId = _accessTokenService.ValidateAccessToken(request.AccessToken);
+            var userId = _tokenService.ValidateAccessToken(request.AccessToken);
             if (userId == null)
                 throw new SecurityTokenException("Invalid access token");
 
@@ -70,8 +69,9 @@ namespace AuthService.Services
             if (user == null)
                 throw new ArgumentException("User not found");
 
-            var newAccessToken = _accessTokenService.GenerateAccessToken(user);
-            var newRefreshToken = await _refreshTokenService.RefreshAsync(request.RefreshToken, userId.Value, remoteIp);
+            var userClaims = new UserClaims { Id = user.Id, Name = user.Username, Email = user.Email };
+            var newAccessToken = _tokenService.GenerateAccessToken(userClaims);
+            var newRefreshToken = await _tokenService.RefreshAsync(request.RefreshToken, userId.Value, remoteIp);
 
             _logger.LogInformation("Token refreshed for {Username}", user.Username);
             return new AuthResponse
@@ -87,13 +87,14 @@ namespace AuthService.Services
 
         public async Task RevokeTokenAsync(string refreshToken, string remoteIp)
         {
-            await _refreshTokenService.RevokeTokenAsync(refreshToken, remoteIp);
+            await _tokenService.RevokeTokenAsync(refreshToken, remoteIp);
         }
 
         private async Task<AuthResponse> GenerateAuthResponseAsync(User user, string remoteIp)
         {
-            var accessToken = _accessTokenService.GenerateAccessToken(user);
-            var refreshToken = await _refreshTokenService.GenerateRefreshTokenAsync(user.Id, remoteIp);
+            var userClaims = new UserClaims { Id = user.Id, Name = user.Username, Email = user.Email };
+            var accessToken = _tokenService.GenerateAccessToken(userClaims);
+            var refreshToken = await _tokenService.GenerateRefreshTokenAsync(user.Id, remoteIp);
 
             return new AuthResponse
             {

@@ -1,5 +1,6 @@
 ﻿using AuthService.DTOs.Jwt;
 using AuthService.Interfaces;
+using AuthService.Interfaces.Jwt;
 using AuthService.Models;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;

@@ -1,8 +1,8 @@
 ﻿using AuthService.DTOs.Jwt;
 
-namespace AuthService.Interfaces
+namespace AuthService.Interfaces.Jwt
 {
-    public interface IRefreshTokenService
+    internal interface IRefreshTokenService
     {
         Task<RefreshTokenData> GenerateRefreshTokenAsync(Guid userId, string remoteIp);
         Task RevokeTokenAsync(string refreshToken, string remoteIp, string? replacedBy = null);

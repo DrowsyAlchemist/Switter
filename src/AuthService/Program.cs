@@ -1,5 +1,6 @@
 using AuthService.Data;
 using AuthService.Interfaces;
+using AuthService.Interfaces.Jwt;
 using AuthService.Models;
 using AuthService.Services;
 using AuthService.Services.Jwt;
@@ -25,6 +26,7 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 // Сервисы
 builder.Services.AddScoped<IAccessTokenService, AccessTokenService>();
 builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
+builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IRedisService, RedisService>();
