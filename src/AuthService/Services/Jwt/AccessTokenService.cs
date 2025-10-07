@@ -12,12 +12,10 @@ namespace AuthService.Services.Jwt
     internal class AccessTokenService : IAccessTokenService
     {
         private readonly JwtSettings _settings;
-        private readonly ILogger<AccessTokenService> _logger;
 
-        public AccessTokenService(IOptions<JwtSettings> jwtSettings, ILogger<AccessTokenService> logger)
+        public AccessTokenService(IOptions<JwtSettings> jwtSettings)
         {
             _settings = jwtSettings.Value;
-            _logger = logger;
         }
 
         public AccessTokenData GenerateAccessToken(UserClaims user)
