@@ -34,7 +34,7 @@ namespace AuthService.Services.Jwt
             await _refreshTokenService.RevokeAsync(refreshToken, remoteIp, replacedBy);
         }
 
-        public ValidateTokenResult ValidateAccessToken(string token)
+        public Guid ValidateAccessToken(string token)
         {
             return _accessTokenService.ValidateToken(token);
         }

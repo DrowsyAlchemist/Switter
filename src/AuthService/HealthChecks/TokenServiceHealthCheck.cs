@@ -23,16 +23,16 @@ namespace AuthService.HealthChecks
                 var testIp = "0.0.0.0";
                 var accessTokenData = _tokenService.GenerateAccessToken(testPayload);
 
-                var result = _tokenService.ValidateAccessToken(accessTokenData.Token);
-                var isAccessTokenValid = result.Success && result.UserId == testPayload.Id;
+                var resultUserId = _tokenService.ValidateAccessToken(accessTokenData.Token);
+
+                if (resultUserId != testPayload.Id)
+                    throw new Exception("Id after access token validation does not match with test user id");
 
                 var refreshToken = await _tokenService.GenerateRefreshTokenAsync(testPayload.Id, testIp);
                 var newRefreshToken = await _tokenService.RefreshAsync(refreshToken.Token, testPayload.Id, testIp);
                 await _tokenService.RevokeTokenAsync(newRefreshToken.Token, testIp);
 
-                return isAccessTokenValid
-                    ? HealthCheckResult.Healthy("Token service is working")
-                    : HealthCheckResult.Unhealthy("Token validation failed");
+                return HealthCheckResult.Healthy("Token service is working");
             }
             catch (Exception ex)
             {

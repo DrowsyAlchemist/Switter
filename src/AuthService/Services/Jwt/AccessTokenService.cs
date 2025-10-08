@@ -47,36 +47,29 @@ namespace AuthService.Services.Jwt
             };
         }
 
-        public ValidateTokenResult ValidateToken(string token)
+        public Guid ValidateToken(string token)
         {
             if (string.IsNullOrEmpty(token))
                 throw new ArgumentException("Token is null or empty.");
 
-            try
-            {
-                var tokenHandler = new JwtSecurityTokenHandler();
-                var key = GetSecurityKey();
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = GetSecurityKey();
 
-                tokenHandler.ValidateToken(token, new TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = key,
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
-                    ValidIssuer = _settings.Issuer,
-                    ValidAudience = _settings.Audience,
-                    ClockSkew = TimeSpan.Zero
-                }, out SecurityToken validatedToken);
-
-                var jwtToken = (JwtSecurityToken)validatedToken;
-                var userId = jwtToken.Claims.First(x => x.Type == ClaimTypes.NameIdentifier).Value;
-                var userGuid = Guid.Parse(userId);
-                return new ValidateTokenResult { UserId = userGuid, Success = true };
-            }
-            catch (SecurityTokenException ex)
+            tokenHandler.ValidateToken(token, new TokenValidationParameters
             {
-                return new ValidateTokenResult { Success = false, Exception = ex };
-            }
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = key,
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidIssuer = _settings.Issuer,
+                ValidAudience = _settings.Audience,
+                ClockSkew = TimeSpan.Zero
+            }, out SecurityToken validatedToken);
+
+            var jwtToken = (JwtSecurityToken)validatedToken;
+            var userId = jwtToken.Claims.First(x => x.Type == ClaimTypes.NameIdentifier).Value;
+            var userGuid = Guid.Parse(userId);
+            return userGuid;
         }
 
         private SymmetricSecurityKey GetSecurityKey()

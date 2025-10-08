@@ -71,12 +71,10 @@ namespace AuthService.Tests.UnitTests
             var token = _accessTokenService.GenerateToken(user);
 
             // Act
-            var result = _accessTokenService.ValidateToken(token.Token);
-            var userId = result.UserId;
+            var resultUserId = _accessTokenService.ValidateToken(token.Token);
 
             // Assert
-            userId.Should().NotBeNull();
-            userId.Should().Be(user.Id);
+            resultUserId.Should().Be(user.Id);
         }
 
         [Fact]
@@ -98,12 +96,12 @@ namespace AuthService.Tests.UnitTests
             var expiredToken = expiredAccessTokenService.GenerateToken(user);
 
             // Act & Assert
-            Assert.Throws<SecurityTokenException>(() =>
+            Assert.Throws<SecurityTokenExpiredException>(() =>
                 _accessTokenService.ValidateToken(expiredToken.Token));
         }
 
         [Fact]
-        public void ValidateToken_WithInvalidToken_ShouldThrowSecurityTokenException()
+        public void ValidateToken_WithFakeToken_ShouldThrowArgumentException()
         {
             // Arrange
             var user = new UserClaims { Id = Guid.NewGuid(), Email = "test@example.com", Name = "User" };
@@ -114,7 +112,7 @@ namespace AuthService.Tests.UnitTests
             var invalidToken = new string(charArray);
 
             // Act & Assert
-            Assert.Throws<SecurityTokenException>(() =>
+            Assert.Throws<ArgumentException>(() =>
                 _accessTokenService.ValidateToken(invalidToken));
         }
     }
