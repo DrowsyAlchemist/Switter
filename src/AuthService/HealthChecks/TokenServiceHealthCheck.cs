@@ -22,8 +22,9 @@ namespace AuthService.HealthChecks
                 var testPayload = new UserClaims { Id = Guid.NewGuid(), Name = "health-check", Email = "health@test.com" };
                 var testIp = "0.0.0.0";
                 var accessTokenData = _tokenService.GenerateAccessToken(testPayload);
-                var userId = _tokenService.ValidateAccessToken(accessTokenData.Token);
-                var isAccessTokenValid = userId != null && userId == testPayload.Id;
+
+                var result = _tokenService.ValidateAccessToken(accessTokenData.Token);
+                var isAccessTokenValid = result.Success && result.UserId == testPayload.Id;
 
                 var refreshToken = await _tokenService.GenerateRefreshTokenAsync(testPayload.Id, testIp);
                 var newRefreshToken = await _tokenService.RefreshAsync(refreshToken.Token, testPayload.Id, testIp);

@@ -19,7 +19,7 @@ namespace AuthService.Services.Jwt
             _settings = options.Value;
         }
 
-        public async Task<RefreshTokenData> GenerateRefreshTokenAsync(Guid userId, string remoteIp)
+        public async Task<RefreshTokenData> GenerateTokenAsync(Guid userId, string remoteIp)
         {
             var token = Convert.ToBase64String(Guid.NewGuid().ToByteArray());
             var expires = DateTime.UtcNow.AddDays(_settings.RefreshTokenExpiryDays);
@@ -42,12 +42,12 @@ namespace AuthService.Services.Jwt
             if (string.IsNullOrEmpty(refreshToken))
                 throw new ArgumentNullException(nameof(refreshToken));
 
-            var newToken = await GenerateRefreshTokenAsync(userId, remoteIp);
-            await RevokeTokenAsync(refreshToken, remoteIp, newToken.Token);
+            var newToken = await GenerateTokenAsync(userId, remoteIp);
+            await RevokeAsync(refreshToken, remoteIp, newToken.Token);
             return newToken;
         }
 
-        public async Task RevokeTokenAsync(string refreshToken, string remoteIp, string? replacedBy = null)
+        public async Task RevokeAsync(string refreshToken, string remoteIp, string? replacedBy = null)
         {
             var tokenJson = await _redisService.GetAsync(refreshToken);
 

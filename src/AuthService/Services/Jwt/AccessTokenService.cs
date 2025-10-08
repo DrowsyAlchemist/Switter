@@ -18,7 +18,7 @@ namespace AuthService.Services.Jwt
             _settings = jwtSettings.Value;
         }
 
-        public AccessTokenData GenerateAccessToken(UserClaims user)
+        public AccessTokenData GenerateToken(UserClaims user)
         {
             var claims = new[]
             {
@@ -47,8 +47,11 @@ namespace AuthService.Services.Jwt
             };
         }
 
-        public Guid? ValidateAccessToken(string token)
+        public ValidateTokenResult ValidateToken(string token)
         {
+            if (string.IsNullOrEmpty(token))
+                throw new ArgumentException("Token is null or empty.");
+
             try
             {
                 var tokenHandler = new JwtSecurityTokenHandler();
@@ -67,13 +70,12 @@ namespace AuthService.Services.Jwt
 
                 var jwtToken = (JwtSecurityToken)validatedToken;
                 var userId = jwtToken.Claims.First(x => x.Type == ClaimTypes.NameIdentifier).Value;
-
-                return Guid.Parse(userId);
+                var userGuid = Guid.Parse(userId);
+                return new ValidateTokenResult { UserId = userGuid, Success = true };
             }
-            catch (Exception ex)
+            catch (SecurityTokenException ex)
             {
-                _logger.LogWarning(ex, "Token validation failed");
-                return null;
+                return new ValidateTokenResult { Success = false, Exception = ex };
             }
         }
 

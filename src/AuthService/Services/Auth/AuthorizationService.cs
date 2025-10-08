@@ -59,17 +59,23 @@ namespace AuthService.Services.Auth
 
         public async Task<AuthResponse> RefreshTokenAsync(RefreshRequest request, string remoteIp)
         {
-            var userId = _tokenService.ValidateAccessToken(request.AccessToken);
-            if (userId == null)
-                throw new SecurityTokenException("Invalid access token");
+            var validationResult = _tokenService.ValidateAccessToken(request.AccessToken);
 
-            var user = await _userService.GetUserByIdAsync(userId.Value);
+            if (validationResult.Success == false)
+            {
+                if (validationResult.Exception.GetType() == typeof(SecurityTokenException))
+                    throw new SecurityTokenException("Invalid access token");
+                else
+                    throw new Exception("Error during token validation." + validationResult.Exception);
+            }
+
+            var user = await _userService.GetUserByIdAsync(validationResult.UserId.Value);
             if (user == null)
                 throw new ArgumentException("User not found");
 
             var userClaims = new UserClaims { Id = user.Id, Name = user.Username, Email = user.Email };
             var newAccessToken = _tokenService.GenerateAccessToken(userClaims);
-            var newRefreshToken = await _tokenService.RefreshAsync(request.RefreshToken, userId.Value, remoteIp);
+            var newRefreshToken = await _tokenService.RefreshAsync(request.RefreshToken, user.Id, remoteIp);
 
             return new AuthResponse
             {

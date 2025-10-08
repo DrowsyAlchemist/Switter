@@ -4,7 +4,7 @@ namespace AuthService.Interfaces.Jwt
 {
     internal interface IAccessTokenService
     {
-        AccessTokenData GenerateAccessToken(UserClaims user);
-        Guid? ValidateAccessToken(string token);
+        AccessTokenData GenerateToken(UserClaims user);
+        ValidateTokenResult ValidateToken(string token);
     }
 }

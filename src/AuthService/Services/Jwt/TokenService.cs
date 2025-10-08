@@ -16,12 +16,12 @@ namespace AuthService.Services.Jwt
 
         public AccessTokenData GenerateAccessToken(UserClaims user)
         {
-            return _accessTokenService.GenerateAccessToken(user);
+            return _accessTokenService.GenerateToken(user);
         }
 
         public async Task<RefreshTokenData> GenerateRefreshTokenAsync(Guid userId, string remoteIp)
         {
-            return await _refreshTokenService.GenerateRefreshTokenAsync(userId, remoteIp);
+            return await _refreshTokenService.GenerateTokenAsync(userId, remoteIp);
         }
 
         public async Task<RefreshTokenData> RefreshAsync(string refreshToken, Guid userId, string remoteIp)
@@ -31,12 +31,12 @@ namespace AuthService.Services.Jwt
 
         public async Task RevokeTokenAsync(string refreshToken, string remoteIp, string? replacedBy = null)
         {
-            await _refreshTokenService.RevokeTokenAsync(refreshToken, remoteIp, replacedBy);
+            await _refreshTokenService.RevokeAsync(refreshToken, remoteIp, replacedBy);
         }
 
-        public Guid? ValidateAccessToken(string token)
+        public ValidateTokenResult ValidateAccessToken(string token)
         {
-            return _accessTokenService.ValidateAccessToken(token);
+            return _accessTokenService.ValidateToken(token);
         }
     }
 }
