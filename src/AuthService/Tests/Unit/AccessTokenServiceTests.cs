@@ -12,7 +12,6 @@ using Xunit;
 
 namespace AuthService.Tests.UnitTests
 {
-    [CollectionDefinition("ServiceTests")]
     public class AccessTokenServiceTests
     {
         private readonly AccessTokenService _accessTokenService;
@@ -25,7 +24,7 @@ namespace AuthService.Tests.UnitTests
             {
                 Secret = "super-secret-key-with-minimum-32-characters-length",
                 Issuer = "auth-service",
-                Audience = "portfolio-app",
+                Audience = "test",
                 AccessTokenExpiryMinutes = 15,
                 RefreshTokenExpiryDays = 7,
                 RefreshTokenDbLifetimeInDays = 14,
