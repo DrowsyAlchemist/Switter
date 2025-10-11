@@ -7,11 +7,11 @@ namespace AuthService.DTOs.Auth
         [Required]
         [StringLength(50, MinimumLength = 3, ErrorMessage = "The length of the string should be from 3 to 50 characters.")]
         [RegularExpression(@"^[a-zA-Z0-9_]+$", ErrorMessage = "Only letters, numbers, and underscores are allowed.")]
-        public string Username { get; set; } = string.Empty;
+        public required string Username { get; set; } = string.Empty;
 
         [Required]
         [EmailAddress]
-        public string Email { get; set; } = string.Empty;
+        public required string Email { get; set; } = string.Empty;
 
         [Required]
         [RegularExpression("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()_+=]).{8,}$",
@@ -20,9 +20,10 @@ namespace AuthService.DTOs.Auth
             "- at least one lowercase letter; \r\n" +
             "- at least one capital letter; \r\n" +
             "- at least one special character (for example, @$!%*?&).")]
-        public string Password { get; set; } = string.Empty;
+        public required string Password { get; set; } = string.Empty;
 
+        [Required]
         [Compare("Password")]
-        public string ConfirmPassword { get; set; } = string.Empty;
+        public required string ConfirmPassword { get; set; } = string.Empty;
     }
 }

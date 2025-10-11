@@ -4,24 +4,23 @@ using AuthService.Interfaces.Auth;
 using AuthService.Interfaces.Infrastructure;
 using AuthService.Interfaces.Jwt;
 using AuthService.Models;
-using Microsoft.IdentityModel.Tokens;
 
 namespace AuthService.Services.Auth
 {
     internal class AuthorizationService : IAuthorizationService
     {
         private readonly ITokenService _tokenService;
-        private readonly IUserRepository _userService;
+        private readonly IUserRepository _userRepository;
 
         public AuthorizationService(ITokenService tokenService, IUserRepository userService)
         {
             _tokenService = tokenService;
-            _userService = userService;
+            _userRepository = userService;
         }
 
         public async Task<AuthResponse> RegisterAsync(RegisterRequest request, string remoteIp)
         {
-            if (await _userService.UserExistsAsync(request.Email, request.Username))
+            if (await _userRepository.UserExistsAsync(request.Email, request.Username))
                 throw new ArgumentException("User with this email or username already exists");
 
             var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
@@ -35,14 +34,14 @@ namespace AuthService.Services.Auth
 
             var authResponse = await GenerateAuthResponseAsync(user, remoteIp);
 
-            await _userService.CreateUserAsync(user);
+            await _userRepository.CreateUserAsync(user);
             return authResponse;
         }
 
         public async Task<AuthResponse> LoginAsync(LoginRequest request, string remoteIp)
         {
-            var user = await _userService.GetUserByEmailAsync(request.Login)
-                  ?? await _userService.GetUserByUsernameAsync(request.Login);
+            var user = await _userRepository.GetUserByEmailAsync(request.Login)
+                  ?? await _userRepository.GetUserByUsernameAsync(request.Login);
 
             if (user == null)
                 throw new UnauthorizedAccessException($"User with login {request.Login} in not found");
@@ -60,7 +59,7 @@ namespace AuthService.Services.Auth
         public async Task<AuthResponse> RefreshTokenAsync(RefreshRequest request, string remoteIp)
         {
             var userId = _tokenService.ValidateAccessToken(request.AccessToken);
-            var user = await _userService.GetUserByIdAsync(userId);
+            var user = await _userRepository.GetUserByIdAsync(userId);
             if (user == null)
                 throw new ArgumentException("User not found");
 

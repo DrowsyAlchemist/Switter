@@ -1,8 +1,6 @@
 ﻿using AuthService.DTOs.Jwt;
 using AuthService.Interfaces.Infrastructure;
-using AuthService.Interfaces.Jwt;
 using AuthService.Models;
-using AuthService.Services.Infrastructure;
 using AuthService.Services.Jwt;
 using AuthService.Tests.MockServices;
 using FluentAssertions;
@@ -11,7 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using Moq;
 using Xunit;
 
-namespace AuthService.Tests.UnitTests
+namespace AuthService.Tests.Unit.Jwt
 {
     public class RefreshTokenTests
     {

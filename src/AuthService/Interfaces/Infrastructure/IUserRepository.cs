@@ -2,7 +2,7 @@
 
 namespace AuthService.Interfaces.Infrastructure
 {
-    internal interface IUserRepository
+    public interface IUserRepository
     {
         Task<User?> CreateUserAsync(User user);
         Task<User?> GetUserByIdAsync(Guid id);
