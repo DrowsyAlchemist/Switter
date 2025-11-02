@@ -29,6 +29,7 @@ services:
       - ASPNETCORE_URLS=http://+:80
       - ConnectionStrings:PostgreSQL=Host=${POSTGRES_HOST};Port=${POSTGRES_PORT};Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
       - Redis:ConnectionString=${REDIS_HOST}:${REDIS_PORT},password=${REDIS_PASSWORD},abortConnect=false
+      - Kafka:BootstrapServers=${KAFKA_HOST}:${KAFKA_PORT}
       - Jwt:Secret=${JWT_SECRET}
       - Jwt:Issuer=switter-dev
       - Jwt:Audience=switter-dev

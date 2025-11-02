@@ -1,0 +1,103 @@
+﻿using AuthService.DTOs.Auth;
+using AuthService.DTOs.Jwt;
+using AuthService.Interfaces.Auth;
+using AuthService.Interfaces.Infrastructure;
+using AuthService.Interfaces.Jwt;
+using AuthService.Models;
+
+namespace AuthService.Services.Auth
+{
+    internal class AuthorizationService : IAuthorizationService
+    {
+        private readonly ITokenService _tokenService;
+        private readonly IUserRepository _userRepository;
+
+        public AuthorizationService(ITokenService tokenService, IUserRepository userService)
+        {
+            _tokenService = tokenService;
+            _userRepository = userService;
+        }
+
+        public async Task<AuthResponse> RegisterAsync(RegisterRequest request, string remoteIp)
+        {
+            if (await _userRepository.UserExistsAsync(request.Email, request.Username))
+                throw new ArgumentException("User with this email or username already exists");
+
+            var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+
+            var user = new User
+            {
+                Username = request.Username,
+                Email = request.Email,
+                PasswordHash = passwordHash
+            };
+
+            var authResponse = await GenerateAuthResponseAsync(user, remoteIp);
+
+            await _userRepository.CreateUserAsync(user);
+            return authResponse;
+        }
+
+        public async Task<AuthResponse> LoginAsync(LoginRequest request, string remoteIp)
+        {
+            var user = await _userRepository.GetUserByEmailAsync(request.Login)
+                  ?? await _userRepository.GetUserByUsernameAsync(request.Login);
+
+            if (user == null)
+                throw new UnauthorizedAccessException($"User with login {request.Login} in not found");
+
+            if (BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash) == false)
+                throw new UnauthorizedAccessException($"Invalid password. Login: {request.Login}");
+
+            if (!user.IsActive)
+                throw new UnauthorizedAccessException($"Account is deactivated. Login: {request.Login}");
+
+            var authResponse = await GenerateAuthResponseAsync(user, remoteIp);
+            return authResponse;
+        }
+
+        public async Task<AuthResponse> RefreshTokenAsync(RefreshRequest request, string remoteIp)
+        {
+            var userId = _tokenService.ValidateAccessToken(request.AccessToken);
+            var user = await _userRepository.GetUserByIdAsync(userId);
+            if (user == null)
+                throw new ArgumentException("User not found");
+
+            var userClaims = new UserClaims { Id = user.Id, Name = user.Username, Email = user.Email };
+            var newAccessToken = _tokenService.GenerateAccessToken(userClaims);
+            var newRefreshToken = await _tokenService.RefreshAsync(request.RefreshToken, user.Id, remoteIp);
+
+            return new AuthResponse
+            {
+                UserId = user.Id,
+                Username = user.Username,
+                Email = user.Email,
+                AccessToken = newAccessToken.Token,
+                RefreshToken = newRefreshToken.Token,
+                ExpiresAt = newAccessToken.Expires
+            };
+        }
+
+        public async Task RevokeTokenAsync(string refreshToken, string remoteIp)
+        {
+            await _tokenService.RevokeTokenAsync(refreshToken, remoteIp);
+        }
+
+        private async Task<AuthResponse> GenerateAuthResponseAsync(User user, string remoteIp)
+        {
+            var userClaims = new UserClaims { Id = user.Id, Name = user.Username, Email = user.Email };
+            var accessToken = _tokenService.GenerateAccessToken(userClaims);
+            var refreshToken = await _tokenService.GenerateRefreshTokenAsync(user.Id, remoteIp);
+
+            return new AuthResponse
+            {
+                UserId = user.Id,
+                Username = user.Username,
+                Email = user.Email,
+                AccessToken = accessToken.Token,
+                RefreshToken = refreshToken.Token,
+                ExpiresAt = accessToken.Expires
+            };
+        }
+    }
+}

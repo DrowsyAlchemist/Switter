@@ -1,0 +1,107 @@
+﻿using AuthService.DTOs.Auth;
+using AuthService.Interfaces.Auth;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
+
+namespace AuthService.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    public class AuthController : ControllerBase
+    {
+        private readonly IAuthorizationService _authorizationService;
+        private readonly ILogger<AuthController> _logger;
+
+        public AuthController(IAuthorizationService authorizationService, ILogger<AuthController> logger)
+        {
+            _authorizationService = authorizationService;
+            _logger = logger;
+        }
+
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] RegisterRequest registerRequest)
+        {
+            try
+            {
+                var authResponse = await _authorizationService.RegisterAsync(registerRequest, GetRemoteIp());
+                _logger.LogInformation("User registered: {Username} ({Email})", registerRequest.Username, registerRequest.Email);
+                return Ok(authResponse);
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning(ex, "Registration failed. User: {email}", registerRequest.Email);
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during registration. User: {email}", registerRequest.Email);
+                return StatusCode(500, new { message = "Internal server error" });
+            }
+        }
+
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] LoginRequest authRequest)
+        {
+            try
+            {
+                var response = await _authorizationService.LoginAsync(authRequest, GetRemoteIp());
+                _logger.LogInformation("User logged in: {Login})", authRequest.Login);
+                return Ok(response);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning(ex, "Login failed. User: {userName}", authRequest.Login);
+                return Unauthorized(new { message = "Invalid credentials" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during login");
+                return StatusCode(500, new { message = "Internal server error" });
+            }
+        }
+
+        [HttpPost("refresh")]
+        public async Task<IActionResult> Refresh([FromBody] RefreshRequest request)
+        {
+            try
+            {
+                var response = await _authorizationService.RefreshTokenAsync(request, GetRemoteIp());
+                _logger.LogInformation("User refreshed: {Login})", response.Email);
+                return Ok(response);
+            }
+            catch (SecurityTokenException ex)
+            {
+                _logger.LogWarning(ex, "Refresh failed");
+                return Unauthorized();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during token refresh");
+                return StatusCode(500, new { message = "Internal server error" });
+            }
+        }
+
+        [HttpPost("revoke")]
+        public async Task<IActionResult> Revoke([FromBody] string refreshToken)
+        {
+            try
+            {
+                await _authorizationService.RevokeTokenAsync(refreshToken, GetRemoteIp());
+                _logger.LogInformation("Token revoked.");
+                return Ok(new { message = "Token revoked successfully" });
+            }
+            catch (SecurityTokenException ex)
+            {
+                _logger.LogWarning(ex, "Revoke failed");
+                return BadRequest(new { message = "Invalid RefreshToken" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during token Revoke");
+                return StatusCode(500, new { message = "Internal server error" });
+            }
+        }
+
+        private string GetRemoteIp() => HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+    }
+}
