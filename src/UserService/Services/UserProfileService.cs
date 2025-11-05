@@ -26,7 +26,7 @@ namespace UserService.Services
 
         public async Task<UserProfileDto?> GetProfileAsync(Guid userId, Guid? currentUserId = null)
         {
-            var cacheKey = $"profile:{userId}";
+            var cacheKey = GetRedisKey(userId);
             var cachedProfile = await _redisService.GetAsync(cacheKey);
             UserProfileDto? profileDto = null;
 
@@ -83,7 +83,8 @@ namespace UserService.Services
 
             _logger.LogInformation("Profile updated for user {UserId}", userId);
 
-            await _redisService.RemoveAsync($"profile:{userId}");
+            var redisKey = GetRedisKey(userId);
+            await _redisService.RemoveAsync(redisKey);
 
             return _mapper.Map<UserProfileDto>(profile);
         }
@@ -91,6 +92,11 @@ namespace UserService.Services
         public async Task<List<UserProfileDto>> SearchUsersAsync(string query, int page = 1, int pageSize = 20)
         {
             throw new NotImplementedException();
+        }
+
+        private static string GetRedisKey(Guid userId)
+        {
+            return $"profile:{userId}";
         }
 
         private async Task<bool> IsFollowingAsync(Guid followerId, Guid followeeId)
