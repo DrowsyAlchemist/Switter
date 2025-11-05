@@ -18,5 +18,8 @@ namespace UserService.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
         public bool IsActive { get; set; } = true;
+
+        public virtual ICollection<UserProfile> Followers { get; set; } = new List<UserProfile>();
+        public virtual ICollection<UserProfile> Following { get; set; } = new List<UserProfile>();
     }
 }
