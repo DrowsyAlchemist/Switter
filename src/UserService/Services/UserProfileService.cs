@@ -60,12 +60,35 @@ namespace UserService.Services
             return profileDto;
         }
 
-        public async Task<List<UserProfileDto>> SearchUsersAsync(string query, int page = 1, int pageSize = 20)
+        public async Task<UserProfileDto> UpdateProfileAsync(Guid userId, UpdateProfileRequest request)
         {
-            throw new NotImplementedException();
+            var profile = await _context.Profiles.FirstOrDefaultAsync(p => p.Id == userId && p.IsActive);
+
+            if (profile == null)
+                throw new ArgumentException("User profile not found");
+
+            if (string.IsNullOrEmpty(request.DisplayName) == false)
+                profile.DisplayName = request.DisplayName;
+
+            if (request.Bio != null)
+                profile.Bio = request.Bio;
+
+            if (string.IsNullOrEmpty(request.AvatarUrl) == false)
+                profile.AvatarUrl = request.AvatarUrl;
+
+            profile.UpdatedAt = DateTime.UtcNow;
+
+            _context.Profiles.Update(profile);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Profile updated for user {UserId}", userId);
+
+            await _redisService.RemoveAsync($"profile:{userId}");
+
+            return _mapper.Map<UserProfileDto>(profile);
         }
 
-        public async Task<UserProfileDto> UpdateProfileAsync(Guid userId, UpdateProfileRequest request)
+        public async Task<List<UserProfileDto>> SearchUsersAsync(string query, int page = 1, int pageSize = 20)
         {
             throw new NotImplementedException();
         }
