@@ -91,7 +91,15 @@ namespace UserService.Services
 
         public async Task<List<UserProfileDto>> SearchUsersAsync(string query, int page = 1, int pageSize = 20)
         {
-            throw new NotImplementedException();
+            var users = await _context.Profiles
+                .Where(p => p.IsActive &&
+                    (p.DisplayName.Contains(query) || p.Bio.Contains(query)))
+                .OrderBy(p => p.DisplayName)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return _mapper.Map<List<UserProfileDto>>(users);
         }
 
         private static string GetRedisKey(Guid userId)
