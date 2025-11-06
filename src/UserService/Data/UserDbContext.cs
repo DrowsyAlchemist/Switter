@@ -20,7 +20,7 @@ namespace UserService.Data
         {
             modelBuilder.HasDefaultSchema("user_service");
 
-            // UserProfile
+            // Profiles
             modelBuilder.Entity<UserProfile>(entity =>
             {
                 entity.HasKey(u => u.Id);
@@ -30,6 +30,18 @@ namespace UserService.Data
                 entity.Property(u => u.Bio).HasMaxLength(500);
                 entity.Property(u => u.CreatedAt).HasColumnType("timestamp with time zone");
                 entity.Property(u => u.UpdatedAt).HasColumnType("timestamp with time zone");
+
+                entity.HasMany(e => e.Followers)
+               .WithMany(e => e.Following)
+               .UsingEntity<Dictionary<string, object>>(
+                   "Follows",
+                   j => j.HasOne<UserProfile>().WithMany().HasForeignKey("FollowerId"),
+                   j => j.HasOne<UserProfile>().WithMany().HasForeignKey("FolloweeId"),
+                   j =>
+                   {
+                       j.HasKey("FollowerId", "FolloweeId");
+                       j.ToTable("Follows");
+                   });
             });
 
             // Follows
@@ -37,10 +49,8 @@ namespace UserService.Data
             {
                 entity.HasKey(f => f.Id);
 
-                // Уникальная подписка
                 entity.HasIndex(f => new { f.FollowerId, f.FolloweeId }).IsUnique();
 
-                // Связи
                 entity.HasOne(f => f.Follower)
                       .WithMany()
                       .HasForeignKey(f => f.FollowerId)
