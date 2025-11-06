@@ -1,30 +1,29 @@
 ﻿using AutoMapper;
-using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
-using UserService.Data;
 using UserService.DTOs;
 using UserService.Interfaces;
+using UserService.Interfaces.Data;
 using UserService.Interfaces.Infrastructure;
 
 namespace UserService.Services
 {
     public class UserProfileService : IUserProfileService
     {
-        private readonly UserDbContext _context;
-        private readonly IMapper _mapper;
+        private readonly IProfilesRepository _profilesRepository;
+        private readonly IFollowChecker _followChecker;
         private readonly IRedisService _redisService;
-        private readonly ILogger<UserProfileService> _logger;
+        private readonly IMapper _mapper;
 
-        public UserProfileService(UserDbContext context, IMapper mapper,
-                                IRedisService redisService, ILogger<UserProfileService> logger)
+        public UserProfileService(IProfilesRepository profilesRepository, IFollowChecker followChecker, IMapper mapper,
+                                IRedisService redisService)
         {
-            _context = context;
+            _profilesRepository = profilesRepository;
+            _followChecker = followChecker;
             _mapper = mapper;
             _redisService = redisService;
-            _logger = logger;
         }
 
-        public async Task<UserProfileDto?> GetProfileAsync(Guid userId, Guid? currentUserId = null)
+        public async Task<UserProfileDto> GetProfileAsync(Guid userId, Guid? currentUserId = null)
         {
             var cacheKey = GetRedisKey(userId);
             var cachedProfile = await _redisService.GetAsync(cacheKey);
@@ -37,21 +36,20 @@ namespace UserService.Services
                 if (profileDto != null)
                 {
                     if (currentUserId.HasValue)
-                        profileDto.IsFollowing = await IsFollowingAsync(currentUserId.Value, userId);
+                        profileDto.IsFollowing = await _followChecker.IsFollowingAsync(currentUserId.Value, userId);
 
                     return profileDto;
                 }
             }
 
-            var userProfile = await _context.Profiles.FirstOrDefaultAsync(p => p.Id == userId && p.IsActive);
+            var profile = await _profilesRepository.GetProfileAsync(userId);
+            if (profile.IsActive == false)
+                throw new ArgumentException("User is deactivated.");
 
-            if (userProfile == null)
-                return null;
-
-            profileDto = _mapper.Map<UserProfileDto>(userProfile);
+            profileDto = _mapper.Map<UserProfileDto>(profile);
 
             if (currentUserId.HasValue)
-                profileDto.IsFollowing = await IsFollowingAsync(currentUserId.Value, userId);
+                profileDto.IsFollowing = await _followChecker.IsFollowingAsync(currentUserId.Value, userId);
 
             await _redisService.SetAsync(cacheKey,
                 JsonSerializer.Serialize(profileDto),
@@ -62,10 +60,9 @@ namespace UserService.Services
 
         public async Task<UserProfileDto> UpdateProfileAsync(Guid userId, UpdateProfileRequest request)
         {
-            var profile = await _context.Profiles.FirstOrDefaultAsync(p => p.Id == userId && p.IsActive);
-
-            if (profile == null)
-                throw new ArgumentException("User profile not found");
+            var profile = await _profilesRepository.GetProfileAsync(userId);
+            if (profile.IsActive == false)
+                throw new ArgumentException("User is deactivated.");
 
             if (string.IsNullOrEmpty(request.DisplayName) == false)
                 profile.DisplayName = request.DisplayName;
@@ -78,10 +75,7 @@ namespace UserService.Services
 
             profile.UpdatedAt = DateTime.UtcNow;
 
-            _context.Profiles.Update(profile);
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation("Profile updated for user {UserId}", userId);
+            await _profilesRepository.UpdateProfileAsync(profile);
 
             var redisKey = GetRedisKey(userId);
             await _redisService.RemoveAsync(redisKey);
@@ -91,26 +85,17 @@ namespace UserService.Services
 
         public async Task<List<UserProfileDto>> SearchUsersAsync(string query, int page = 1, int pageSize = 20)
         {
-            var users = await _context.Profiles
-                .Where(p => p.IsActive &&
-                    (p.DisplayName.Contains(query) || p.Bio.Contains(query)))
+            var users = await _profilesRepository.GetUsersAsync();
+            users = users
+                .Where(p => p.IsActive
+                && (p.DisplayName.Contains(query) || p.Bio.Contains(query)))
                 .OrderBy(p => p.DisplayName)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .ToListAsync();
-
+                .ToList();
             return _mapper.Map<List<UserProfileDto>>(users);
         }
 
-        private static string GetRedisKey(Guid userId)
-        {
-            return $"profile:{userId}";
-        }
-
-        private async Task<bool> IsFollowingAsync(Guid followerId, Guid followeeId)
-        {
-            return await _context.Follows
-                .AnyAsync(f => f.FollowerId == followerId && f.FolloweeId == followeeId);
-        }
+        private static string GetRedisKey(Guid userId) => $"profile:{userId}";
     }
 }
