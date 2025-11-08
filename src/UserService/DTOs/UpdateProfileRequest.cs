@@ -4,6 +4,7 @@ namespace UserService.DTOs
 {
     public class UpdateProfileRequest
     {
+        [MinLength(3)]
         [MaxLength(50)]
         public string? DisplayName { get; set; }
 
