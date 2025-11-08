@@ -5,6 +5,6 @@ namespace UserService.DTOs
     public class FollowRequest
     {
         [Required]
-        public Guid FoloweeId { get; set; }
+        public Guid FolloweeId { get; set; }
     }
 }
