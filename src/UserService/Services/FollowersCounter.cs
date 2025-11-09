@@ -1,5 +1,7 @@
 ﻿using AutoMapper;
 using UserService.DTOs;
+using UserService.Exceptions;
+using UserService.Exceptions.Profiles;
 using UserService.Interfaces;
 using UserService.Interfaces.Data;
 using UserService.Interfaces.Infrastructure;
@@ -49,9 +51,14 @@ namespace UserService.Services
             var followerProfile = await _profilesRepository.GetProfileAsync(followerId);
             var followeeProfile = await _profilesRepository.GetProfileAsync(followeeId);
 
+            if (followerProfile == null)
+                throw new UserNotFoundException(followerId);
+            if (followeeProfile == null)
+                throw new UserNotFoundException(followeeId);
+
             followerProfile.FollowingCount += value;
             followeeProfile.FollowersCount += value;
-            
+
             await _profilesRepository.UpdateProfileAsync(followerProfile);
             await _profilesRepository.UpdateProfileAsync(followeeProfile);
         }

@@ -16,13 +16,6 @@ namespace UserService.Data
 
         public async Task<Follow> AddAsync(Guid followerId, Guid followeeId)
         {
-            if (followerId == followeeId)
-                throw new ArgumentException("Cannot follow yourself");
-
-            bool isFollowing = await IsFollowingAsync(followerId, followeeId);
-            if (isFollowing)
-                throw new ArgumentException("Follow already exists.");
-
             var follow = new Follow
             {
                 FollowerId = followerId,
@@ -48,7 +41,7 @@ namespace UserService.Data
                 .FirstOrDefaultAsync(f => f.FollowerId == followerId && f.FolloweeId == followeeId);
 
             if (follow == null)
-                throw new ArgumentException("Following is not found.");
+                throw new ArgumentException("Follow is not found.");
 
             _context.Follows.Remove(follow);
             await _context.SaveChangesAsync();

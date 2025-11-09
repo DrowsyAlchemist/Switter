@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using UserService.DTOs;
+using UserService.Exceptions.Follows;
+using UserService.Exceptions.Profiles;
 using UserService.Interfaces;
 
 namespace UserService.Controllers
@@ -34,7 +36,12 @@ namespace UserService.Controllers
                 _logger.LogInformation("Successfully followed user.\nFollower:{followerId}\nFollowee:{followeeId}", currentUserId.Value, request.FolloweeId);
                 return Ok(new { message = "Successfully followed user" });
             }
-            catch (ArgumentException ex)
+            catch (UserNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "Follow failed.\nFollowee:{followeeId}", request.FolloweeId);
+                return NotFound("Followee not found.");
+            }
+            catch (FollowExceprion ex)
             {
                 _logger.LogWarning(ex, "Follow failed.\nFollowee:{followeeId}", request.FolloweeId);
                 return BadRequest("Already following or cannot follow yourself");
@@ -61,10 +68,10 @@ namespace UserService.Controllers
                 _logger.LogInformation("Successfully unfollowed user.\nFollower:{followerId}\nFollowee:{followeeId}", currentUserId.Value, followeeId);
                 return Ok(new { message = "Successfully unfollowed user" });
             }
-            catch (ArgumentException ex)
+            catch (FollowNotFoundException ex)
             {
                 _logger.LogWarning(ex, "Unfollow failed.\nFollowee:{followeeId}", followeeId);
-                return BadRequest("Not following this user");
+                return NotFound("Not following this user.");
             }
             catch (Exception ex)
             {
@@ -79,12 +86,11 @@ namespace UserService.Controllers
             try
             {
                 var followers = await _followService.GetFollowersAsync(userId, page);
+
+                if (followers.Count == 0)
+                    return StatusCode(204, "No followers");
+
                 return Ok(followers);
-            }
-            catch (ArgumentException ex)
-            {
-                _logger.LogWarning(ex, "GetFollowers failed.\nUserId:{UserId}", userId);
-                return NotFound("User not found.");
             }
             catch (Exception ex)
             {
@@ -99,13 +105,11 @@ namespace UserService.Controllers
             try
             {
                 var following = await _followService.GetFollowingAsync(userId, page);
-                return Ok(following);
-            }
 
-            catch (ArgumentException ex)
-            {
-                _logger.LogWarning(ex, "GetFollowing failed.\nUserId:{UserId}", userId);
-                return NotFound("User not found.");
+                if (following.Count == 0)
+                    return StatusCode(204, "No followings");
+
+                return Ok(following);
             }
             catch (Exception ex)
             {

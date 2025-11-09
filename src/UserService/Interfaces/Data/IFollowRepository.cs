@@ -9,5 +9,6 @@ namespace UserService.Interfaces.Data
         Task DeleteAsync(Guid followerId, Guid followeeId);
         Task<List<UserProfile>> GetFollowersAsync(Guid followeeId);
         Task<List<UserProfile>> GetFollowingsAsync(Guid followerId);
+        Task<bool> IsFollowingAsync(Guid followerId, Guid followeeId);
     }
 }

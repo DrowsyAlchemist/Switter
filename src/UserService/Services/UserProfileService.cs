@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using System.Text.Json;
 using UserService.DTOs;
+using UserService.Exceptions.Profiles;
 using UserService.Interfaces;
 using UserService.Interfaces.Data;
 using UserService.Interfaces.Infrastructure;
@@ -43,8 +44,10 @@ namespace UserService.Services
             }
 
             var profile = await _profilesRepository.GetProfileAsync(userId);
+            if (profile == null)
+                throw new UserNotFoundException(userId);
             if (profile.IsActive == false)
-                throw new ArgumentException("User is deactivated.");
+                throw new UserDeactivatedException(userId);
 
             profileDto = _mapper.Map<UserProfileDto>(profile);
 
@@ -61,8 +64,10 @@ namespace UserService.Services
         public async Task<UserProfileDto> UpdateProfileAsync(Guid userId, UpdateProfileRequest request)
         {
             var profile = await _profilesRepository.GetProfileAsync(userId);
+            if (profile == null)
+                throw new UserNotFoundException(userId);
             if (profile.IsActive == false)
-                throw new ArgumentException("User is deactivated.");
+                throw new UserDeactivatedException(userId);
 
             if (string.IsNullOrEmpty(request.DisplayName) == false)
                 profile.DisplayName = request.DisplayName;

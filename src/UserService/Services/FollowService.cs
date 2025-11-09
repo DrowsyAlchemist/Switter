@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using UserService.DTOs;
 using UserService.Events;
+using UserService.Exceptions.Follows;
 using UserService.Interfaces;
 using UserService.Interfaces.Data;
 using UserService.Interfaces.Infrastructure;
@@ -24,6 +25,13 @@ namespace UserService.Services
 
         public async Task FollowUserAsync(Guid followerId, Guid followeeId)
         {
+            if (followerId == followeeId)
+                throw new SelfFollowException();
+
+            bool isFollowing = await _followRepository.IsFollowingAsync(followerId, followeeId);
+            if (isFollowing)
+                throw new DoubleFollowException();
+
             await _followRepository.AddAsync(followerId, followeeId);
             await _followersCounter.IncrementCounter(followerId, followeeId);
             await _kafkaProducer.ProduceAsync("user-events", new UserFollowedEvent
@@ -36,6 +44,10 @@ namespace UserService.Services
 
         public async Task UnfollowUserAsync(Guid followerId, Guid followeeId)
         {
+            bool isFollowing = await _followRepository.IsFollowingAsync(followerId, followeeId);
+            if (isFollowing == false)
+                throw new FollowNotFoundException(followerId, followeeId);
+
             await _followRepository.DeleteAsync(followerId, followeeId);
             await _followersCounter.DecrementCounter(followerId, followeeId);
             await _kafkaProducer.ProduceAsync("user-events", new UserUnfollowedEvent

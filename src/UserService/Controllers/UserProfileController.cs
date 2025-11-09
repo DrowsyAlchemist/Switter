@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using UserService.DTOs;
+using UserService.Exceptions;
 using UserService.Interfaces;
 
 namespace UserService.Controllers
@@ -30,7 +31,7 @@ namespace UserService.Controllers
                 _logger.LogInformation("Profile successfully returned.\nUserId: {userId}\nCurrentUserId:{currentUserId}", userId, currentUserId);
                 return Ok(profile);
             }
-            catch (ArgumentException ex)
+            catch (UserServiceException ex)
             {
                 _logger.LogWarning(ex, "GetProfile failed.\nUserId: {userId}", userId);
                 return NotFound(new { message = ex.Message });
@@ -56,6 +57,11 @@ namespace UserService.Controllers
                 var profile = await _userProfileService.GetProfileAsync(currentUserId.Value);
                 _logger.LogInformation("Profile successfully returned.\nCurrentUserId:{id}", currentUserId);
                 return Ok(profile);
+            }
+            catch (UserServiceException ex)
+            {
+                _logger.LogWarning(ex, "GetMyProfile failed.");
+                return NotFound(new { message = ex.Message });
             }
             catch (Exception ex)
             {
