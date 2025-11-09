@@ -31,23 +31,22 @@ namespace UserService.Data
                 entity.Property(u => u.CreatedAt).HasColumnType("timestamp with time zone");
                 entity.Property(u => u.UpdatedAt).HasColumnType("timestamp with time zone");
 
-                entity.HasMany(e => e.Followers)
-               .WithMany(e => e.Following)
-               .UsingEntity<Dictionary<string, object>>(
-                   "Follows",
-                   j => j.HasOne<UserProfile>().WithMany().HasForeignKey("FollowerId"),
-                   j => j.HasOne<UserProfile>().WithMany().HasForeignKey("FolloweeId"),
-                   j =>
-                   {
-                       j.HasKey("FollowerId", "FolloweeId");
-                       j.ToTable("Follows");
-                   });
+                entity.HasMany(u => u.Followers)
+                             .WithOne(f => f.Followee)
+                             .HasForeignKey(f => f.FolloweeId)
+                             .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasMany(u => u.Following)
+                      .WithOne(f => f.Follower)
+                      .HasForeignKey(f => f.FollowerId)
+                      .OnDelete(DeleteBehavior.Restrict);
             });
 
             // Follows
             modelBuilder.Entity<Follow>(entity =>
             {
                 entity.HasKey(f => f.Id);
+                entity.ToTable("Follows");
 
                 entity.HasIndex(f => new { f.FollowerId, f.FolloweeId }).IsUnique();
 
