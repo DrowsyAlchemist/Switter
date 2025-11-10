@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using UserService.DTOs;
-using UserService.Exceptions;
 using UserService.Exceptions.Profiles;
 using UserService.Interfaces;
 using UserService.Interfaces.Data;
@@ -34,6 +33,9 @@ namespace UserService.Services
         public async Task<UserProfileDto> ForceUpdateCountersForUserAsync(Guid userId)
         {
             var user = await _profilesRepository.GetProfileAsync(userId);
+
+            if (user == null)
+                throw new UserNotFoundException(userId);
 
             user.FollowersCount = user.Followers.Count;
             user.FollowingCount = user.Following.Count;
