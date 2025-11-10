@@ -33,9 +33,10 @@ namespace UserService.Services
         public async Task<UserProfileDto> ForceUpdateCountersForUserAsync(Guid userId)
         {
             var user = await _profilesRepository.GetProfileAsync(userId);
-
             if (user == null)
                 throw new UserNotFoundException(userId);
+
+            await _redis.RemoveAsync(GetRedisKey(userId));
 
             user.FollowersCount = user.Followers.Count;
             user.FollowingCount = user.Following.Count;
@@ -60,6 +61,11 @@ namespace UserService.Services
 
             followerProfile.FollowingCount += value;
             followeeProfile.FollowersCount += value;
+
+            if (followerProfile.FollowingCount < 0)
+                throw new InvalidOperationException();
+            if (followeeProfile.FollowingCount < 0)
+                throw new InvalidOperationException();
 
             await _profilesRepository.UpdateProfileAsync(followerProfile);
             await _profilesRepository.UpdateProfileAsync(followeeProfile);
