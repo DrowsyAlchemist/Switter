@@ -14,42 +14,38 @@ namespace UserService.Services
         private readonly IFollowChecker _followChecker;
         private readonly IRedisService _redisService;
         private readonly IMapper _mapper;
+        private readonly ILogger<UserProfileService> _logger;
 
         public UserProfileService(IProfilesRepository profilesRepository, IFollowChecker followChecker, IMapper mapper,
-                                IRedisService redisService)
+                                IRedisService redisService, ILogger<UserProfileService> logger)
         {
             _profilesRepository = profilesRepository;
             _followChecker = followChecker;
             _mapper = mapper;
             _redisService = redisService;
+            _logger = logger;
         }
 
         public async Task<UserProfileDto> GetProfileAsync(Guid userId, Guid? currentUserId = null)
         {
             var cacheKey = GetRedisKey(userId);
-            var cachedProfile = await _redisService.GetAsync(cacheKey);
-            UserProfileDto? profileDto = null;
+            UserProfileDto? profileDto = await GetProfileFromCacheAsync(cacheKey);
 
-            if (string.IsNullOrEmpty(cachedProfile) == false)
+            if (profileDto != null)
             {
-                profileDto = JsonSerializer.Deserialize<UserProfileDto>(cachedProfile);
+                if (currentUserId.HasValue)
+                    profileDto.IsFollowing = await _followChecker.IsFollowingAsync(currentUserId.Value, userId);
 
-                if (profileDto != null)
-                {
-                    if (currentUserId.HasValue)
-                        profileDto.IsFollowing = await _followChecker.IsFollowingAsync(currentUserId.Value, userId);
-
-                    return profileDto;
-                }
+                return profileDto;
             }
 
-            var profile = await _profilesRepository.GetProfileAsync(userId);
-            if (profile == null)
+            var profileFromDb = await _profilesRepository.GetProfileAsync(userId);
+            if (profileFromDb == null)
                 throw new UserNotFoundException(userId);
-            if (profile.IsActive == false)
+            if (profileFromDb.IsActive == false)
                 throw new UserDeactivatedException(userId);
 
-            profileDto = _mapper.Map<UserProfileDto>(profile);
+            profileDto = _mapper.Map<UserProfileDto>(profileFromDb);
 
             if (currentUserId.HasValue)
                 profileDto.IsFollowing = await _followChecker.IsFollowingAsync(currentUserId.Value, userId);
@@ -102,5 +98,25 @@ namespace UserService.Services
         }
 
         private static string GetRedisKey(Guid userId) => $"profile:{userId}";
+
+        private async Task<UserProfileDto?> GetProfileFromCacheAsync(string key)
+        {
+
+            var cachedProfile = await _redisService.GetAsync(key);
+            UserProfileDto? profileDto = null;
+
+            if (string.IsNullOrEmpty(cachedProfile) == false)
+            {
+                try
+                {
+                    profileDto = JsonSerializer.Deserialize<UserProfileDto>(cachedProfile);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Cached data is invalid.\nKey: {key}\nCachedProfile: {cache}", key, cachedProfile);
+                }
+            }
+            return profileDto;
+        }
     }
 }
