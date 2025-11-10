@@ -1,6 +1,7 @@
 using AuthService.Services.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
+using UserService.Consumers;
 using UserService.Data;
 using UserService.Interfaces;
 using UserService.Interfaces.Data;
@@ -20,7 +21,7 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 builder.Services.AddScoped<IRedisService, RedisService>();
 
 // Kafka 
-//builder.Services.AddHostedService<UserEventsConsumer>();
+builder.Services.AddHostedService<AuthEventsConsumer>();
 builder.Services.AddSingleton<IKafkaProducerService, KafkaProducerService>();
 
 // Database
