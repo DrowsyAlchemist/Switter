@@ -26,6 +26,18 @@ namespace UserService.Data
                 .FirstOrDefaultAsync();
         }
 
+        public async Task<UserProfile> AddAsync(UserProfile profile)
+        {
+            ArgumentNullException.ThrowIfNull(profile);
+
+            bool isExist = await _context.Profiles.AnyAsync(p => p.Id.Equals(profile.Id));
+            if (isExist)
+                throw new InvalidOperationException("Profile with this id already exists.");
+
+            await _context.Profiles.AddAsync(profile);
+            return profile;
+        }
+
         public async Task<UserProfile> UpdateProfileAsync(UserProfile profile)
         {
             ArgumentNullException.ThrowIfNull(profile);
