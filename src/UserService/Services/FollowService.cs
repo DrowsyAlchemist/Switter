@@ -15,11 +15,11 @@ namespace UserService.Services
         private readonly IKafkaProducerService _kafkaProducer;
         private readonly IMapper _mapper;
 
-        public FollowService(IFollowRepository followRepository, IFollowersCounter followersCounter, IKafkaProducerService kafkaProduser, IMapper mapper)
+        public FollowService(IFollowRepository followRepository, IFollowersCounter followersCounter, IKafkaProducerService kafkaProducer, IMapper mapper)
         {
             _followRepository = followRepository;
             _followersCounter = followersCounter;
-            _kafkaProducer = kafkaProduser;
+            _kafkaProducer = kafkaProducer;
             _mapper = mapper;
         }
 
