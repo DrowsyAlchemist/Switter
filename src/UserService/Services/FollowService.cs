@@ -8,7 +8,7 @@ using UserService.Interfaces.Infrastructure;
 
 namespace UserService.Services
 {
-    public class FollowService : IFollowService
+    public class FollowService : IFollowService, IFollowChecker
     {
         private readonly IFollowRepository _followRepository;
         private readonly IFollowersCounter _followersCounter;
@@ -70,6 +70,11 @@ namespace UserService.Services
             var followings = await _followRepository.GetFollowingsAsync(userId);
             followings = followings.Skip((page - 1) * pageSize).Take(pageSize).ToList();
             return _mapper.Map<List<UserProfileDto>>(followings);
+        }
+
+        public async Task<bool> IsFollowingAsync(Guid followerId, Guid followeeId)
+        {
+            return await _followRepository.IsFollowingAsync(followerId, followeeId);
         }
     }
 }

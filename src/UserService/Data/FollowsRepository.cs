@@ -1,11 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using UserService.Interfaces;
 using UserService.Interfaces.Data;
 using UserService.Models;
 
 namespace UserService.Data
 {
-    public class FollowsRepository : IFollowRepository, IFollowChecker
+    public class FollowsRepository : IFollowRepository
     {
         private readonly UserDbContext _context;
 
