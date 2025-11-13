@@ -3,6 +3,7 @@ using UserService.Exceptions.Follows;
 using UserService.Interfaces.Data;
 using UserService.Interfaces;
 using UserService.DTOs;
+using UserService.Exceptions.Blocks;
 
 namespace UserService.Services
 {
@@ -20,11 +21,11 @@ namespace UserService.Services
         public async Task BlockAsync(Guid blockerId, Guid blockedId)
         {
             if (blockerId == blockedId)
-                throw new SelfFollowException();
+                throw new SelfBlockException();
 
             bool isBlocked = await _blockRepository.IsBlockedAsync(blockerId, blockedId);
             if (isBlocked)
-                throw new DoubleFollowException();
+                throw new DoubleBlockException();
 
             await _blockRepository.AddAsync(blockerId, blockedId);
         }
@@ -33,7 +34,7 @@ namespace UserService.Services
         {
             bool isBlocked = await _blockRepository.IsBlockedAsync(blockerId, blockedId);
             if (isBlocked == false)
-                throw new FollowNotFoundException(blockerId, blockedId);
+                throw new BlockNotFoundException(blockerId, blockedId);
 
             await _blockRepository.DeleteAsync(blockerId, blockedId);
         }
