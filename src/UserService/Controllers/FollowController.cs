@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using UserService.DTOs;
 using UserService.Exceptions.Follows;
 using UserService.Exceptions.Profiles;
 using UserService.Interfaces;
@@ -22,8 +21,8 @@ namespace UserService.Controllers
             _logger = logger;
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Follow([FromBody] FollowRequest request)
+        [HttpPost("{followeeId}")]
+        public async Task<IActionResult> Follow(Guid followeeId)
         {
             try
             {
@@ -31,24 +30,24 @@ namespace UserService.Controllers
                 if (currentUserId.HasValue == false)
                     throw new Exception("Current user not found.");
 
-                await _followService.FollowUserAsync(currentUserId.Value, request.FolloweeId);
+                await _followService.FollowUserAsync(currentUserId.Value, followeeId);
 
-                _logger.LogInformation("Successfully followed user.\nFollower:{followerId}\nFollowee:{followeeId}", currentUserId.Value, request.FolloweeId);
+                _logger.LogInformation("Successfully followed user.\nFollower:{followerId}\nFollowee:{followeeId}", currentUserId.Value, followeeId);
                 return Ok(new { message = "Successfully followed user" });
             }
             catch (UserNotFoundException ex)
             {
-                _logger.LogWarning(ex, "Follow failed.\nFollowee:{followeeId}", request.FolloweeId);
+                _logger.LogWarning(ex, "Follow failed.\nFollowee:{followeeId}", followeeId);
                 return NotFound("Followee not found.");
             }
-            catch (FollowExceprion ex)
+            catch (FollowException ex)
             {
-                _logger.LogWarning(ex, "Follow failed.\nFollowee:{followeeId}", request.FolloweeId);
+                _logger.LogWarning(ex, "Follow failed.\nFollowee:{followeeId}", followeeId);
                 return BadRequest("Already following or cannot follow yourself");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error during Follow.\nFollowee:{followeeId}", request.FolloweeId);
+                _logger.LogError(ex, "Error during Follow.\nFollowee:{followeeId}", followeeId);
                 return StatusCode(500, new { message = "Internal server error" });
             }
 
@@ -81,11 +80,11 @@ namespace UserService.Controllers
         }
 
         [HttpGet("followers/{userId}")]
-        public async Task<IActionResult> GetFollowers(Guid userId, [FromQuery] int page = 1)
+        public async Task<IActionResult> GetFollowers(Guid userId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
             try
             {
-                var followers = await _followService.GetFollowersAsync(userId, page);
+                var followers = await _followService.GetFollowersAsync(userId, page, pageSize);
 
                 if (followers.Count == 0)
                     return StatusCode(204, "No followers");
@@ -100,11 +99,11 @@ namespace UserService.Controllers
         }
 
         [HttpGet("following/{userId}")]
-        public async Task<IActionResult> GetFollowing(Guid userId, [FromQuery] int page = 1)
+        public async Task<IActionResult> GetFollowing(Guid userId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
             try
             {
-                var following = await _followService.GetFollowingAsync(userId, page);
+                var following = await _followService.GetFollowingAsync(userId, page, pageSize);
 
                 if (following.Count == 0)
                     return StatusCode(204, "No followings");
