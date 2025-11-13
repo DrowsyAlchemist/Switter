@@ -31,10 +31,15 @@ builder.Services.AddDbContext<UserDbContext>(options =>
 // Services
 builder.Services.AddScoped<IProfilesRepository, ProfilesRepository>();
 builder.Services.AddScoped<IFollowRepository, FollowsRepository>();
-builder.Services.AddScoped<IFollowChecker, FollowsRepository>();
-builder.Services.AddScoped<IFollowersCounter, FollowersCounter>();
-builder.Services.AddScoped<IFollowService, FollowService>();
+builder.Services.AddScoped<IBlockRepository, BlockRepository>();
+
 builder.Services.AddScoped<IUserProfileService, UserProfileService>();
+builder.Services.AddScoped<IFollowService, FollowService>();
+builder.Services.AddScoped<IBlockService, BlockService>();
+
+builder.Services.AddScoped<IFollowChecker, FollowService>();
+builder.Services.AddScoped<IBlockChecker, BlockService>();
+builder.Services.AddScoped<IFollowersCounter, FollowersCounter>();
 
 
 // AutoMapper
