@@ -15,24 +15,24 @@ namespace UserService.Tests.Unit
 {
     public class FollowServiceTests
     {
-        private readonly Mock<IFollowRepository> FollowRepositoryMock;
-        private readonly Mock<IFollowersCounter> FollowersCounterMock;
-        private readonly Mock<IKafkaProducerService> KafkaProducerMock;
-        private readonly Mock<IMapper> MapperMock;
-        private readonly FollowService FollowService;
+        private readonly Mock<IFollowRepository> _followRepositoryMock;
+        private readonly Mock<IFollowersCounter> _followersCounterMock;
+        private readonly Mock<IKafkaProducerService> _kafkaProducerMock;
+        private readonly Mock<IMapper> _mapperMock;
+        private readonly FollowService _followService;
 
         public FollowServiceTests()
         {
-            FollowRepositoryMock = new Mock<IFollowRepository>();
-            FollowersCounterMock = new Mock<IFollowersCounter>();
-            KafkaProducerMock = new Mock<IKafkaProducerService>();
-            MapperMock = new Mock<IMapper>();
+            _followRepositoryMock = new Mock<IFollowRepository>();
+            _followersCounterMock = new Mock<IFollowersCounter>();
+            _kafkaProducerMock = new Mock<IKafkaProducerService>();
+            _mapperMock = new Mock<IMapper>();
 
-            FollowService = new FollowService(
-                FollowRepositoryMock.Object,
-                FollowersCounterMock.Object,
-                KafkaProducerMock.Object,
-                MapperMock.Object
+            _followService = new FollowService(
+                _followRepositoryMock.Object,
+                _followersCounterMock.Object,
+                _kafkaProducerMock.Object,
+                _mapperMock.Object
             );
         }
 
@@ -43,30 +43,30 @@ namespace UserService.Tests.Unit
             var followerId = Guid.NewGuid();
             var followeeId = Guid.NewGuid();
 
-            FollowRepositoryMock
+            _followRepositoryMock
                 .Setup(x => x.IsFollowingAsync(followerId, followeeId))
                 .ReturnsAsync(false);
 
-            FollowRepositoryMock
+            _followRepositoryMock
                 .Setup(x => x.AddAsync(followerId, followeeId))
                 .ReturnsAsync(It.IsAny<Follow>());
 
-            FollowersCounterMock
+            _followersCounterMock
                 .Setup(x => x.IncrementCounter(followerId, followeeId))
                 .Returns(Task.CompletedTask);
 
-            KafkaProducerMock
+            _kafkaProducerMock
                 .Setup(x => x.ProduceAsync("user-events", It.IsAny<UserFollowedEvent>()))
                 .Returns(Task.CompletedTask);
 
             // Act
-            await FollowService.FollowUserAsync(followerId, followeeId);
+            await _followService.FollowUserAsync(followerId, followeeId);
 
             // Assert
-            FollowRepositoryMock.Verify(x => x.IsFollowingAsync(followerId, followeeId), Times.Once);
-            FollowRepositoryMock.Verify(x => x.AddAsync(followerId, followeeId), Times.Once);
-            FollowersCounterMock.Verify(x => x.IncrementCounter(followerId, followeeId), Times.Once);
-            KafkaProducerMock.Verify(x => x.ProduceAsync("user-events", It.Is<UserFollowedEvent>(e =>
+            _followRepositoryMock.Verify(x => x.IsFollowingAsync(followerId, followeeId), Times.Once);
+            _followRepositoryMock.Verify(x => x.AddAsync(followerId, followeeId), Times.Once);
+            _followersCounterMock.Verify(x => x.IncrementCounter(followerId, followeeId), Times.Once);
+            _kafkaProducerMock.Verify(x => x.ProduceAsync("user-events", It.Is<UserFollowedEvent>(e =>
                 e.FollowerId == followerId && e.FolloweeId == followeeId)), Times.Once);
         }
 
@@ -78,12 +78,12 @@ namespace UserService.Tests.Unit
 
             // Act & Assert
             await Assert.ThrowsAsync<SelfFollowException>(() =>
-                FollowService.FollowUserAsync(userId, userId));
+                _followService.FollowUserAsync(userId, userId));
 
-            FollowRepositoryMock.Verify(x => x.IsFollowingAsync(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never);
-            FollowRepositoryMock.Verify(x => x.AddAsync(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never);
-            FollowersCounterMock.Verify(x => x.IncrementCounter(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never);
-            KafkaProducerMock.Verify(x => x.ProduceAsync(It.IsAny<string>(), It.IsAny<KafkaEvent>()), Times.Never);
+            _followRepositoryMock.Verify(x => x.IsFollowingAsync(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never);
+            _followRepositoryMock.Verify(x => x.AddAsync(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never);
+            _followersCounterMock.Verify(x => x.IncrementCounter(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never);
+            _kafkaProducerMock.Verify(x => x.ProduceAsync(It.IsAny<string>(), It.IsAny<KafkaEvent>()), Times.Never);
         }
 
         [Fact]
@@ -93,17 +93,17 @@ namespace UserService.Tests.Unit
             var followerId = Guid.NewGuid();
             var followeeId = Guid.NewGuid();
 
-            FollowRepositoryMock
+            _followRepositoryMock
                 .Setup(x => x.IsFollowingAsync(followerId, followeeId))
                 .ReturnsAsync(true);
 
             // Act & Assert
             await Assert.ThrowsAsync<DoubleFollowException>(() =>
-                FollowService.FollowUserAsync(followerId, followeeId));
+                _followService.FollowUserAsync(followerId, followeeId));
 
-            FollowRepositoryMock.Verify(x => x.AddAsync(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never);
-            FollowersCounterMock.Verify(x => x.IncrementCounter(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never);
-            KafkaProducerMock.Verify(x => x.ProduceAsync(It.IsAny<string>(), It.IsAny<KafkaEvent>()), Times.Never);
+            _followRepositoryMock.Verify(x => x.AddAsync(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never);
+            _followersCounterMock.Verify(x => x.IncrementCounter(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never);
+            _kafkaProducerMock.Verify(x => x.ProduceAsync(It.IsAny<string>(), It.IsAny<KafkaEvent>()), Times.Never);
         }
 
         [Fact]
@@ -113,30 +113,30 @@ namespace UserService.Tests.Unit
             var followerId = Guid.NewGuid();
             var followeeId = Guid.NewGuid();
 
-            FollowRepositoryMock
+            _followRepositoryMock
                 .Setup(x => x.IsFollowingAsync(followerId, followeeId))
                 .ReturnsAsync(true);
 
-            FollowRepositoryMock
+            _followRepositoryMock
                 .Setup(x => x.DeleteAsync(followerId, followeeId))
                 .Returns(Task.CompletedTask);
 
-            FollowersCounterMock
+            _followersCounterMock
                 .Setup(x => x.DecrementCounter(followerId, followeeId))
                 .Returns(Task.CompletedTask);
 
-            KafkaProducerMock
+            _kafkaProducerMock
                 .Setup(x => x.ProduceAsync("user-events", It.IsAny<UserUnfollowedEvent>()))
                 .Returns(Task.CompletedTask);
 
             // Act
-            await FollowService.UnfollowUserAsync(followerId, followeeId);
+            await _followService.UnfollowUserAsync(followerId, followeeId);
 
             // Assert
-            FollowRepositoryMock.Verify(x => x.IsFollowingAsync(followerId, followeeId), Times.Once);
-            FollowRepositoryMock.Verify(x => x.DeleteAsync(followerId, followeeId), Times.Once);
-            FollowersCounterMock.Verify(x => x.DecrementCounter(followerId, followeeId), Times.Once);
-            KafkaProducerMock.Verify(x => x.ProduceAsync("user-events", It.Is<UserUnfollowedEvent>(e =>
+            _followRepositoryMock.Verify(x => x.IsFollowingAsync(followerId, followeeId), Times.Once);
+            _followRepositoryMock.Verify(x => x.DeleteAsync(followerId, followeeId), Times.Once);
+            _followersCounterMock.Verify(x => x.DecrementCounter(followerId, followeeId), Times.Once);
+            _kafkaProducerMock.Verify(x => x.ProduceAsync("user-events", It.Is<UserUnfollowedEvent>(e =>
                 e.FollowerId == followerId && e.FolloweeId == followeeId)), Times.Once);
         }
 
@@ -147,17 +147,17 @@ namespace UserService.Tests.Unit
             var followerId = Guid.NewGuid();
             var followeeId = Guid.NewGuid();
 
-            FollowRepositoryMock
+            _followRepositoryMock
                 .Setup(x => x.IsFollowingAsync(followerId, followeeId))
                 .ReturnsAsync(false);
 
             // Act & Assert
             await Assert.ThrowsAsync<FollowNotFoundException>(() =>
-                FollowService.UnfollowUserAsync(followerId, followeeId));
+                _followService.UnfollowUserAsync(followerId, followeeId));
 
-            FollowRepositoryMock.Verify(x => x.DeleteAsync(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never);
-            FollowersCounterMock.Verify(x => x.DecrementCounter(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never);
-            KafkaProducerMock.Verify(x => x.ProduceAsync(It.IsAny<string>(), It.IsAny<KafkaEvent>()), Times.Never);
+            _followRepositoryMock.Verify(x => x.DeleteAsync(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never);
+            _followersCounterMock.Verify(x => x.DecrementCounter(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never);
+            _kafkaProducerMock.Verify(x => x.ProduceAsync(It.IsAny<string>(), It.IsAny<KafkaEvent>()), Times.Never);
         }
 
         [Fact]
@@ -186,24 +186,24 @@ namespace UserService.Tests.Unit
                 .Select(f => new UserProfileDto { Id = f.Id, DisplayName = f.DisplayName })
                 .ToList();
 
-            FollowRepositoryMock
+            _followRepositoryMock
                 .Setup(x => x.GetFollowersAsync(userId))
                 .ReturnsAsync(allFollowers);
 
-            MapperMock
+            _mapperMock
                 .Setup(x => x.Map<List<UserProfileDto>>(expectedPaginatedFollowers))
                 .Returns(expectedDtos);
 
             // Act
-            var result = await FollowService.GetFollowersAsync(userId, page, pageSize);
+            var result = await _followService.GetFollowersAsync(userId, page, pageSize);
 
             // Assert
             result.Should().NotBeNull();
             result.Should().HaveCount(expectedPaginatedFollowers.Count);
             result.Should().BeEquivalentTo(expectedDtos);
 
-            FollowRepositoryMock.Verify(x => x.GetFollowersAsync(userId), Times.Once);
-            MapperMock.Verify(x => x.Map<List<UserProfileDto>>(expectedPaginatedFollowers), Times.Once);
+            _followRepositoryMock.Verify(x => x.GetFollowersAsync(userId), Times.Once);
+            _mapperMock.Verify(x => x.Map<List<UserProfileDto>>(expectedPaginatedFollowers), Times.Once);
         }
 
         [Fact]
@@ -227,22 +227,22 @@ namespace UserService.Tests.Unit
                 .Select(f => new UserProfileDto { Id = f.Id, DisplayName = f.DisplayName })
                 .ToList();
 
-            FollowRepositoryMock
+            _followRepositoryMock
                 .Setup(x => x.GetFollowersAsync(userId))
                 .ReturnsAsync(allFollowers);
 
-            MapperMock
+            _mapperMock
                 .Setup(x => x.Map<List<UserProfileDto>>(expectedPaginatedFollowers))
                 .Returns(expectedDtos);
 
             // Act
-            var result = await FollowService.GetFollowersAsync(userId);
+            var result = await _followService.GetFollowersAsync(userId);
 
             // Assert
             result.Should().NotBeNull();
             result.Should().HaveCount(2);
 
-            FollowRepositoryMock.Verify(x => x.GetFollowersAsync(userId), Times.Once);
+            _followRepositoryMock.Verify(x => x.GetFollowersAsync(userId), Times.Once);
         }
 
         [Fact]
@@ -271,24 +271,24 @@ namespace UserService.Tests.Unit
                 .Select(f => new UserProfileDto { Id = f.Id, DisplayName = f.DisplayName })
                 .ToList();
 
-            FollowRepositoryMock
+            _followRepositoryMock
                 .Setup(x => x.GetFollowingsAsync(userId))
                 .ReturnsAsync(allFollowing);
 
-            MapperMock
+            _mapperMock
                 .Setup(x => x.Map<List<UserProfileDto>>(expectedPaginatedFollowing))
                 .Returns(expectedDtos);
 
             // Act
-            var result = await FollowService.GetFollowingAsync(userId, page, pageSize);
+            var result = await _followService.GetFollowingAsync(userId, page, pageSize);
 
             // Assert
             result.Should().NotBeNull();
             result.Should().HaveCount(expectedPaginatedFollowing.Count);
             result.Should().BeEquivalentTo(expectedDtos);
 
-            FollowRepositoryMock.Verify(x => x.GetFollowingsAsync(userId), Times.Once);
-            MapperMock.Verify(x => x.Map<List<UserProfileDto>>(expectedPaginatedFollowing), Times.Once);
+            _followRepositoryMock.Verify(x => x.GetFollowingsAsync(userId), Times.Once);
+            _mapperMock.Verify(x => x.Map<List<UserProfileDto>>(expectedPaginatedFollowing), Times.Once);
         }
 
         [Fact]
@@ -300,23 +300,23 @@ namespace UserService.Tests.Unit
             var emptyFollowing = new List<UserProfile>();
             var expectedDtos = new List<UserProfileDto>();
 
-            FollowRepositoryMock
+            _followRepositoryMock
                 .Setup(x => x.GetFollowingsAsync(userId))
                 .ReturnsAsync(emptyFollowing);
 
-            MapperMock
+            _mapperMock
                 .Setup(x => x.Map<List<UserProfileDto>>(emptyFollowing))
                 .Returns(expectedDtos);
 
             // Act
-            var result = await FollowService.GetFollowingAsync(userId);
+            var result = await _followService.GetFollowingAsync(userId);
 
             // Assert
             result.Should().NotBeNull();
             result.Should().BeEmpty();
 
-            FollowRepositoryMock.Verify(x => x.GetFollowingsAsync(userId), Times.Once);
-            MapperMock.Verify(x => x.Map<List<UserProfileDto>>(emptyFollowing), Times.Once);
+            _followRepositoryMock.Verify(x => x.GetFollowingsAsync(userId), Times.Once);
+            _mapperMock.Verify(x => x.Map<List<UserProfileDto>>(emptyFollowing), Times.Once);
         }
 
         [Fact]
@@ -328,23 +328,79 @@ namespace UserService.Tests.Unit
             var emptyFollowers = new List<UserProfile>();
             var expectedDtos = new List<UserProfileDto>();
 
-            FollowRepositoryMock
+            _followRepositoryMock
                 .Setup(x => x.GetFollowersAsync(userId))
                 .ReturnsAsync(emptyFollowers);
 
-            MapperMock
+            _mapperMock
                 .Setup(x => x.Map<List<UserProfileDto>>(emptyFollowers))
                 .Returns(expectedDtos);
 
             // Act
-            var result = await FollowService.GetFollowersAsync(userId);
+            var result = await _followService.GetFollowersAsync(userId);
 
             // Assert
             result.Should().NotBeNull();
             result.Should().BeEmpty();
 
-            FollowRepositoryMock.Verify(x => x.GetFollowersAsync(userId), Times.Once);
-            MapperMock.Verify(x => x.Map<List<UserProfileDto>>(emptyFollowers), Times.Once);
+            _followRepositoryMock.Verify(x => x.GetFollowersAsync(userId), Times.Once);
+            _mapperMock.Verify(x => x.Map<List<UserProfileDto>>(emptyFollowers), Times.Once);
+        }
+
+        [Fact]
+        public async Task IsFollowing_WhenFollowing_ReturnsTrue()
+        {
+            // Arrange
+            var followerId = Guid.NewGuid();
+            var followeeId = Guid.NewGuid();
+
+            _followRepositoryMock
+                .Setup(x => x.IsFollowingAsync(followerId, followeeId))
+                .ReturnsAsync(true);
+
+            // Act
+            var result = await _followService.IsFollowingAsync(followerId, followeeId);
+
+            // Assert
+            result.Should().BeTrue();
+            _followRepositoryMock.Verify(x => x.IsFollowingAsync(followerId, followeeId), Times.Once);
+        }
+
+        [Fact]
+        public async Task IsFollowing_WhenNotFollowing_ReturnsFalse()
+        {
+            // Arrange
+            var followerId = Guid.NewGuid();
+            var followeeId = Guid.NewGuid();
+
+            _followRepositoryMock
+                .Setup(x => x.IsFollowingAsync(followerId, followeeId))
+                .ReturnsAsync(false);
+
+            // Act
+            var result = await _followService.IsFollowingAsync(followerId, followeeId);
+
+            // Assert
+            result.Should().BeFalse();
+            _followRepositoryMock.Verify(x => x.IsFollowingAsync(followerId, followeeId), Times.Once);
+        }
+
+        [Fact]
+        public async Task IsBlocked_WithSameUser_ReturnsFalse()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+
+            _followRepositoryMock
+                .Setup(x => x.IsFollowingAsync(userId, userId))
+                .ReturnsAsync(false);
+
+            // Act
+            var result = await _followService.IsFollowingAsync(userId, userId);
+
+            // Assert
+            result.Should().BeFalse();
+            _followRepositoryMock.Verify(x => x.IsFollowingAsync(userId, userId), Times.Once);
         }
     }
 }
