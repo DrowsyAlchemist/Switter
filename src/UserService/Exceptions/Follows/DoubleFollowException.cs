@@ -1,6 +1,6 @@
 ﻿namespace UserService.Exceptions.Follows
 {
-    public class DoubleFollowException : FollowExceprion
+    public class DoubleFollowException : FollowException
     {
         public DoubleFollowException() : base("Follow already exists.")
         {

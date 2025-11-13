@@ -1,6 +1,6 @@
 ﻿namespace UserService.Exceptions.Follows
 {
-    public class SelfFollowException : FollowExceprion
+    public class SelfFollowException : FollowException
     {
         public SelfFollowException() : base("Cannot follow yourself")
         {
