@@ -1,5 +1,4 @@
 ﻿using AutoMapper;
-using UserService.Exceptions.Follows;
 using UserService.Interfaces.Data;
 using UserService.Interfaces;
 using UserService.DTOs;
@@ -10,11 +9,13 @@ namespace UserService.Services
     public class BlockService : IBlockService, IBlockChecker
     {
         private readonly IBlockRepository _blockRepository;
+        private readonly Blocker _blocker;
         private readonly IMapper _mapper;
 
-        public BlockService(IBlockRepository blockRepository, IMapper mapper)
+        public BlockService(IBlockRepository blockRepository, Blocker blocker, IMapper mapper)
         {
             _blockRepository = blockRepository;
+            _blocker = blocker;
             _mapper = mapper;
         }
 
@@ -27,7 +28,7 @@ namespace UserService.Services
             if (isBlocked)
                 throw new DoubleBlockException();
 
-            await _blockRepository.AddAsync(blockerId, blockedId);
+            await _blocker.BlockUserAsync(blockerId, blockedId);
         }
 
         public async Task UnblockAsync(Guid blockerId, Guid blockedId)
@@ -46,7 +47,7 @@ namespace UserService.Services
             return _mapper.Map<List<UserProfileDto>>(blockedUsers);
         }
 
-        public async Task<bool> IsBlocked(Guid blockerId, Guid blockedId)
+        public async Task<bool> IsBlockedAsync(Guid blockerId, Guid blockedId)
         {
             return await _blockRepository.IsBlockedAsync(blockerId, blockedId);
         }
