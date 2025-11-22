@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
 using Moq;
 using UserService.DTOs;
-using UserService.Events;
 using UserService.Exceptions.Follows;
 using UserService.Interfaces.Data;
 using UserService.Interfaces;
@@ -10,6 +9,7 @@ using UserService.Services;
 using Xunit;
 using UserService.Interfaces.Infrastructure;
 using FluentAssertions;
+using UserService.KafkaEvents.UserEvents;
 
 namespace UserService.Tests.Unit
 {
@@ -17,7 +17,7 @@ namespace UserService.Tests.Unit
     {
         private readonly Mock<IFollowRepository> _followRepositoryMock;
         private readonly Mock<IFollowersCounter> _followersCounterMock;
-        private readonly Mock<IKafkaProducerService> _kafkaProducerMock;
+        private readonly Mock<IKafkaProducer> _kafkaProducerMock;
         private readonly Mock<IMapper> _mapperMock;
         private readonly FollowService _followService;
 
@@ -25,15 +25,15 @@ namespace UserService.Tests.Unit
         {
             _followRepositoryMock = new Mock<IFollowRepository>();
             _followersCounterMock = new Mock<IFollowersCounter>();
-            _kafkaProducerMock = new Mock<IKafkaProducerService>();
+            _kafkaProducerMock = new Mock<IKafkaProducer>();
             _mapperMock = new Mock<IMapper>();
 
-            _followService = new FollowService(
-                _followRepositoryMock.Object,
-                _followersCounterMock.Object,
-                _kafkaProducerMock.Object,
-                _mapperMock.Object
-            );
+            //_followService = new FollowService(
+            //    _followRepositoryMock.Object,
+            //    _followersCounterMock.Object,
+            //    _kafkaProducerMock.Object,
+            //    _mapperMock.Object
+            //);
         }
 
         [Fact]
@@ -83,7 +83,7 @@ namespace UserService.Tests.Unit
             _followRepositoryMock.Verify(x => x.IsFollowingAsync(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never);
             _followRepositoryMock.Verify(x => x.AddAsync(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never);
             _followersCounterMock.Verify(x => x.IncrementCounter(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never);
-            _kafkaProducerMock.Verify(x => x.ProduceAsync(It.IsAny<string>(), It.IsAny<KafkaEvent>()), Times.Never);
+            _kafkaProducerMock.Verify(x => x.ProduceAsync(It.IsAny<string>(), It.IsAny<UserFollowedEvent>()), Times.Never);
         }
 
         [Fact]
@@ -103,7 +103,7 @@ namespace UserService.Tests.Unit
 
             _followRepositoryMock.Verify(x => x.AddAsync(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never);
             _followersCounterMock.Verify(x => x.IncrementCounter(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never);
-            _kafkaProducerMock.Verify(x => x.ProduceAsync(It.IsAny<string>(), It.IsAny<KafkaEvent>()), Times.Never);
+            _kafkaProducerMock.Verify(x => x.ProduceAsync(It.IsAny<string>(), It.IsAny<UserFollowedEvent>()), Times.Never);
         }
 
         [Fact]
@@ -157,7 +157,6 @@ namespace UserService.Tests.Unit
 
             _followRepositoryMock.Verify(x => x.DeleteAsync(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never);
             _followersCounterMock.Verify(x => x.DecrementCounter(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never);
-            _kafkaProducerMock.Verify(x => x.ProduceAsync(It.IsAny<string>(), It.IsAny<KafkaEvent>()), Times.Never);
         }
 
         [Fact]

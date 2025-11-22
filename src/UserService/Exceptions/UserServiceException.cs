@@ -2,8 +2,8 @@
 {
     public class UserServiceException : Exception
     {
-        public UserServiceException(string? message) : base(message)
-        {
-        }
+        public UserServiceException() : base() { }
+        public UserServiceException(string? message) : base() { }
+        public UserServiceException(string? message, Exception? inner) : base(message, inner) { }
     }
 }

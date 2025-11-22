@@ -1,7 +1,7 @@
 ﻿using Confluent.Kafka;
 using System.Text.Json;
 using UserService.Data;
-using UserService.Events;
+using UserService.KafkaEvents.AuthEvents;
 using UserService.Models;
 
 namespace UserService.Consumers

@@ -2,8 +2,6 @@
 {
     public class FollowException : UserServiceException
     {
-        public FollowException(string? message) : base(message)
-        {
-        }
+        public FollowException(string? message) : base(message) { }
     }
 }

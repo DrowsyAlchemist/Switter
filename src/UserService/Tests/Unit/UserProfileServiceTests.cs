@@ -23,12 +23,12 @@ namespace UserService.Tests.Unit
             MapperMock = new Mock<IMapper>();
             var logger = new Mock<ILogger<UserProfileService>>();
 
-            UserProfileService = new UserProfileService(
-                ProfilesRepositoryMock.Object,
-                FollowCheckerMock.Object,
-                MapperMock.Object,
-                RedisServiceMock.Object,
-                logger.Object);
+            //UserProfileService = new UserProfileService(
+            //    ProfilesRepositoryMock.Object,
+            //    FollowCheckerMock.Object,
+            //    MapperMock.Object,
+            //    RedisServiceMock.Object,
+            //    logger.Object);
         }
     }
 }

@@ -27,12 +27,10 @@ namespace UserService.Controllers
             try
             {
                 var currentUserId = GetCurrentUserId();
-                if (currentUserId.HasValue == false)
-                    throw new Exception("Current user not found.");
 
-                await _followService.FollowUserAsync(currentUserId.Value, followeeId);
+                await _followService.FollowUserAsync(currentUserId, followeeId);
 
-                _logger.LogInformation("Successfully followed user.\nFollower:{followerId}\nFollowee:{followeeId}", currentUserId.Value, followeeId);
+                _logger.LogInformation("Successfully followed user.\nFollower:{followerId}\nFollowee:{followeeId}", currentUserId, followeeId);
                 return Ok(new { message = "Successfully followed user" });
             }
             catch (UserNotFoundException ex)
@@ -59,12 +57,10 @@ namespace UserService.Controllers
             try
             {
                 var currentUserId = GetCurrentUserId();
-                if (currentUserId.HasValue == false)
-                    throw new Exception("Current user not found.");
 
-                await _followService.UnfollowUserAsync(currentUserId.Value, followeeId);
+                await _followService.UnfollowUserAsync(currentUserId, followeeId);
 
-                _logger.LogInformation("Successfully unfollowed user.\nFollower:{followerId}\nFollowee:{followeeId}", currentUserId.Value, followeeId);
+                _logger.LogInformation("Successfully unfollowed user.\nFollower:{followerId}\nFollowee:{followeeId}", currentUserId, followeeId);
                 return Ok(new { message = "Successfully unfollowed user" });
             }
             catch (FollowNotFoundException ex)
@@ -117,14 +113,14 @@ namespace UserService.Controllers
             }
         }
 
-        private Guid? GetCurrentUserId()
+        private Guid GetCurrentUserId()
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            if (userId == null)
-                return null;
+            if (userId != null)
+                return Guid.Parse(userId!);
 
-            return Guid.Parse(userId!);
+            throw new Exception("Current user not found.");
         }
     }
 }

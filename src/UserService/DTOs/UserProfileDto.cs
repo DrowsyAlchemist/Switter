@@ -9,6 +9,11 @@
         public int FollowersCount { get; set; }
         public int FollowingCount { get; set; }
         public DateTime CreatedAt { get; set; }
-        public bool IsFollowing { get; set; } // Для текущего пользователя
+
+        // Для текущего пользователя
+        public bool IsFollowing { get; set; } 
+        public bool IsFollowed { get; set; } 
+        public bool IsBlocking { get; set; }
+        public bool IsBlocked { get; set; }
     }
 }

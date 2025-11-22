@@ -27,12 +27,10 @@ namespace UserService.Controllers
             try
             {
                 var currentUserId = GetCurrentUserId();
-                if (currentUserId.HasValue == false)
-                    throw new Exception("Current user not found.");
 
-                await _blockService.BlockAsync(currentUserId.Value, userToBlock);
+                await _blockService.BlockAsync(currentUserId, userToBlock);
 
-                _logger.LogInformation("Successfully blocked user.\nBlocker:{blockerId}\nBlocked:{blockedId}", currentUserId.Value, userToBlock);
+                _logger.LogInformation("Successfully blocked user.\nBlocker:{blockerId}\nBlocked:{blockedId}", currentUserId, userToBlock);
                 return Ok(new { message = "Successfully blocked user" });
             }
             catch (UserNotFoundException ex)
@@ -40,7 +38,7 @@ namespace UserService.Controllers
                 _logger.LogWarning(ex, "Blocking failed.\nUser to block:{id}", userToBlock);
                 return NotFound("User not found.");
             }
-            catch (BlockException ex) 
+            catch (BlockException ex)
             {
                 _logger.LogWarning(ex, "Blocking failed.\nUser to block:{id}", userToBlock);
                 return BadRequest("Already blocked or cannot block yourself");
@@ -59,15 +57,13 @@ namespace UserService.Controllers
             try
             {
                 var currentUserId = GetCurrentUserId();
-                if (currentUserId.HasValue == false)
-                    throw new Exception("Current user not found.");
 
-                await _blockService.UnblockAsync(currentUserId.Value, blockedId);
+                await _blockService.UnblockAsync(currentUserId, blockedId);
 
-                _logger.LogInformation("Successfully unblock user.\nBlocker:{blockerId}\nBlocked:{blockedId}", currentUserId.Value, blockedId);
+                _logger.LogInformation("Successfully unblock user.\nBlocker:{blockerId}\nBlocked:{blockedId}", currentUserId, blockedId);
                 return Ok(new { message = "Successfully unblock user" });
             }
-            catch (BlockNotFoundException ex) 
+            catch (BlockNotFoundException ex)
             {
                 _logger.LogWarning(ex, "Unblocking failed.\nUser to unblock:{blockedId}", blockedId);
                 return NotFound("User is not blocked.");
@@ -84,6 +80,10 @@ namespace UserService.Controllers
         {
             try
             {
+                var currentUserId = GetCurrentUserId();
+                if (userId != currentUserId)
+                    return Forbid();
+
                 var blocked = await _blockService.GetBlockedAsync(userId, page, pageSize);
 
                 if (blocked.Count == 0)
@@ -98,14 +98,14 @@ namespace UserService.Controllers
             }
         }
 
-        private Guid? GetCurrentUserId()
+        private Guid GetCurrentUserId()
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            if (userId == null)
-                return null;
+            if (userId != null)
+                return Guid.Parse(userId!);
 
-            return Guid.Parse(userId!);
+            throw new Exception("Current user not found.");
         }
     }
 }

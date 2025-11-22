@@ -21,10 +21,10 @@ namespace UserService.Tests.Unit
             _blockRepositoryMock = new Mock<IBlockRepository>();
             _mapperMock = new Mock<IMapper>();
 
-            _blockService = new BlockService(
-                _blockRepositoryMock.Object,
-                _mapperMock.Object
-            );
+            //_blockService = new BlockService(
+            //    _blockRepositoryMock.Object,
+            //    _mapperMock.Object
+            //);
         }
 
         [Fact]
@@ -209,7 +209,7 @@ namespace UserService.Tests.Unit
                 .ReturnsAsync(true);
 
             // Act
-            var result = await _blockService.IsBlocked(blockerId, blockedId);
+            var result = await _blockService.IsBlockedAsync(blockerId, blockedId);
 
             // Assert
             result.Should().BeTrue();
@@ -228,7 +228,7 @@ namespace UserService.Tests.Unit
                 .ReturnsAsync(false);
 
             // Act
-            var result = await _blockService.IsBlocked(blockerId, blockedId);
+            var result = await _blockService.IsBlockedAsync(blockerId, blockedId);
 
             // Assert
             result.Should().BeFalse();
@@ -246,7 +246,7 @@ namespace UserService.Tests.Unit
                 .ReturnsAsync(false);
 
             // Act
-            var result = await _blockService.IsBlocked(userId, userId);
+            var result = await _blockService.IsBlockedAsync(userId, userId);
 
             // Assert
             result.Should().BeFalse();

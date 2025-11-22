@@ -20,7 +20,7 @@ namespace UserService.Tests.Unit.ProfileService
             {
                 Id = userId,
                 DisplayName = "Test User",
-                IsFollowing = false
+                IsFollowed = false
             };
 
             var cachedJson = JsonSerializer.Serialize(expectedProfile);
@@ -40,7 +40,7 @@ namespace UserService.Tests.Unit.ProfileService
             result.Should().NotBeNull();
             result.Id.Should().Be(expectedProfile.Id);
             result.DisplayName.Should().Be(expectedProfile.DisplayName);
-            result.IsFollowing.Should().BeFalse();
+            result.IsFollowed.Should().BeFalse();
 
             RedisServiceMock.Verify(x => x.GetAsync(It.IsAny<string>()), Times.Once);
             ProfilesRepositoryMock.Verify(x => x.GetProfileAsync(It.IsAny<Guid>()), Times.Never);
@@ -81,7 +81,7 @@ namespace UserService.Tests.Unit.ProfileService
             var userId = Guid.NewGuid();
             var currentUserId = Guid.NewGuid();
             var userProfile = new UserProfile { Id = userId, DisplayName = "Test User", IsActive = true };
-            var expectedProfileDto = new UserProfileDto { Id = userId, DisplayName = "Test User", IsFollowing = true };
+            var expectedProfileDto = new UserProfileDto { Id = userId, DisplayName = "Test User", IsFollowed = true };
 
             RedisServiceMock
                 .Setup(x => x.GetAsync(It.IsAny<string>()))
@@ -109,7 +109,7 @@ namespace UserService.Tests.Unit.ProfileService
             // Assert
             result.Should().NotBeNull();
             result.Id.Should().Be(expectedProfileDto.Id);
-            result.IsFollowing.Should().BeTrue();
+            result.IsFollowed.Should().BeTrue();
 
             ProfilesRepositoryMock.Verify(x => x.GetProfileAsync(userId), Times.Once);
             MapperMock.Verify(x => x.Map<UserProfileDto>(userProfile), Times.Once);

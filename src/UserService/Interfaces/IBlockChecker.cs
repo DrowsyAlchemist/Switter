@@ -2,6 +2,6 @@
 {
     public interface IBlockChecker
     {
-        Task<bool> IsBlocked(Guid blockerId, Guid blockedId);
+        Task<bool> IsBlockedAsync(Guid blockerId, Guid blockedId);
     }
 }

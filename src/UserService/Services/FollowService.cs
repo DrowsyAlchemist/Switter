@@ -1,25 +1,21 @@
 ﻿using AutoMapper;
 using UserService.DTOs;
-using UserService.Events;
 using UserService.Exceptions.Follows;
 using UserService.Interfaces;
 using UserService.Interfaces.Data;
-using UserService.Interfaces.Infrastructure;
 
 namespace UserService.Services
 {
     public class FollowService : IFollowService, IFollowChecker
     {
         private readonly IFollowRepository _followRepository;
-        private readonly IFollowersCounter _followersCounter;
-        private readonly IKafkaProducerService _kafkaProducer;
+        private readonly IUserRelationshipService _relationshipService;
         private readonly IMapper _mapper;
 
-        public FollowService(IFollowRepository followRepository, IFollowersCounter followersCounter, IKafkaProducerService kafkaProducer, IMapper mapper)
+        public FollowService(IFollowRepository followRepository, IUserRelationshipService relationshipService, IMapper mapper)
         {
             _followRepository = followRepository;
-            _followersCounter = followersCounter;
-            _kafkaProducer = kafkaProducer;
+            _relationshipService = relationshipService;
             _mapper = mapper;
         }
 
@@ -32,14 +28,12 @@ namespace UserService.Services
             if (isFollowing)
                 throw new DoubleFollowException();
 
+            if (await _relationshipService.IsBlockedAsync(followerId, followeeId))
+                throw new FollowToBlockedUserException();
+            if (await _relationshipService.IsBlockedAsync(followeeId, followerId))
+                throw new FollowToBlockerException();
+
             await _followRepository.AddAsync(followerId, followeeId);
-            await _followersCounter.IncrementCounter(followerId, followeeId);
-            await _kafkaProducer.ProduceAsync("user-events", new UserFollowedEvent
-            {
-                FollowerId = followerId,
-                FolloweeId = followeeId,
-                Timestamp = DateTime.UtcNow
-            });
         }
 
         public async Task UnfollowUserAsync(Guid followerId, Guid followeeId)
@@ -49,13 +43,6 @@ namespace UserService.Services
                 throw new FollowNotFoundException(followerId, followeeId);
 
             await _followRepository.DeleteAsync(followerId, followeeId);
-            await _followersCounter.DecrementCounter(followerId, followeeId);
-            await _kafkaProducer.ProduceAsync("user-events", new UserUnfollowedEvent
-            {
-                FollowerId = followerId,
-                FolloweeId = followeeId,
-                Timestamp = DateTime.UtcNow
-            });
         }
 
         public async Task<List<UserProfileDto>> GetFollowersAsync(Guid userId, int page = 1, int pageSize = 20)
