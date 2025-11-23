@@ -1,19 +1,19 @@
 ﻿using System.Text.Json;
 using UserService.DTOs;
-using UserService.Interfaces;
 using UserService.Interfaces.Infrastructure;
+using UserService.Interfaces.Queries;
 
 namespace UserService.Services.Decorators
 {
-    public class CachedProfileService : IUserProfileService
+    public class ProfileQueriesCached : IProfileQueries
     {
-        private IUserProfileService _profileService;
-        private IRedisService _redisService;
-        private ILogger<CachedProfileService> _logger;
+        private readonly IProfileQueries _profileQueries;
+        private readonly IRedisService _redisService;
+        private readonly ILogger<ProfileQueriesCached> _logger;
 
-        public CachedProfileService(IUserProfileService profileService, IRedisService redisService, ILogger<CachedProfileService> logger)
+        public ProfileQueriesCached(IProfileQueries profileQueries, IRedisService redisService, ILogger<ProfileQueriesCached> logger)
         {
-            _profileService = profileService;
+            _profileQueries = profileQueries;
             _redisService = redisService;
             _logger = logger;
         }
@@ -26,7 +26,7 @@ namespace UserService.Services.Decorators
             if (profileDto != null)
                 return profileDto;
 
-            profileDto = await _profileService.GetProfileAsync(userId);
+            profileDto = await _profileQueries.GetProfileAsync(userId);
 
             await _redisService.SetAsync(cacheKey,
                 JsonSerializer.Serialize(profileDto),
@@ -35,17 +35,9 @@ namespace UserService.Services.Decorators
             return profileDto;
         }
 
-        public async Task<UserProfileDto> UpdateProfileAsync(Guid userId, UpdateProfileRequest request)
-        {
-            var updatedProfile = await _profileService.UpdateProfileAsync(userId, request);
-            var cacheKey = GetRedisKey(userId);
-            await _redisService.RemoveAsync(cacheKey);
-            return updatedProfile;
-        }
-
         public Task<List<UserProfileDto>> SearchUsersAsync(string query, int page = 1, int pageSize = 20)
         {
-            return _profileService.SearchUsersAsync(query, page, pageSize);
+            return _profileQueries.SearchUsersAsync(query, page, pageSize);
         }
 
         private static string GetRedisKey(Guid userId) => $"profile:{userId}";

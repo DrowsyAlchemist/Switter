@@ -1,22 +1,19 @@
-﻿using AutoMapper;
-using UserService.DTOs;
-using UserService.Exceptions.Follows;
+﻿using UserService.Exceptions.Follows;
 using UserService.Interfaces;
+using UserService.Interfaces.Commands;
 using UserService.Interfaces.Data;
 
-namespace UserService.Services
+namespace UserService.Services.Commands
 {
-    public class FollowService : IFollowService, IFollowChecker
+    public class FollowCommands : IFollowCommands
     {
         private readonly IFollowRepository _followRepository;
         private readonly IUserRelationshipService _relationshipService;
-        private readonly IMapper _mapper;
 
-        public FollowService(IFollowRepository followRepository, IUserRelationshipService relationshipService, IMapper mapper)
+        public FollowCommands(IFollowRepository followRepository, IUserRelationshipService relationshipService)
         {
             _followRepository = followRepository;
             _relationshipService = relationshipService;
-            _mapper = mapper;
         }
 
         public async Task FollowUserAsync(Guid followerId, Guid followeeId)
@@ -45,23 +42,5 @@ namespace UserService.Services
             await _followRepository.DeleteAsync(followerId, followeeId);
         }
 
-        public async Task<List<UserProfileDto>> GetFollowersAsync(Guid userId, int page = 1, int pageSize = 20)
-        {
-            var followers = await _followRepository.GetFollowersAsync(userId);
-            followers = followers.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-            return _mapper.Map<List<UserProfileDto>>(followers);
-        }
-
-        public async Task<List<UserProfileDto>> GetFollowingAsync(Guid userId, int page = 1, int pageSize = 20)
-        {
-            var followings = await _followRepository.GetFollowingsAsync(userId);
-            followings = followings.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-            return _mapper.Map<List<UserProfileDto>>(followings);
-        }
-
-        public async Task<bool> IsFollowingAsync(Guid followerId, Guid followeeId)
-        {
-            return await _followRepository.IsFollowingAsync(followerId, followeeId);
-        }
     }
 }

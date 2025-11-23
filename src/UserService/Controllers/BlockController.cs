@@ -3,7 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using UserService.Exceptions.Blocks;
 using UserService.Exceptions.Profiles;
-using UserService.Interfaces;
+using UserService.Interfaces.Commands;
+using UserService.Interfaces.Queries;
 
 namespace UserService.Controllers
 {
@@ -12,12 +13,14 @@ namespace UserService.Controllers
     [Authorize]
     public class BlockController : ControllerBase
     {
-        private readonly IBlockService _blockService;
+        private readonly IBlockCommands _blockCommands;
+        private readonly IBlockQueries _blockQueries;
         private readonly ILogger<BlockController> _logger;
 
-        public BlockController(IBlockService blockService, ILogger<BlockController> logger)
+        public BlockController(IBlockCommands blockCommands, IBlockQueries blockQueries, ILogger<BlockController> logger)
         {
-            _blockService = blockService;
+            _blockCommands = blockCommands;
+            _blockQueries = blockQueries;
             _logger = logger;
         }
 
@@ -28,7 +31,7 @@ namespace UserService.Controllers
             {
                 var currentUserId = GetCurrentUserId();
 
-                await _blockService.BlockAsync(currentUserId, userToBlock);
+                await _blockCommands.BlockAsync(currentUserId, userToBlock);
 
                 _logger.LogInformation("Successfully blocked user.\nBlocker:{blockerId}\nBlocked:{blockedId}", currentUserId, userToBlock);
                 return Ok(new { message = "Successfully blocked user" });
@@ -58,7 +61,7 @@ namespace UserService.Controllers
             {
                 var currentUserId = GetCurrentUserId();
 
-                await _blockService.UnblockAsync(currentUserId, blockedId);
+                await _blockCommands.UnblockAsync(currentUserId, blockedId);
 
                 _logger.LogInformation("Successfully unblock user.\nBlocker:{blockerId}\nBlocked:{blockedId}", currentUserId, blockedId);
                 return Ok(new { message = "Successfully unblock user" });
@@ -84,7 +87,7 @@ namespace UserService.Controllers
                 if (userId != currentUserId)
                     return Forbid();
 
-                var blocked = await _blockService.GetBlockedAsync(userId, page, pageSize);
+                var blocked = await _blockQueries.GetBlockedAsync(userId, page, pageSize);
 
                 if (blocked.Count == 0)
                     return StatusCode(204, "No blocked users.");

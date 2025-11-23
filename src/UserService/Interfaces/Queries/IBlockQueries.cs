@@ -1,11 +1,9 @@
 ﻿using UserService.DTOs;
 
-namespace UserService.Interfaces
+namespace UserService.Interfaces.Queries
 {
-    public interface IBlockService
+    public interface IBlockQueries
     {
-        Task BlockAsync(Guid blocker, Guid blocked);
-        Task UnblockAsync(Guid blocker, Guid blocked);
         Task<bool> IsBlockedAsync(Guid blocker, Guid blocked);
         Task<List<UserProfileDto>> GetBlockedAsync(Guid blockerId, int page = 1, int pageSize = 20);
     }

@@ -4,15 +4,13 @@ using UserService.Interfaces.Data;
 
 namespace UserService.Services
 {
-    public class ProfileRelationshipService : IUserRelationshipService
+    public class UserRelationshipService : IUserRelationshipService
     {
-        private readonly IUserProfileService _profileService;
         private readonly IFollowRepository _followRepository;
         private readonly IBlockRepository _blockRepository;
 
-        public ProfileRelationshipService(IUserProfileService profileService, IFollowRepository followRepository, IBlockRepository blockRepository)
+        public UserRelationshipService(IFollowRepository followRepository, IBlockRepository blockRepository)
         {
-            _profileService = profileService;
             _followRepository = followRepository;
             _blockRepository = blockRepository;
         }

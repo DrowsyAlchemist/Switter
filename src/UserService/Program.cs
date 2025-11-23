@@ -4,11 +4,15 @@ using StackExchange.Redis;
 using UserService.Consumers;
 using UserService.Data;
 using UserService.Interfaces;
+using UserService.Interfaces.Commands;
 using UserService.Interfaces.Data;
 using UserService.Interfaces.Infrastructure;
+using UserService.Interfaces.Queries;
 using UserService.Services;
+using UserService.Services.Commands;
 using UserService.Services.Decorators;
 using UserService.Services.Infrastructure;
+using UserService.Services.Queries;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,8 +26,8 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 builder.Services.AddScoped<IRedisService, RedisService>();
 
 // Kafka 
-//builder.Services.AddHostedService<AuthEventsConsumer>();
-//builder.Services.AddSingleton<IKafkaProducer, KafkaProducer>();
+builder.Services.AddHostedService<AuthEventsConsumer>();
+builder.Services.AddSingleton<IKafkaProducer, KafkaProducer>();
 
 // Database
 builder.Services.AddDbContext<UserDbContext>(options =>
@@ -43,50 +47,70 @@ builder.Services.AddAutoMapper(cfg =>
 
 // Services
 
+builder.Services.AddScoped<IUserRelationshipService, UserRelationshipService>();
+
 // ProfileService
-builder.Services.AddScoped<IUserRelationshipService, ProfileRelationshipService>();
-builder.Services.AddScoped<UserProfileService>();
-builder.Services.AddScoped<IUserProfileService>(serviceProvider =>
+builder.Services.AddScoped<ProfileCommands>();
+builder.Services.AddScoped<IProfileCommands>(serviceProvider =>
 {
-    var baseService = serviceProvider.GetRequiredService<UserProfileService>();
-    var cachedService = new CachedProfileService(
-        profileService: baseService,
+    var baseService = serviceProvider.GetRequiredService<ProfileCommands>();
+    var profileCommandsCached = new ProfileCommandsCached(
+        profileCommands: baseService,
+        redisService: serviceProvider.GetRequiredService<IRedisService>()
+        );
+    return profileCommandsCached;
+});
+
+builder.Services.AddScoped<ProfileQueries>();
+builder.Services.AddScoped<IProfileQueries>(serviceProvider =>
+{
+    var baseService = serviceProvider.GetRequiredService<ProfileQueries>();
+    var profileQueriesCached = new ProfileQueriesCached(
+        profileQueries: baseService,
         redisService: serviceProvider.GetRequiredService<IRedisService>(),
-        logger: serviceProvider.GetRequiredService<ILogger<CachedProfileService>>()
-    );
-    return cachedService;
+        logger: serviceProvider.GetRequiredService<ILogger<ProfileQueriesCached>>()
+        );
+    var profileQueriesWithRelationship = new ProfileQueriesWithRelationship(
+        profileQueries: profileQueriesCached,
+        userRelationshipService: serviceProvider.GetRequiredService<IUserRelationshipService>()
+        );
+    return profileQueriesWithRelationship;
 });
 
 // FollowService
-builder.Services.AddScoped<FollowService>();
-builder.Services.AddScoped<IFollowService>(serviceProvider =>
-{
-    var baseService = serviceProvider.GetRequiredService<FollowService>();
+builder.Services.AddScoped<IFollowQueries, FollowQueries>();
 
-    var serviceWithCounter = new FollowWithCounterService(
-        followService: baseService,
+builder.Services.AddScoped<FollowCommands>();
+builder.Services.AddScoped<IFollowCommands>(serviceProvider =>
+{
+    var baseService = serviceProvider.GetRequiredService<FollowCommands>();
+
+    var serviceWithCounter = new FollowCommandsCounter(
+        followCommands: baseService,
         profilesRepository: serviceProvider.GetRequiredService<IProfilesRepository>(),
         redis: serviceProvider.GetRequiredService<IRedisService>()
         );
-    //var serviceWithKafka = new FollowServiceWithKafka(
-    //    followService: serviceWithCounter,
-    //    kafkaProducer: serviceProvider.GetRequiredService<IKafkaProducer>()
-    //    );
+    var serviceWithKafka = new FollowCommandsWithKafka(
+        followCommands: serviceWithCounter,
+        kafkaProducer: serviceProvider.GetRequiredService<IKafkaProducer>()
+        );
     return serviceWithCounter;
 });
 
 // BlockService
-builder.Services.AddScoped<Blocker>();
-builder.Services.AddScoped<BlockService>();
-builder.Services.AddScoped<IBlockService>(serviceProvider =>
-{
-    var baseService = serviceProvider.GetRequiredService<BlockService>();
+builder.Services.AddScoped<IBlockQueries, BlockQueries>();
 
-    //var blockWithKafka = new BlockServiceWithKafka(
-    //    blockService: baseService,
-    //    kafkaProducer: serviceProvider.GetRequiredService<IKafkaProducer>()
-    //    );
-    return baseService;
+builder.Services.AddScoped<IBlocker, Blocker>();
+builder.Services.AddScoped<BlockCommands>();
+builder.Services.AddScoped<IBlockCommands>(serviceProvider =>
+{
+    var baseService = serviceProvider.GetRequiredService<BlockCommands>();
+
+    var blockWithKafka = new BlockCommandsWithKafka(
+        blockCommands: baseService,
+        kafkaProducer: serviceProvider.GetRequiredService<IKafkaProducer>()
+        );
+    return blockWithKafka;
 });
 
 var app = builder.Build();

@@ -1,22 +1,19 @@
-﻿using AutoMapper;
-using UserService.Interfaces.Data;
+﻿using UserService.Exceptions.Blocks;
 using UserService.Interfaces;
-using UserService.DTOs;
-using UserService.Exceptions.Blocks;
+using UserService.Interfaces.Commands;
+using UserService.Interfaces.Data;
 
-namespace UserService.Services
+namespace UserService.Services.Commands
 {
-    public class BlockService : IBlockService, IBlockChecker
+    public class BlockCommands : IBlockCommands
     {
         private readonly IBlockRepository _blockRepository;
-        private readonly Blocker _blocker;
-        private readonly IMapper _mapper;
+        private readonly IBlocker _blocker;
 
-        public BlockService(IBlockRepository blockRepository, Blocker blocker, IMapper mapper)
+        public BlockCommands(IBlockRepository blockRepository, IBlocker blocker)
         {
             _blockRepository = blockRepository;
             _blocker = blocker;
-            _mapper = mapper;
         }
 
         public async Task BlockAsync(Guid blockerId, Guid blockedId)
@@ -38,18 +35,6 @@ namespace UserService.Services
                 throw new BlockNotFoundException(blockerId, blockedId);
 
             await _blockRepository.DeleteAsync(blockerId, blockedId);
-        }
-
-        public async Task<List<UserProfileDto>> GetBlockedAsync(Guid blockerId, int page = 1, int pageSize = 20)
-        {
-            var blockedUsers = await _blockRepository.GetBlockedAsync(blockerId);
-            blockedUsers = blockedUsers.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-            return _mapper.Map<List<UserProfileDto>>(blockedUsers);
-        }
-
-        public async Task<bool> IsBlockedAsync(Guid blockerId, Guid blockedId)
-        {
-            return await _blockRepository.IsBlockedAsync(blockerId, blockedId);
         }
     }
 }

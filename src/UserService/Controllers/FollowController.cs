@@ -3,7 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using UserService.Exceptions.Follows;
 using UserService.Exceptions.Profiles;
-using UserService.Interfaces;
+using UserService.Interfaces.Commands;
+using UserService.Interfaces.Queries;
 
 namespace UserService.Controllers
 {
@@ -12,12 +13,14 @@ namespace UserService.Controllers
     [Authorize]
     public class FollowController : ControllerBase
     {
-        private readonly IFollowService _followService;
+        private readonly IFollowCommands _followCommands;
+        private readonly IFollowQueries _followQueries;
         private readonly ILogger<FollowController> _logger;
 
-        public FollowController(IFollowService followService, ILogger<FollowController> logger)
+        public FollowController(IFollowCommands followCommands, IFollowQueries followQueries, ILogger<FollowController> logger)
         {
-            _followService = followService;
+            _followCommands = followCommands;
+            _followQueries = followQueries;
             _logger = logger;
         }
 
@@ -28,7 +31,7 @@ namespace UserService.Controllers
             {
                 var currentUserId = GetCurrentUserId();
 
-                await _followService.FollowUserAsync(currentUserId, followeeId);
+                await _followCommands.FollowUserAsync(currentUserId, followeeId);
 
                 _logger.LogInformation("Successfully followed user.\nFollower:{followerId}\nFollowee:{followeeId}", currentUserId, followeeId);
                 return Ok(new { message = "Successfully followed user" });
@@ -58,7 +61,7 @@ namespace UserService.Controllers
             {
                 var currentUserId = GetCurrentUserId();
 
-                await _followService.UnfollowUserAsync(currentUserId, followeeId);
+                await _followCommands.UnfollowUserAsync(currentUserId, followeeId);
 
                 _logger.LogInformation("Successfully unfollowed user.\nFollower:{followerId}\nFollowee:{followeeId}", currentUserId, followeeId);
                 return Ok(new { message = "Successfully unfollowed user" });
@@ -80,7 +83,7 @@ namespace UserService.Controllers
         {
             try
             {
-                var followers = await _followService.GetFollowersAsync(userId, page, pageSize);
+                var followers = await _followQueries.GetFollowersAsync(userId, page, pageSize);
 
                 if (followers.Count == 0)
                     return StatusCode(204, "No followers");
@@ -99,7 +102,7 @@ namespace UserService.Controllers
         {
             try
             {
-                var following = await _followService.GetFollowingAsync(userId, page, pageSize);
+                var following = await _followQueries.GetFollowingAsync(userId, page, pageSize);
 
                 if (following.Count == 0)
                     return StatusCode(204, "No followings");

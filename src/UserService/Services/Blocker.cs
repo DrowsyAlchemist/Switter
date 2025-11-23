@@ -1,21 +1,22 @@
 ﻿using UserService.Data;
 using UserService.Exceptions.Follows;
 using UserService.Interfaces;
+using UserService.Interfaces.Commands;
 using UserService.Interfaces.Data;
 
 namespace UserService.Services
 {
-    public class Blocker
+    public class Blocker : IBlocker
     {
         private readonly UserDbContext _dbContext;
         private readonly IBlockRepository _blockRepository;
-        private readonly IFollowService _followService;
+        private readonly IFollowCommands _followCommands;
 
-        public Blocker(UserDbContext context, IBlockRepository blockRepository, IFollowService followService)
+        public Blocker(UserDbContext context, IBlockRepository blockRepository, IFollowCommands followCommands)
         {
             _dbContext = context;
             _blockRepository = blockRepository;
-            _followService = followService;
+            _followCommands = followCommands;
         }
 
         public async Task BlockUserAsync(Guid blocker, Guid blocked)
@@ -39,7 +40,7 @@ namespace UserService.Services
         {
             try
             {
-                await _followService.UnfollowUserAsync(followerId, followeeId);
+                await _followCommands.UnfollowUserAsync(followerId, followeeId);
             }
             catch (FollowNotFoundException) { return; }
         }

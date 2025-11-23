@@ -3,7 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using UserService.DTOs;
 using UserService.Exceptions;
-using UserService.Interfaces;
+using UserService.Interfaces.Commands;
+using UserService.Interfaces.Queries;
 
 namespace UserService.Controllers
 {
@@ -11,13 +12,14 @@ namespace UserService.Controllers
     [Route("api/[controller]")]
     public class UserProfileController : ControllerBase
     {
-        private readonly IUserProfileService _userProfileService;
+        private readonly IProfileCommands _profileCommands;
+        private readonly IProfileQueries _profileQueries;
         private readonly ILogger<UserProfileController> _logger;
 
-        public UserProfileController(IUserProfileService userProfileService,
-                                   ILogger<UserProfileController> logger)
+        public UserProfileController(IProfileCommands profileCommands, IProfileQueries profileQueries, ILogger<UserProfileController> logger)
         {
-            _userProfileService = userProfileService;
+            _profileCommands = profileCommands;
+            _profileQueries = profileQueries;
             _logger = logger;
         }
 
@@ -27,7 +29,7 @@ namespace UserService.Controllers
             try
             {
                 var currentUserId = GetCurrentUserId();
-                var profile = await _userProfileService.GetProfileAsync(userId, currentUserId);
+                var profile = await _profileQueries.GetProfileAsync(userId, currentUserId);
                 _logger.LogInformation("Profile successfully returned.\nUserId: {userId}\nCurrentUserId:{currentUserId}", userId, currentUserId);
                 return Ok(profile);
             }
@@ -54,7 +56,7 @@ namespace UserService.Controllers
                 if (currentUserId.HasValue == false)
                     throw new Exception("Current user not found.");
 
-                var profile = await _userProfileService.GetProfileAsync(currentUserId.Value);
+                var profile = await _profileQueries.GetProfileAsync(currentUserId.Value);
                 _logger.LogInformation("Profile successfully returned.\nCurrentUserId:{id}", currentUserId);
                 return Ok(profile);
             }
@@ -80,7 +82,7 @@ namespace UserService.Controllers
                 if (currentUserId.HasValue == false)
                     throw new Exception("Current user not found.");
 
-                var updatedProfile = await _userProfileService.UpdateProfileAsync(currentUserId.Value, request);
+                var updatedProfile = await _profileCommands.UpdateProfileAsync(currentUserId.Value, request);
                 _logger.LogInformation("Profile updated.\nUserId: {userId}", currentUserId);
                 return Ok(updatedProfile);
             }
@@ -96,7 +98,7 @@ namespace UserService.Controllers
         {
             try
             {
-                var users = await _userProfileService.SearchUsersAsync(query, page, pageSize);
+                var users = await _profileQueries.SearchUsersAsync(query, page, pageSize);
                 _logger.LogInformation("UsersList sent.\nQuery: {query}", query);
                 return Ok(users);
             }
