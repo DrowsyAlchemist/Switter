@@ -5,11 +5,12 @@ namespace UserService.Data
 {
     public class UserDbContext : DbContext
     {
-        public UserDbContext(DbContextOptions<UserDbContext> options) : base(options) { }
-
         public DbSet<UserProfile> Profiles { get; set; }
         public DbSet<Follow> Follows { get; set; }
         public DbSet<Block> Blocks { get; set; }
+
+        public UserDbContext(DbContextOptions<UserDbContext> options) : base(options) { }
+        public UserDbContext() { }
 
         public async Task<bool> CanConnectAsync()
         {

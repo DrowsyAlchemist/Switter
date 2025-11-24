@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using UserService.Interfaces.Data;
-using UserService.Interfaces;
 using UserService.Interfaces.Queries;
 using UserService.DTOs;
 
