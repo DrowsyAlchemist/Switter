@@ -24,13 +24,12 @@ namespace UserService.Consumers
                 GroupId = "user-service-group",
                 AutoOffsetReset = AutoOffsetReset.Earliest
             };
-
             _consumer = new ConsumerBuilder<Ignore, string>(config).Build();
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _consumer.Subscribe("auth-events");
+            _consumer.Subscribe("user-registered-event");
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -38,9 +37,7 @@ namespace UserService.Consumers
                 {
                     var consumeResult = _consumer.Consume(stoppingToken);
                     var message = consumeResult.Message.Value;
-
                     _logger.LogInformation("Received message: {Message}", message);
-
                     await ProcessMessageAsync(message);
                 }
                 catch (OperationCanceledException)
@@ -52,7 +49,6 @@ namespace UserService.Consumers
                     _logger.LogError(ex, "Error processing Kafka message");
                 }
             }
-
             _consumer.Close();
         }
 
@@ -74,7 +70,6 @@ namespace UserService.Consumers
                         CreatedAt = userEvent.Timestamp,
                         UpdatedAt = userEvent.Timestamp
                     };
-
                     await profilesRepository.AddAsync(profile);
                     _logger.LogInformation("Created profile for user {UserId}", userEvent.UserId);
                 }
@@ -84,6 +79,5 @@ namespace UserService.Consumers
                 _logger.LogError(ex, "Error processing user event");
             }
         }
-
     }
 }
