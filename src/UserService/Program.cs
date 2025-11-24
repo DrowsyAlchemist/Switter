@@ -1,44 +1,134 @@
+using AuthService.Services.Infrastructure;
+using Microsoft.EntityFrameworkCore;
+using StackExchange.Redis;
+using UserService.Consumers;
+using UserService.Data;
+using UserService.Interfaces;
+using UserService.Interfaces.Commands;
+using UserService.Interfaces.Data;
+using UserService.Interfaces.Infrastructure;
+using UserService.Interfaces.Queries;
+using UserService.Services;
+using UserService.Services.Commands;
+using UserService.Services.Decorators;
+using UserService.Services.Infrastructure;
+using UserService.Services.Queries;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Redis
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+    ConnectionMultiplexer.Connect(builder.Configuration["Redis:ConnectionString"]!));
+builder.Services.AddScoped<IRedisService, RedisService>();
+
+// Kafka 
+builder.Services.AddHostedService<AuthEventsConsumer>();
+builder.Services.AddSingleton<IKafkaProducer, KafkaProducer>();
+
+// Database
+builder.Services.AddDbContext<UserDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("PostgreSQL")));
+
+// Repositories
+builder.Services.AddScoped<IProfilesRepository, ProfilesRepository>();
+builder.Services.AddScoped<IFollowRepository, FollowsRepository>();
+builder.Services.AddScoped<IBlockRepository, BlockRepository>();
+
+// AutoMapper
+builder.Services.AddAutoMapper(cfg =>
+{
+    cfg.AllowNullCollections = true;
+    cfg.AllowNullDestinationValues = false;
+});
+
+// Services
+
+builder.Services.AddScoped<IUserRelationshipService, UserRelationshipService>();
+
+// ProfileService
+builder.Services.AddScoped<ProfileCommands>();
+builder.Services.AddScoped<IProfileCommands>(serviceProvider =>
+{
+    var baseService = serviceProvider.GetRequiredService<ProfileCommands>();
+    var profileCommandsCached = new ProfileCommandsCached(
+        profileCommands: baseService,
+        redisService: serviceProvider.GetRequiredService<IRedisService>()
+        );
+    return profileCommandsCached;
+});
+
+builder.Services.AddScoped<ProfileQueries>();
+builder.Services.AddScoped<IProfileQueries>(serviceProvider =>
+{
+    var baseService = serviceProvider.GetRequiredService<ProfileQueries>();
+    var profileQueriesCached = new ProfileQueriesCached(
+        profileQueries: baseService,
+        redisService: serviceProvider.GetRequiredService<IRedisService>(),
+        logger: serviceProvider.GetRequiredService<ILogger<ProfileQueriesCached>>()
+        );
+    var profileQueriesWithRelationship = new ProfileQueriesWithRelationship(
+        profileQueries: profileQueriesCached,
+        userRelationshipService: serviceProvider.GetRequiredService<IUserRelationshipService>()
+        );
+    return profileQueriesWithRelationship;
+});
+
+// FollowService
+builder.Services.AddScoped<IFollowQueries, FollowQueries>();
+
+builder.Services.AddScoped<FollowCommands>();
+builder.Services.AddScoped<IFollowCommands>(serviceProvider =>
+{
+    var baseService = serviceProvider.GetRequiredService<FollowCommands>();
+
+    var serviceWithCounter = new FollowCommandsCounter(
+        followCommands: baseService,
+        profilesRepository: serviceProvider.GetRequiredService<IProfilesRepository>(),
+        redis: serviceProvider.GetRequiredService<IRedisService>()
+        );
+    var serviceWithKafka = new FollowCommandsWithKafka(
+        followCommands: serviceWithCounter,
+        kafkaProducer: serviceProvider.GetRequiredService<IKafkaProducer>()
+        );
+    return serviceWithCounter;
+});
+
+// BlockService
+builder.Services.AddScoped<IBlockQueries, BlockQueries>();
+
+builder.Services.AddScoped<IBlocker, Blocker>();
+builder.Services.AddScoped<BlockCommands>();
+builder.Services.AddScoped<IBlockCommands>(serviceProvider =>
+{
+    var baseService = serviceProvider.GetRequiredService<BlockCommands>();
+
+    var blockWithKafka = new BlockCommandsWithKafka(
+        blockCommands: baseService,
+        kafkaProducer: serviceProvider.GetRequiredService<IKafkaProducer>()
+        );
+    return blockWithKafka;
+});
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<UserDbContext>();
+    db.Database.Migrate();
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
-
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast")
-.WithOpenApi();
+app.UseRouting();
+app.UseAuthorization();
+app.MapControllers();
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
