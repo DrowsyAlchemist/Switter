@@ -15,7 +15,7 @@ namespace UserService.Data
             _logger = logger;
         }
 
-        public async Task<List<UserProfile>> GetUsersAsync()
+        public async Task<List<UserProfile>> GetProfilesAsync()
         {
             try
             {
@@ -28,7 +28,7 @@ namespace UserService.Data
             }
         }
 
-        public async Task<UserProfile?> GetProfileAsync(Guid userId)
+        public async Task<UserProfile?> GetProfileByIdAsync(Guid userId)
         {
             try
             {

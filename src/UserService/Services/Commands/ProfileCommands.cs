@@ -19,7 +19,7 @@ namespace UserService.Services.Commands
 
         public async Task<UserProfileDto> UpdateProfileAsync(Guid userId, UpdateProfileRequest request)
         {
-            var profile = await _profilesRepository.GetProfileAsync(userId);
+            var profile = await _profilesRepository.GetProfileByIdAsync(userId);
             if (profile == null)
                 throw new UserNotFoundException(userId);
             if (profile.IsActive == false)
