@@ -55,6 +55,7 @@ namespace UserService.Data
                     throw new InvalidOperationException("Profile with this id already exists.");
 
                 await _context.Profiles.AddAsync(profile);
+                await _context.SaveChangesAsync();
                 return profile;
             }
             catch (Exception ex)
@@ -70,9 +71,33 @@ namespace UserService.Data
 
             try
             {
-                _context.Profiles.Update(profile);
+                var existingProfile = await _context.Profiles
+                    .FirstOrDefaultAsync(p => p.Id == profile.Id);
+
+                if (existingProfile == null)
+                    throw new InvalidOperationException("Profile not found.");
+
+                _context.Profiles.Entry(existingProfile).CurrentValues.SetValues(profile);
                 await _context.SaveChangesAsync();
-                return profile;
+                return existingProfile;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Db is unavailable");
+                throw new Exception("Db is unavailable", ex);
+            }
+        }
+
+        public async Task RemoveAsync(Guid id)
+        {
+            try
+            {
+                var profile = await _context.Profiles.Where(p => p.Id == id).FirstOrDefaultAsync();
+                if (profile == null)
+                    throw new InvalidOperationException("Profile does not exist.");
+
+                _context.Profiles.Remove(profile);
+                await _context.SaveChangesAsync();
             }
             catch (Exception ex)
             {
