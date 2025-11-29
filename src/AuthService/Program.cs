@@ -39,8 +39,9 @@ builder.Services.AddSingleton<IKafkaProducerService, KafkaProducerService>();
 builder.Services.AddHealthChecks()
     .AddNpgSql(builder.Configuration.GetConnectionString("PostgreSQL")!)
     .AddRedis(builder.Configuration["Redis:ConnectionString"]!)
+    .AddCheck<DatabaseHealthCheck>("Database")
     .AddCheck<TokenServiceHealthCheck>("JwtService")
-    .AddCheck<DatabaseHealthCheck>("Database");
+    .AddCheck<AuthHealthCheck>("AuthService");
 
 var app = builder.Build();
 
