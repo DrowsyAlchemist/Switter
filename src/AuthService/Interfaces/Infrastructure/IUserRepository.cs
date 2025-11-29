@@ -9,5 +9,6 @@ namespace AuthService.Interfaces.Infrastructure
         Task<User?> GetUserByEmailAsync(string email);
         Task<User?> GetUserByUsernameAsync(string username);
         Task<bool> UserExistsAsync(string email, string username);
+        Task<bool> CanConnectAsync();
     }
 }
