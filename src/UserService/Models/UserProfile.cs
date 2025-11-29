@@ -4,10 +4,10 @@ namespace UserService.Models
 {
     public class UserProfile
     {
-        public Guid Id { get; set; } // Same with AuthService
+        public required Guid Id { get; set; } // Same with AuthService
 
-        [MaxLength(50)]
-        public string DisplayName { get; set; } = string.Empty;
+        [Length(3, 50)]
+        public required string DisplayName { get; set; }
 
         [MaxLength(500)]
         public string Bio { get; set; } = string.Empty;

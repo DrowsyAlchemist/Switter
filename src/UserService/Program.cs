@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
 using UserService.Consumers;
 using UserService.Data;
+using UserService.HealthChecks;
 using UserService.Interfaces;
 using UserService.Interfaces.Commands;
 using UserService.Interfaces.Data;
@@ -43,7 +44,7 @@ builder.Services.AddAutoMapper(cfg =>
 {
     cfg.AllowNullCollections = true;
     cfg.AllowNullDestinationValues = false;
-});
+}, typeof(Program).Assembly);
 
 // Services
 
@@ -113,6 +114,15 @@ builder.Services.AddScoped<IBlockCommands>(serviceProvider =>
     return blockWithKafka;
 });
 
+// Health Checks
+builder.Services.AddHealthChecks()
+    .AddNpgSql(builder.Configuration.GetConnectionString("PostgreSQL")!)
+    .AddRedis(builder.Configuration["Redis:ConnectionString"]!)
+    .AddCheck<DatabaseHealthCheck>("Database")
+    .AddCheck<ProfileServiceHealthCheck>("ProfileService")
+    .AddCheck<FollowServiceHealthCheck>("FollowService")
+    .AddCheck<BlockServiceHealthCheck>("BlockService");
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
@@ -130,5 +140,6 @@ if (app.Environment.IsDevelopment())
 app.UseRouting();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHealthChecks("/health");
 
 app.Run();

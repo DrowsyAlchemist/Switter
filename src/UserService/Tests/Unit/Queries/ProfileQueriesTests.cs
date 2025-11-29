@@ -54,7 +54,7 @@ namespace UserService.Tests.Unit.Queries
             };
 
             _mockProfilesRepository
-                .Setup(repo => repo.GetProfileAsync(userId))
+                .Setup(repo => repo.GetProfileByIdAsync(userId))
                 .ReturnsAsync(profile);
 
             _mockMapper
@@ -66,7 +66,7 @@ namespace UserService.Tests.Unit.Queries
 
             // Assert
             result.Should().BeEquivalentTo(expectedDto);
-            _mockProfilesRepository.Verify(repo => repo.GetProfileAsync(userId), Times.Once);
+            _mockProfilesRepository.Verify(repo => repo.GetProfileByIdAsync(userId), Times.Once);
             _mockMapper.Verify(mapper => mapper.Map<UserProfileDto>(profile), Times.Once);
         }
 
@@ -90,7 +90,7 @@ namespace UserService.Tests.Unit.Queries
             };
 
             _mockProfilesRepository
-                .Setup(repo => repo.GetProfileAsync(userId))
+                .Setup(repo => repo.GetProfileByIdAsync(userId))
                 .ReturnsAsync(profile);
 
             _mockMapper
@@ -111,7 +111,7 @@ namespace UserService.Tests.Unit.Queries
             var userId = Guid.NewGuid();
 
             _mockProfilesRepository
-                .Setup(repo => repo.GetProfileAsync(userId))
+                .Setup(repo => repo.GetProfileByIdAsync(userId))
                 .ReturnsAsync((UserProfile?)null);
 
             // Act
@@ -135,7 +135,7 @@ namespace UserService.Tests.Unit.Queries
             };
 
             _mockProfilesRepository
-                .Setup(repo => repo.GetProfileAsync(userId))
+                .Setup(repo => repo.GetProfileByIdAsync(userId))
                 .ReturnsAsync(deactivatedProfile);
 
             // Act
@@ -171,7 +171,7 @@ namespace UserService.Tests.Unit.Queries
                 .ToList();
 
             _mockProfilesRepository
-                .Setup(repo => repo.GetUsersAsync())
+                .Setup(repo => repo.GetProfilesAsync())
                 .ReturnsAsync(allUsers);
 
             _mockMapper
@@ -184,7 +184,7 @@ namespace UserService.Tests.Unit.Queries
             // Assert
             result.Should().BeEquivalentTo(expectedDtos);
             result.Should().HaveCount(3); // All users with "test" in display name or bio
-            _mockProfilesRepository.Verify(repo => repo.GetUsersAsync(), Times.Once);
+            _mockProfilesRepository.Verify(repo => repo.GetProfilesAsync(), Times.Once);
         }
 
         [Fact]
@@ -206,7 +206,7 @@ namespace UserService.Tests.Unit.Queries
                 .ToList();
 
             _mockProfilesRepository
-                .Setup(repo => repo.GetUsersAsync())
+                .Setup(repo => repo.GetProfilesAsync())
                 .ReturnsAsync(allUsers);
 
             _mockMapper
@@ -242,7 +242,7 @@ namespace UserService.Tests.Unit.Queries
                 .ToList();
 
             _mockProfilesRepository
-                .Setup(repo => repo.GetUsersAsync())
+                .Setup(repo => repo.GetProfilesAsync())
                 .ReturnsAsync(allUsers);
 
             _mockMapper
@@ -285,7 +285,7 @@ namespace UserService.Tests.Unit.Queries
                 .ToList();
 
             _mockProfilesRepository
-                .Setup(repo => repo.GetUsersAsync())
+                .Setup(repo => repo.GetProfilesAsync())
                 .ReturnsAsync(allUsers);
 
             _mockMapper
@@ -326,7 +326,7 @@ namespace UserService.Tests.Unit.Queries
                 .ToList();
 
             _mockProfilesRepository
-                .Setup(repo => repo.GetUsersAsync())
+                .Setup(repo => repo.GetProfilesAsync())
                 .ReturnsAsync(allUsers);
 
             _mockMapper
@@ -358,7 +358,7 @@ namespace UserService.Tests.Unit.Queries
             var emptyDtoList = new List<UserProfileDto>();
 
             _mockProfilesRepository
-                .Setup(repo => repo.GetUsersAsync())
+                .Setup(repo => repo.GetProfilesAsync())
                 .ReturnsAsync(allUsers);
 
             _mockMapper
@@ -388,7 +388,7 @@ namespace UserService.Tests.Unit.Queries
                 .ToList();
 
             _mockProfilesRepository
-                .Setup(repo => repo.GetUsersAsync())
+                .Setup(repo => repo.GetProfilesAsync())
                 .ReturnsAsync(allUsers);
 
             _mockMapper
@@ -423,7 +423,7 @@ namespace UserService.Tests.Unit.Queries
                 .ToList();
 
             _mockProfilesRepository
-                .Setup(repo => repo.GetUsersAsync())
+                .Setup(repo => repo.GetProfilesAsync())
                 .ReturnsAsync(allUsers);
 
             _mockMapper
@@ -469,7 +469,7 @@ namespace UserService.Tests.Unit.Queries
                 .ToList();
 
             _mockProfilesRepository
-                .Setup(repo => repo.GetUsersAsync())
+                .Setup(repo => repo.GetProfilesAsync())
                 .ReturnsAsync(allUsers);
 
             _mockMapper
@@ -501,7 +501,7 @@ namespace UserService.Tests.Unit.Queries
             var emptyDtoList = new List<UserProfileDto>();
 
             _mockProfilesRepository
-                .Setup(repo => repo.GetUsersAsync())
+                .Setup(repo => repo.GetProfilesAsync())
                 .ReturnsAsync(allUsers);
 
             _mockMapper
