@@ -95,8 +95,8 @@ namespace UserService.Data
             {
                 return await _context.Follows
                     .AsNoTracking()
-                    .Where(f => f.FolloweeId == followerId)
-                    .Select(f => f.Follower)
+                    .Where(f => f.FollowerId == followerId)
+                    .Select(f => f.Followee)
                     .ToListAsync();
             }
             catch (Exception ex)
