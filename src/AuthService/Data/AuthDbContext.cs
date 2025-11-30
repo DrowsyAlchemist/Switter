@@ -11,6 +11,8 @@ namespace AuthService.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.HasDefaultSchema("auth_service");
+
             modelBuilder.Entity<User>(entity =>
             {
                 entity.HasKey(u => u.Id);

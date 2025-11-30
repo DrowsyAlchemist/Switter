@@ -14,7 +14,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+      # - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "${POSTGRES_PORT}:5432"
     networks:
@@ -90,72 +90,7 @@ services:
       timeout: 10s
       retries: 3
     restart: unless-stopped
-
-  seq:
-    image: datalust/seq:latest
-    container_name: switter-seq
-    environment:
-      ACCEPT_EULA: Y
-      SEQ_FIRSTRUN_ADMINUSERNAME: admin
-      SEQ_FIRSTRUN_ADMINPASSWORD: ${SEQ_PASSWORD}
-    volumes:
-      - seq_data:/data
-    ports:
-      - "5341:5341"   # Web UI
-      - "5342:5342"   # Ingestion API
-    networks:
-      - switter-network
-    healthcheck:
-      test: wget --no-verbose --tries=1 --spider http://localhost:5341/api || exit 1
-      interval: 10s
-      timeout: 5s
-      retries: 3
-    restart: unless-stopped
-
-  redis-commander:
-    image: rediscommander/redis-commander:latest
-    container_name: switter-redis-commander
-    environment:
-      REDIS_HOSTS: local:redis:6379:0:${REDIS_PASSWORD:-RedisDevPass123!}
-    depends_on:
-      - redis
-    ports:
-      - "8081:8081"
-    networks:
-      - switter-network
-    restart: unless-stopped
-
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: switter-pgadmin
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@switter.local
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-PgAdmin123!}
-      PGADMIN_CONFIG_SERVER_MODE: "False"
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
-    ports:
-      - "8082:80"
-    networks:
-      - switter-network
-    restart: unless-stopped
-
-  kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    container_name: switter-kafka-ui
-    environment:
-        KAFKA_CLUSTERS_0_NAME: switter-cluster
-        KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
-        KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
-    depends_on:
-        - kafka
-        - zookeeper
-    ports:
-        - "8083:8080"
-    networks:
-        - switter-network
-    restart: unless-stopped
-
+   
 volumes:
   postgres_data:
     driver: local
@@ -166,9 +101,3 @@ volumes:
   kafka_data:
     driver: local
     name: switter-kafka-data
-  seq_data:
-    driver: local
-    name: switter-seq-data
-  pgadmin_data:
-    driver: local
-    name: switter-pgadmin-data
