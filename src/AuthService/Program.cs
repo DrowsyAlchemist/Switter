@@ -12,13 +12,13 @@ using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Конфигурация
+// ГЉГ®Г­ГґГЁГЈГіГ°Г Г¶ГЁГї
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// База данных
+// ГЃГ Г§Г  Г¤Г Г­Г­Г»Гµ
 builder.Services.AddDbContext<AuthDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("PostgreSQL")));
 
@@ -26,7 +26,7 @@ builder.Services.AddDbContext<AuthDbContext>(options =>
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
     ConnectionMultiplexer.Connect(builder.Configuration["Redis:ConnectionString"]!));
 
-// Сервисы
+// Г‘ГҐГ°ГўГЁГ±Г»
 builder.Services.AddScoped<IAccessTokenService, AccessTokenService>();
 builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
@@ -39,12 +39,13 @@ builder.Services.AddSingleton<IKafkaProducerService, KafkaProducerService>();
 builder.Services.AddHealthChecks()
     .AddNpgSql(builder.Configuration.GetConnectionString("PostgreSQL")!)
     .AddRedis(builder.Configuration["Redis:ConnectionString"]!)
+    .AddCheck<DatabaseHealthCheck>("Database")
     .AddCheck<TokenServiceHealthCheck>("JwtService")
-    .AddCheck<DatabaseHealthCheck>("Database");
+    .AddCheck<AuthHealthCheck>("AuthService");
 
 var app = builder.Build();
 
-// Миграция базы данных
+// ГЊГЁГЈГ°Г Г¶ГЁГї ГЎГ Г§Г» Г¤Г Г­Г­Г»Гµ
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AuthDbContext>();

@@ -1,14 +1,14 @@
-﻿using AuthService.Data;
+﻿using AuthService.Interfaces.Infrastructure;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace AuthService.HealthChecks
 {
     internal class DatabaseHealthCheck : IHealthCheck
     {
-        private readonly UserRepository _userRepository;
+        private readonly IUserRepository _userRepository;
         private readonly ILogger _logger;
 
-        public DatabaseHealthCheck(UserRepository userRepository , ILogger<DatabaseHealthCheck> logger)
+        public DatabaseHealthCheck(IUserRepository userRepository, ILogger<DatabaseHealthCheck> logger)
         {
             _userRepository = userRepository;
             _logger = logger;
