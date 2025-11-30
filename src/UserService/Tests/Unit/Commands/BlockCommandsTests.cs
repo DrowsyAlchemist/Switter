@@ -1,4 +1,5 @@
-﻿using FluentAssertions;
+﻿#if DEBUG
+using FluentAssertions;
 using Moq;
 using Xunit;
 using UserService.Exceptions.Blocks;
@@ -109,3 +110,4 @@ namespace UserService.Tests.Unit.Commands
         }
     }
 }
+#endif
