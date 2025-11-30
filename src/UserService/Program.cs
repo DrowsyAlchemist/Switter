@@ -1,5 +1,6 @@
 using AuthService.Services.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using StackExchange.Redis;
 using UserService.Consumers;
 using UserService.Data;
@@ -9,6 +10,7 @@ using UserService.Interfaces.Commands;
 using UserService.Interfaces.Data;
 using UserService.Interfaces.Infrastructure;
 using UserService.Interfaces.Queries;
+using UserService.Models;
 using UserService.Services;
 using UserService.Services.Commands;
 using UserService.Services.Decorators;
@@ -62,6 +64,7 @@ builder.Services.AddScoped<IProfileCommands>(serviceProvider =>
     return profileCommandsCached;
 });
 
+builder.Services.Configure<UserServiceOptions>(builder.Configuration.GetSection("UserServiceOptions"));
 builder.Services.AddScoped<ProfileQueries>();
 builder.Services.AddScoped<IProfileQueries>(serviceProvider =>
 {
@@ -69,6 +72,7 @@ builder.Services.AddScoped<IProfileQueries>(serviceProvider =>
     var profileQueriesCached = new ProfileQueriesCached(
         profileQueries: baseService,
         redisService: serviceProvider.GetRequiredService<IRedisService>(),
+        options: serviceProvider.GetRequiredService<IOptions<UserServiceOptions>>(),
         logger: serviceProvider.GetRequiredService<ILogger<ProfileQueriesCached>>()
         );
     var profileQueriesWithRelationship = new ProfileQueriesWithRelationship(

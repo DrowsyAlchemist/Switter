@@ -1,7 +1,9 @@
-﻿using System.Text.Json;
+﻿using Microsoft.Extensions.Options;
+using System.Text.Json;
 using UserService.DTOs;
 using UserService.Interfaces.Infrastructure;
 using UserService.Interfaces.Queries;
+using UserService.Models;
 
 namespace UserService.Services.Decorators
 {
@@ -9,12 +11,17 @@ namespace UserService.Services.Decorators
     {
         private readonly IProfileQueries _profileQueries;
         private readonly IRedisService _redisService;
+        private readonly IOptions<UserServiceOptions> _options;
         private readonly ILogger<ProfileQueriesCached> _logger;
 
-        public ProfileQueriesCached(IProfileQueries profileQueries, IRedisService redisService, ILogger<ProfileQueriesCached> logger)
+        public ProfileQueriesCached(IProfileQueries profileQueries,
+            IRedisService redisService,
+            IOptions<UserServiceOptions> options,
+            ILogger<ProfileQueriesCached> logger)
         {
             _profileQueries = profileQueries;
             _redisService = redisService;
+            _options = options;
             _logger = logger;
         }
 
@@ -30,7 +37,7 @@ namespace UserService.Services.Decorators
 
             await _redisService.SetAsync(cacheKey,
                 JsonSerializer.Serialize(profileDto),
-                TimeSpan.FromMinutes(5));
+                TimeSpan.FromMinutes(_options.Value.ProfileExpiryInMinutes));
 
             return profileDto;
         }
