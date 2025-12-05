@@ -6,6 +6,7 @@ namespace TweetService.Data
 {
     public class TweetRepository : ITweetRepository
     {
+        private const string ErrorMessage = "Db is unavailable";
         private readonly TweetDbContext _context;
         private readonly ILogger<TweetRepository> _logger;
 
@@ -15,7 +16,7 @@ namespace TweetService.Data
             _logger = logger;
         }
 
-        public async Task<Tweet?> GetById(Guid id)
+        public async Task<Tweet?> GetByIdAsync(Guid id)
         {
             try
             {
@@ -26,12 +27,12 @@ namespace TweetService.Data
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Db is unavailable");
-                throw new Exception("Db is unavailable", ex);
+                _logger.LogError(ex, ErrorMessage);
+                throw new Exception(ErrorMessage, ex);
             }
         }
 
-        public async Task<List<Tweet>> GetByUser(Guid userId)
+        public async Task<List<Tweet>> GetByUserAsync(Guid userId)
         {
             try
             {
@@ -42,12 +43,45 @@ namespace TweetService.Data
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Db is unavailable");
-                throw new Exception("Db is unavailable", ex);
+                _logger.LogError(ex, ErrorMessage);
+                throw new Exception(ErrorMessage, ex);
             }
         }
 
-        public async Task<Tweet> Add(Tweet tweet)
+        public async Task<bool> IsRetweetedAsync(Guid userId, Guid tweetId)
+        {
+            try
+            {
+                return await _context.Tweets.AnyAsync(
+                    t => t.AuthorId == userId
+                    && t.Type == TweetType.Retweet
+                    && t.ParentTweet!.Id == tweetId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, ErrorMessage);
+                throw new Exception(ErrorMessage, ex);
+            }
+        }
+
+        public async Task<List<Tweet>> GetRepliesAsync(Guid tweetId)
+        {
+            try
+            {
+                return await _context.Tweets
+                       .AsNoTracking()
+                       .Where(t => t.Type == TweetType.Reply
+                           && t.ParentTweetId == tweetId)
+                       .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, ErrorMessage);
+                throw new Exception(ErrorMessage, ex);
+            }
+        }
+
+        public async Task<Tweet> AddAsync(Tweet tweet)
         {
             ArgumentNullException.ThrowIfNull(tweet);
             try
@@ -58,12 +92,12 @@ namespace TweetService.Data
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Db is unavailable");
-                throw new Exception("Db is unavailable", ex);
+                _logger.LogError(ex, ErrorMessage);
+                throw new Exception(ErrorMessage, ex);
             }
         }
 
-        public async Task<Tweet> Update(Tweet tweet)
+        public async Task<Tweet> UpdateAsync(Tweet tweet)
         {
             ArgumentNullException.ThrowIfNull(tweet);
             try
@@ -74,12 +108,12 @@ namespace TweetService.Data
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Db is unavailable");
-                throw new Exception("Db is unavailable", ex);
+                _logger.LogError(ex, ErrorMessage);
+                throw new Exception(ErrorMessage, ex);
             }
         }
 
-        public async Task<Tweet> Delete(Guid id)
+        public async Task<Tweet> DeleteAsync(Guid id)
         {
             try
             {
@@ -97,8 +131,8 @@ namespace TweetService.Data
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Db is unavailable");
-                throw new Exception("Db is unavailable", ex);
+                _logger.LogError(ex, ErrorMessage);
+                throw new Exception(ErrorMessage, ex);
             }
         }
     }

@@ -6,6 +6,7 @@ namespace TweetService.Data
 {
     public class LikeRepository : ILikesRepository
     {
+        private const string ErrorMessage = "Db is unavailable";
         private readonly TweetDbContext _context;
         private readonly ILogger<LikeRepository> _logger;
 
@@ -15,7 +16,7 @@ namespace TweetService.Data
             _logger = logger;
         }
 
-        public async Task<Like?> GetById(Guid id)
+        public async Task<Like?> GetByIdAsync(Guid id)
         {
             try
             {
@@ -26,12 +27,12 @@ namespace TweetService.Data
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Db is unavailable");
-                throw new Exception("Db is unavailable", ex);
+                _logger.LogError(ex, ErrorMessage);
+                throw new Exception(ErrorMessage, ex);
             }
         }
 
-        public async Task<List<Like>> GetByUser(Guid userId)
+        public async Task<List<Like>> GetByUserAsync(Guid userId)
         {
             try
             {
@@ -42,12 +43,12 @@ namespace TweetService.Data
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Db is unavailable");
-                throw new Exception("Db is unavailable", ex);
+                _logger.LogError(ex, ErrorMessage);
+                throw new Exception(ErrorMessage, ex);
             }
         }
 
-        public async Task<Like> Add(Like like)
+        public async Task<Like> AddAsync(Like like)
         {
             ArgumentNullException.ThrowIfNull(like);
             try
@@ -58,12 +59,12 @@ namespace TweetService.Data
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Db is unavailable");
-                throw new Exception("Db is unavailable", ex);
+                _logger.LogError(ex, ErrorMessage);
+                throw new Exception(ErrorMessage, ex);
             }
         }
 
-        public async Task<Like> Delete(Guid id)
+        public async Task<Like> DeleteAsync(Guid id)
         {
             try
             {
@@ -81,8 +82,21 @@ namespace TweetService.Data
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Db is unavailable");
-                throw new Exception("Db is unavailable", ex);
+                _logger.LogError(ex, ErrorMessage);
+                throw new Exception(ErrorMessage, ex);
+            }
+        }
+
+        public async Task<bool> IsExist(Guid userId, Guid tweetId)
+        {
+            try
+            {
+                return await _context.Likes.AnyAsync(l => l.UserId == userId && l.TweetId == tweetId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, ErrorMessage);
+                throw new Exception(ErrorMessage, ex);
             }
         }
     }

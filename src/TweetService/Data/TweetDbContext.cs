@@ -13,7 +13,7 @@ namespace TweetService.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.HasDefaultSchema("tweet");
+            modelBuilder.HasDefaultSchema("tweet_service");
 
             // Tweet
             modelBuilder.Entity<Tweet>(entity =>
@@ -26,7 +26,6 @@ namespace TweetService.Data
 
                 entity.Property(t => t.Content).IsRequired().HasMaxLength(280);
                 entity.Property(t => t.CreatedAt).HasColumnType("timestamp with time zone");
-                entity.Property(t => t.UpdatedAt).HasColumnType("timestamp with time zone");
 
                 entity.HasOne(t => t.ParentTweet)
                       .WithMany(t => t.Replies)
@@ -55,6 +54,23 @@ namespace TweetService.Data
                 entity.HasIndex(h => h.Tag).IsUnique();
                 entity.Property(h => h.Tag).IsRequired().HasMaxLength(50);
             });
+
+            // TweetHashtag
+            modelBuilder.Entity<TweetHashtag>(entity =>
+            {
+                entity.HasKey(th => new { th.TweetId, th.HashtagId });
+
+                entity.HasOne(th => th.Tweet)
+                      .WithMany()
+                      .HasForeignKey(th => th.TweetId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(th => th.Hashtag)
+                      .WithMany(h => h.TweetHashtags)
+                      .HasForeignKey(th => th.HashtagId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
         }
     }
 }

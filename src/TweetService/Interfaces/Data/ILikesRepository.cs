@@ -4,9 +4,10 @@ namespace TweetService.Interfaces.Data
 {
     public interface ILikesRepository
     {
-        Task<Like?> GetById(Guid id);
-        Task<List<Like>> GetByUser(Guid userId);
-        Task<Like> Add(Like like);
-        Task<Like> Delete(Guid id);
+        Task<Like?> GetByIdAsync(Guid id);
+        Task<List<Like>> GetByUserAsync(Guid userId);
+        Task<Like> AddAsync(Like like);
+        Task<Like> DeleteAsync(Guid id);
+        Task<bool> IsExist(Guid userId, Guid tweetId);
     }
 }

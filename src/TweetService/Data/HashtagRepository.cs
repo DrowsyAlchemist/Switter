@@ -6,6 +6,7 @@ namespace TweetService.Data
 {
     public class HashtagRepository : IHashtagRepository
     {
+        private const string ErrorMessage = "Db is unavailable";
         private readonly TweetDbContext _context;
         private readonly ILogger<HashtagRepository> _logger;
 
@@ -15,7 +16,7 @@ namespace TweetService.Data
             _logger = logger;
         }
 
-        public async Task<Hashtag?> GetById(Guid id)
+        public async Task<Hashtag?> GetByIdAsync(Guid id)
         {
             try
             {
@@ -26,27 +27,36 @@ namespace TweetService.Data
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Db is unavailable");
-                throw new Exception("Db is unavailable", ex);
+                _logger.LogError(ex, ErrorMessage);
+                throw new Exception(ErrorMessage, ex);
             }
         }
 
-        public async Task<List<Hashtag>> Search(string query, int page, int pageSize)
+        public async Task<List<Hashtag>> SearchAsync(string query, int page, int pageSize)
         {
-            var hashtags = await _context.Hashtags
-                                    .AsNoTracking()
-                                    .ToListAsync();
+            try
+            {
+                var hashtags = await _context.Hashtags
+                                        .AsNoTracking()
+                                        .ToListAsync();
 
-            if (string.IsNullOrEmpty(query) == false)
-                hashtags = hashtags.Where(h => h.Tag.ToLower().Contains(query.ToLower())).ToList();
+                if (string.IsNullOrEmpty(query) == false)
+                    hashtags = hashtags.Where(h => h.Tag.ToLower().Contains(query.ToLower())).ToList();
 
-            return hashtags
-                    .Skip(pageSize * (page - 1))
-                    .Take(pageSize)
-                    .ToList();
+                return hashtags
+                        .Skip(pageSize * (page - 1))
+                        .Take(pageSize)
+                        .ToList();
+            }
+            catch (Exception ex)
+
+            {
+                _logger.LogError(ex, ErrorMessage);
+                throw new Exception(ErrorMessage, ex);
+            }
         }
 
-        public async Task<Hashtag> Add(Hashtag hashtag)
+        public async Task<Hashtag> AddAsync(Hashtag hashtag)
         {
             ArgumentNullException.ThrowIfNull(hashtag);
             try
@@ -57,12 +67,12 @@ namespace TweetService.Data
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Db is unavailable");
-                throw new Exception("Db is unavailable", ex);
+                _logger.LogError(ex, ErrorMessage);
+                throw new Exception(ErrorMessage, ex);
             }
         }
 
-        public async Task<Hashtag> Update(Hashtag hashtag)
+        public async Task<Hashtag> UpdateAsync(Hashtag hashtag)
         {
             ArgumentNullException.ThrowIfNull(hashtag);
             try
@@ -73,12 +83,12 @@ namespace TweetService.Data
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Db is unavailable");
-                throw new Exception("Db is unavailable", ex);
+                _logger.LogError(ex, ErrorMessage);
+                throw new Exception(ErrorMessage, ex);
             }
         }
 
-        public async Task<Hashtag> Delete(Guid id)
+        public async Task<Hashtag> DeleteAsync(Guid id)
         {
             try
             {
@@ -96,8 +106,8 @@ namespace TweetService.Data
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Db is unavailable");
-                throw new Exception("Db is unavailable", ex);
+                _logger.LogError(ex, ErrorMessage);
+                throw new Exception(ErrorMessage, ex);
             }
         }
     }

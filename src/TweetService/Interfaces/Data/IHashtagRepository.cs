@@ -4,10 +4,10 @@ namespace TweetService.Interfaces.Data
 {
     public interface IHashtagRepository
     {
-        Task<Hashtag?> GetById(Guid id);
-        Task<List<Hashtag>> Search(string query, int page, int pageSize);
-        Task<Hashtag> Add(Hashtag hashtag);
-        Task<Hashtag> Update(Hashtag hashtag);
-        Task<Hashtag> Delete(Guid id);
+        Task<Hashtag?> GetByIdAsync(Guid id);
+        Task<List<Hashtag>> SearchAsync(string query, int page, int pageSize);
+        Task<Hashtag> AddAsync(Hashtag hashtag);
+        Task<Hashtag> UpdateAsync(Hashtag hashtag);
+        Task<Hashtag> DeleteAsync(Guid id);
     }
 }

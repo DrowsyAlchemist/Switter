@@ -14,6 +14,6 @@ namespace TweetService.Models
         public DateTime FirstUsed { get; set; } = DateTime.UtcNow;
         public DateTime LastUsed { get; set; } = DateTime.UtcNow;
 
-        public virtual ICollection<Tweet> Tweets { get; set; } = new List<Tweet>();
+        public virtual ICollection<TweetHashtag> TweetHashtags { get; set; } = new List<TweetHashtag>();
     }
 }
