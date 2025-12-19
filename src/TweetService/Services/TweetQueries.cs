@@ -2,7 +2,6 @@
 using TweetService.DTOs;
 using TweetService.Exceptions;
 using TweetService.Interfaces.Data;
-using TweetService.Interfaces.Infrastructure;
 using TweetService.Interfaces.Services;
 
 namespace TweetService.Services
@@ -10,17 +9,14 @@ namespace TweetService.Services
     public class TweetQueries : ITweetQueries
     {
         private readonly ITweetRepository _tweetRepository;
-        private readonly IUserServiceClient _userServiceClient;
         private readonly IUserTweetRelationship _userTweetRelationship;
         private readonly IMapper _mapper;
 
         public TweetQueries(ITweetRepository tweetRepository,
-            IUserServiceClient userServiceClient,
             IUserTweetRelationship userTweetRelationship,
             IMapper mapper)
         {
             _tweetRepository = tweetRepository;
-            _userServiceClient = userServiceClient;
             _userTweetRelationship = userTweetRelationship;
             _mapper = mapper;
         }
@@ -46,15 +42,8 @@ namespace TweetService.Services
             var tweetDtos = _mapper.Map<List<TweetDto>>(replies);
 
             if (currentUserId.HasValue)
-            {
-                var repliesWithRelationship = new List<TweetDto>();
-                foreach (var tweet in tweetDtos)
-                {
-                    var tweetWithRelationships = await _userTweetRelationship.GetTweetWithRelationshipsAsync(tweet, currentUserId.Value);
-                    repliesWithRelationship.Add(tweetWithRelationships);
-                }
-                tweetDtos = repliesWithRelationship;
-            }
+                tweetDtos = await _userTweetRelationship.GetTweetsWithRelationshipsAsync(tweetDtos, currentUserId.Value);
+
             return tweetDtos;
         }
 
@@ -65,15 +54,8 @@ namespace TweetService.Services
             var tweetDtos = _mapper.Map<List<TweetDto>>(tweets);
 
             if (currentUserId.HasValue)
-            {
-                var repliesWithRelationship = new List<TweetDto>();
-                foreach (var tweet in tweetDtos)
-                {
-                    var tweetWithRelationships = await _userTweetRelationship.GetTweetWithRelationshipsAsync(tweet, currentUserId.Value);
-                    repliesWithRelationship.Add(tweetWithRelationships);
-                }
-                tweetDtos = repliesWithRelationship;
-            }
+                tweetDtos = await _userTweetRelationship.GetTweetsWithRelationshipsAsync(tweetDtos, currentUserId.Value);
+
             return tweetDtos;
         }
     }

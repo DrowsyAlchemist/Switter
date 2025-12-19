@@ -1,9 +1,11 @@
-﻿namespace TweetService.Interfaces.Services
+﻿using TweetService.DTOs;
+
+namespace TweetService.Interfaces.Services
 {
     public interface ILikeService
     {
-        Task<bool> LikeTweetAsync(Guid tweetId, Guid userId);
-        Task<bool> UnlikeTweetAsync(Guid tweetId, Guid userId);
-        Task<List<Guid>> GetLikedTweetIdsAsync(Guid userId, List<Guid> tweetIds);
+        Task LikeTweetAsync(Guid tweetId, Guid userId);
+        Task UnlikeTweetAsync(Guid tweetId, Guid userId);
+        Task<List<TweetDto>> GetLikedTweetsAsync(Guid userId, int page = 1, int pageSize = 20);
     }
 }

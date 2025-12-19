@@ -32,6 +32,42 @@ namespace TweetService.Data
             }
         }
 
+        public async Task<List<Tweet>> GetByIdsAsync(List<Guid> ids)
+        {
+            try
+            {
+                return await _context.Tweets
+                       .AsNoTracking()
+                       .Where(t => ids.Contains(t.Id))
+                       .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, ErrorMessage);
+                throw new Exception(ErrorMessage, ex);
+            }
+        }
+
+        public async Task<List<Tweet>> GetByHashtagAsync(List<Guid> ids, string hashtag)
+        {
+            if (string.IsNullOrEmpty(hashtag))
+                throw new ArgumentException(nameof(hashtag));
+            try
+            {
+                return await _context.Tweets
+                       .Include(t => t.TweetHashtags)
+                       .AsNoTracking()
+                       .Where(t => ids.Contains(t.Id)
+                            && t.TweetHashtags.Any(th => th.Hashtag.Tag.Equals(hashtag)))
+                       .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, ErrorMessage);
+                throw new Exception(ErrorMessage, ex);
+            }
+        }
+
         public async Task<List<Tweet>> GetByUserAsync(Guid userId)
         {
             try
@@ -48,7 +84,7 @@ namespace TweetService.Data
             }
         }
 
-        public async Task<bool> IsRetweetedAsync(Guid userId, Guid tweetId)
+        public async Task<bool> IsRetweetedAsync(Guid tweetId, Guid userId)
         {
             try
             {
@@ -56,6 +92,24 @@ namespace TweetService.Data
                     t => t.AuthorId == userId
                     && t.Type == TweetType.Retweet
                     && t.ParentTweet!.Id == tweetId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, ErrorMessage);
+                throw new Exception(ErrorMessage, ex);
+            }
+        }
+
+        public async Task<List<Guid>> GetRetweetedIdsAsync(List<Guid> tweetIds, Guid userId)
+        {
+            try
+            {
+                return await _context.Tweets.Where(
+                    t => t.AuthorId == userId
+                    && t.Type == TweetType.Retweet
+                    && tweetIds.Contains(t.ParentTweet!.Id))
+                    .Select(t => t.Id)
+                    .ToListAsync();
             }
             catch (Exception ex)
             {

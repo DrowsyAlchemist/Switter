@@ -1,5 +1,4 @@
-﻿using TweetService.Data;
-using TweetService.DTOs;
+﻿using TweetService.DTOs;
 using TweetService.Interfaces.Data;
 using TweetService.Interfaces.Services;
 
@@ -7,27 +6,35 @@ namespace TweetService.Services
 {
     public class UserTweetRelationship : IUserTweetRelationship
     {
-       // private readonly TweetDbContext _context;
         private readonly ITweetRepository _tweetRepository;
         private readonly ILikesRepository _likesRepository;
 
         public UserTweetRelationship(ITweetRepository tweetRepository, ILikesRepository likesRepository)
         {
-           // _context = context;
             _tweetRepository = tweetRepository;
             _likesRepository = likesRepository;
         }
 
         public async Task<TweetDto> GetTweetWithRelationshipsAsync(TweetDto tweetDto, Guid userId)
         {
-            tweetDto.IsLiked = await _likesRepository.IsExist(userId, tweetDto.Id);
-            tweetDto.IsRetweeted = await _tweetRepository.IsRetweetedAsync(userId, tweetDto.Id);
+            tweetDto.IsLiked = await _likesRepository.IsExistAsync(tweetDto.Id, userId);
+            tweetDto.IsRetweeted = await _tweetRepository.IsRetweetedAsync(tweetDto.Id, userId);
             return tweetDto;
         }
 
-        //public async Task<List<Guid>> GetLiked(Guid userId, List<Guid> tweets)
-        //{
-        //   // return await _context.
-        //}
+        public async Task<List<TweetDto>> GetTweetsWithRelationshipsAsync(List<TweetDto> tweetDtos, Guid userId)
+        {
+            var tweetIds = tweetDtos.Select(t => t.Id).ToList();
+
+            var likedTweetIds = await _likesRepository.GetLikedTweetIdsAsync(tweetIds, userId);
+            var retweetedIds = await _tweetRepository.GetRetweetedIdsAsync(tweetIds, userId);
+
+            foreach (var tweetDto in tweetDtos)
+            {
+                tweetDto.IsLiked = likedTweetIds.Contains(tweetDto.Id);
+                tweetDto.IsRetweeted = retweetedIds.Contains(tweetDto.Id);
+            }
+            return tweetDtos;
+        }
     }
 }

@@ -10,6 +10,7 @@ namespace TweetService.Data
         public DbSet<Tweet> Tweets { get; set; }
         public DbSet<Like> Likes { get; set; }
         public DbSet<Hashtag> Hashtags { get; set; }
+        public DbSet<TweetHashtag> TweetHashtags { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

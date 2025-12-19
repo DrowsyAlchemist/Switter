@@ -38,7 +38,60 @@ namespace TweetService.Data
             {
                 return await _context.Likes
                        .AsNoTracking()
-                       .Where(t => t.UserId.Equals(userId))
+                       .Where(l => l.UserId.Equals(userId))
+                       .Include(l => l.Tweet)
+                       .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, ErrorMessage);
+                throw new Exception(ErrorMessage, ex);
+            }
+        }
+
+        public async Task<Like?> GetAsync(Guid tweetId, Guid userId)
+        {
+            try
+            {
+                return await _context.Likes
+                       .AsNoTracking()
+                       .Where(l => l.UserId.Equals(userId)
+                            && l.TweetId.Equals(tweetId))
+                       .FirstOrDefaultAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, ErrorMessage);
+                throw new Exception(ErrorMessage, ex);
+            }
+        }
+
+        public async Task<List<Guid>> GetLikedTweetIdsAsync(List<Guid> tweetIds, Guid userId)
+        {
+            try
+            {
+                return await _context.Likes
+                       .AsNoTracking()
+                       .Where(l => l.UserId.Equals(userId)
+                            && tweetIds.Contains(l.TweetId))
+                       .Select(l => l.TweetId)
+                       .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, ErrorMessage);
+                throw new Exception(ErrorMessage, ex);
+            }
+        }
+
+        public async Task<List<Guid>> GetLikedTweetIdsAsync(Guid userId)
+        {
+            try
+            {
+                return await _context.Likes
+                       .AsNoTracking()
+                       .Where(l => l.UserId.Equals(userId))
+                       .Select(l => l.TweetId)
                        .ToListAsync();
             }
             catch (Exception ex)
@@ -87,7 +140,7 @@ namespace TweetService.Data
             }
         }
 
-        public async Task<bool> IsExist(Guid userId, Guid tweetId)
+        public async Task<bool> IsExistAsync(Guid tweetId, Guid userId)
         {
             try
             {

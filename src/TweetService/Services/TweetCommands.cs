@@ -53,7 +53,7 @@ namespace TweetService.Services
             await UpdateParentCountersAsync(request.Type, parentTweet!, 1);
 
             if (request.Type != TweetType.Reply && request.Content != string.Empty)
-                await _hashtagService.ProcessHashtagsAsync(tweet.Id, request.Content);
+                await _hashtagService.ProcessHashtagsAsync(tweet.Id);
 
             return _mapper.Map<TweetDto>(tweet);
         }

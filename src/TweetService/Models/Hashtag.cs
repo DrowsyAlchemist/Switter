@@ -7,8 +7,8 @@ namespace TweetService.Models
         public Guid Id { get; set; } = Guid.NewGuid();
 
         [Required]
-        [MaxLength(50)]
-        public string Tag { get; set; } = string.Empty;
+        [Length(3, 50)]
+        public required string Tag { get; set; }
 
         public int UsageCount { get; set; }
         public DateTime FirstUsed { get; set; } = DateTime.UtcNow;

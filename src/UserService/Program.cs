@@ -1,4 +1,3 @@
-using AuthService.Services.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
 using UserService.Consumers;

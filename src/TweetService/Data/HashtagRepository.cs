@@ -16,14 +16,49 @@ namespace TweetService.Data
             _logger = logger;
         }
 
-        public async Task<Hashtag?> GetByIdAsync(Guid id)
+        public async Task<List<Hashtag>> GetMostPopularAsync(int count)
         {
             try
             {
                 return await _context.Hashtags
                        .AsNoTracking()
-                       .Where(h => h.Id.Equals(id))
+                       .OrderByDescending(h => h.UsageCount)
+                       .Take(count)
+                       .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, ErrorMessage);
+                throw new Exception(ErrorMessage, ex);
+            }
+        }
+
+        public async Task<Hashtag?> GetByTagAsync(string tag)
+        {
+            try
+            {
+                tag = tag.ToLower();
+                return await _context.Hashtags
+                       .AsNoTracking()
+                       .Where(h => h.Tag.Equals(tag))
                        .FirstOrDefaultAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, ErrorMessage);
+                throw new Exception(ErrorMessage, ex);
+            }
+        }
+
+        public async Task<List<Hashtag>> GetByTagsAsync(List<string> tags)
+        {
+            try
+            {
+                tags = tags.Select(t => t.ToLower()).ToList();
+                return await _context.Hashtags
+                       .AsNoTracking()
+                       .Where(h => tags.Contains(h.Tag))
+                       .ToListAsync();
             }
             catch (Exception ex)
             {
@@ -39,9 +74,9 @@ namespace TweetService.Data
                 var hashtags = await _context.Hashtags
                                         .AsNoTracking()
                                         .ToListAsync();
-
+                query = query.ToLower();
                 if (string.IsNullOrEmpty(query) == false)
-                    hashtags = hashtags.Where(h => h.Tag.ToLower().Contains(query.ToLower())).ToList();
+                    hashtags = hashtags.Where(h => h.Tag.Contains(query)).ToList();
 
                 return hashtags
                         .Skip(pageSize * (page - 1))
@@ -61,6 +96,7 @@ namespace TweetService.Data
             ArgumentNullException.ThrowIfNull(hashtag);
             try
             {
+                hashtag.Tag = hashtag.Tag.ToLower();
                 await _context.Hashtags.AddAsync(hashtag);
                 await _context.SaveChangesAsync();
                 return hashtag;
@@ -77,6 +113,7 @@ namespace TweetService.Data
             ArgumentNullException.ThrowIfNull(hashtag);
             try
             {
+                hashtag.Tag = hashtag.Tag.ToLower();
                 _context.Hashtags.Update(hashtag);
                 await _context.SaveChangesAsync();
                 return hashtag;

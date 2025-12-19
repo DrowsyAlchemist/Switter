@@ -1,4 +1,5 @@
-﻿using StackExchange.Redis;
+﻿using FluentAssertions.Common;
+using StackExchange.Redis;
 using TweetService.Interfaces.Infrastructure;
 
 namespace TweetService.Services.Infrastructure
@@ -14,11 +15,49 @@ namespace TweetService.Services.Infrastructure
             _logger = logger;
         }
 
-        public async Task<string?> GetAsync(string key)
+        public async Task AddToListAsync(string key, string value)
         {
             if (string.IsNullOrWhiteSpace(key))
                 throw new ArgumentException("Key cannot be null or empty", nameof(key));
 
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));
+
+            try
+            {
+                long timeStamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                var db = _redis.GetDatabase();
+                await db.SortedSetAddAsync(key, value, timeStamp);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Redis is unavailable");
+                throw new Exception("Redis is unavailable" + ex);
+            }
+        }
+
+        public async Task<List<string>> GetListFromDateAsync(string key, DateTime startDateTime)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+                throw new ArgumentException("Key cannot be null or empty", nameof(key));
+            try
+            {
+                long startTimeStamp = startDateTime.ToDateTimeOffset().ToUnixTimeSeconds();
+                var db = _redis.GetDatabase();
+                var list = await db.SortedSetRangeByRankWithScoresAsync(key, order: Order.Descending, start: startTimeStamp);
+                return list.Select(x => x.ToString()).ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Redis is unavailable");
+                throw new Exception("Redis is unavailable" + ex);
+            }
+        }
+
+        public async Task<string?> GetAsync(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+                throw new ArgumentException("Key cannot be null or empty", nameof(key));
             try
             {
                 var db = _redis.GetDatabase();
