@@ -21,7 +21,7 @@ namespace TweetService.Services
             _mapper = mapper;
         }
 
-        public async Task<TweetDto?> GetTweetAsync(Guid tweetId, Guid? currentUserId = null)
+        public async Task<TweetDto> GetTweetAsync(Guid tweetId, Guid? currentUserId = null)
         {
             var tweet = await _tweetRepository.GetByIdAsync(tweetId);
             if (tweet == null)
