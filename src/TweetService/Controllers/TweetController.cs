@@ -1,12 +1,9 @@
-﻿using Azure.Core;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http.HttpResults;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using TweetService.DTOs;
 using TweetService.Exceptions;
 using TweetService.Interfaces.Services;
-using TweetService.Models;
 
 namespace TweetService.Controllers
 {
@@ -93,7 +90,7 @@ namespace TweetService.Controllers
         }
 
         [HttpGet("{tweetId}")]
-        private async Task<IActionResult> GetTweetAsync(Guid tweetId)
+        public async Task<IActionResult> GetTweetAsync(Guid tweetId)
         {
             try
             {
@@ -114,8 +111,8 @@ namespace TweetService.Controllers
             }
         }
 
-        [HttpGet("byUser/{userId}")]
-        private async Task<IActionResult> GetUserTweetsAsync(
+        [HttpGet("user/{userId}")]
+        public async Task<IActionResult> GetUserTweetsAsync(
             Guid userId,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 20)
@@ -134,8 +131,30 @@ namespace TweetService.Controllers
             }
         }
 
+        [Authorize]
+        [HttpGet("me")]
+        public async Task<IActionResult> GetMyTweets([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        {
+            try
+            {
+                var currentUserId = GetCurrentUserId();
+                if (currentUserId == null)
+                    throw new Exception("Current user not found.");
+
+                var tweetDtos = await _tweetQueries.GetUserTweetsAsync(currentUserId.Value, page, pageSize, currentUserId);
+                _logger.LogInformation("User's tweets successfully sent.\nUserId:{userId}", currentUserId.Value);
+                return Ok(tweetDtos);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during GetMyTweets.");
+                return StatusCode(500, new { message = "Internal server error" });
+            }
+        }
+
+
         [HttpGet("replies/{tweetId}")]
-        private async Task<IActionResult> GetTweetRepliesAsync(Guid tweetId,
+        public async Task<IActionResult> GetTweetRepliesAsync(Guid tweetId,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 20)
         {
@@ -160,7 +179,7 @@ namespace TweetService.Controllers
             if (userId != null)
                 return Guid.Parse(userId!);
 
-            throw new Exception("Current user not found.");
+            return null;
         }
     }
 }
