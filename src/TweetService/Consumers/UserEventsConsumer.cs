@@ -10,6 +10,7 @@ namespace TweetService.Consumers
         private readonly IConsumer<Ignore, string> _consumer;
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<UserEventsConsumer> _logger;
+        private readonly TimeSpan _pollTimeout = TimeSpan.FromSeconds(1);
 
         public UserEventsConsumer(IConfiguration configuration, IServiceProvider serviceProvider,
                                 ILogger<UserEventsConsumer> logger)
@@ -23,7 +24,9 @@ namespace TweetService.Consumers
                 GroupId = "tweet-service-group",
                 AutoOffsetReset = AutoOffsetReset.Earliest,
                 EnableAutoOffsetStore = false,
-                EnableAutoCommit = false
+                EnableAutoCommit = false,
+                MaxPollIntervalMs = 300000, // 5 минут
+                SessionTimeoutMs = 45000    // 45 секунд
             };
             _consumer = new ConsumerBuilder<Ignore, string>(config).Build();
         }
@@ -31,40 +34,54 @@ namespace TweetService.Consumers
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _consumer.Subscribe(["user-profile-changed", "user-profile-deleted"]);
+            _logger.LogInformation("Kafka consumer started for topics: user-profile-changed, user-profile-deleted");
 
-            while (!stoppingToken.IsCancellationRequested)
+            var task = Task.Run(async () =>
             {
-                try
+                while (!stoppingToken.IsCancellationRequested)
                 {
-                    var consumeResult = _consumer.Consume(stoppingToken);
-                    var message = consumeResult.Message.Value;
-                    var topic = consumeResult.Topic;
+                    try
+                    {
+                        var consumeResult = _consumer.Consume(_pollTimeout);
+                        if (consumeResult == null)
+                            continue;
 
-                    _logger.LogInformation("Received message from topic {Topic}: {Message}", topic, message);
+                        var message = consumeResult.Message.Value;
+                        var topic = consumeResult.Topic;
 
-                    await ProcessMessageAsync(topic, message);
+                        _logger.LogInformation("Received message from topic {Topic}: {Message}", topic, message);
 
-                    _consumer.StoreOffset(consumeResult);
+                        await ProcessMessageAsync(topic, message, stoppingToken);
+
+                        _consumer.StoreOffset(consumeResult);
+                        _logger.LogDebug("Offset committed for topic {Topic}, partition {Partition}, offset {Offset}",
+                                topic, consumeResult.Partition.Value, consumeResult.Offset.Value);
+                    }
+                    catch (ConsumeException ex)
+                    {
+                        _logger.LogError(ex, "Error consuming Kafka message");
+                        await Task.Delay(5000, stoppingToken);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        _logger.LogInformation("Consuming cancelled");
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Unexpected error processing Kafka message");
+                        await Task.Delay(10000, stoppingToken);
+                    }
                 }
-                catch (ConsumeException ex)
-                {
-                    _logger.LogError(ex, "Error consuming Kafka message");
-                }
-                catch (OperationCanceledException)
-                {
-                    _logger.LogInformation("Consuming cancelled");
-                    break;
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Unexpected error processing Kafka message");
-                }
-            }
-            _consumer.Close();
-            _consumer.Dispose();
+                _logger.LogInformation("Closing Kafka consumer...");
+                _consumer.Close();
+                _consumer.Dispose();
+                _logger.LogInformation("Kafka consumer disposed");
+            }, stoppingToken);
+            await task;
         }
 
-        private async Task ProcessMessageAsync(string topic, string message)
+        private async Task ProcessMessageAsync(string topic, string message, CancellationToken cancellationToken)
         {
             using var scope = _serviceProvider.CreateScope();
 
@@ -73,11 +90,11 @@ namespace TweetService.Consumers
                 switch (topic)
                 {
                     case "user-profile-changed":
-                        await HandleUserProfileChanged(message, scope.ServiceProvider);
+                        await HandleUserProfileChanged(message, scope.ServiceProvider, cancellationToken);
                         break;
 
                     case "user-profile-deleted":
-                        await HandleUserProfileDeleted(message, scope.ServiceProvider);
+                        await HandleUserProfileDeleted(message, scope.ServiceProvider, cancellationToken);
                         break;
 
                     default:
@@ -90,16 +107,14 @@ namespace TweetService.Consumers
             {
                 _logger.LogError(ex, "Error deserializing message from topic {Topic}: {Message}",
                     topic, message);
-                throw;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 _logger.LogError(ex, "Error processing message from topic {Topic}", topic);
-                throw;
             }
         }
 
-        private async Task HandleUserProfileChanged(string message, IServiceProvider services)
+        private async Task HandleUserProfileChanged(string message, IServiceProvider services, CancellationToken cancellationToken)
         {
             var userEvent = JsonSerializer.Deserialize<UserProfileChangedEvent>(message);
 
@@ -107,6 +122,12 @@ namespace TweetService.Consumers
                 throw new InvalidOperationException("Failed to deserialize user profile changed event");
 
             _logger.LogInformation("Processing user profile update for user {UserId}", userEvent.UserId);
+
+            if (userEvent.DisplayName == null && userEvent.AvatarUrl == null)
+            {
+                _logger.LogInformation("No changes required for user {UserId}", userEvent.UserId);
+                return;
+            }
 
             var tweetRepository = services.GetRequiredService<ITweetRepository>();
             var userTweets = await tweetRepository.GetByUserAsync(userEvent.UserId);
@@ -122,9 +143,9 @@ namespace TweetService.Consumers
             await tweetRepository.UpdateRangeAsync(userTweets);
         }
 
-        private async Task HandleUserProfileDeleted(string message, IServiceProvider services)
+        private async Task HandleUserProfileDeleted(string message, IServiceProvider services, CancellationToken cancellationToken)
         {
-            var userEvent = JsonSerializer.Deserialize<UserProfileChangedEvent>(message);
+            var userEvent = JsonSerializer.Deserialize<UserProfileDeletedEvent>(message);
 
             if (userEvent == null)
                 throw new InvalidOperationException("Failed to deserialize user profile changed event");
@@ -133,7 +154,16 @@ namespace TweetService.Consumers
 
             var tweetRepository = services.GetRequiredService<ITweetRepository>();
             var userTweetIds = await tweetRepository.GetIdsByUserAsync(userEvent.UserId);
-            await tweetRepository.DeleteRangeAsync(userTweetIds);
+
+            if (userTweetIds.Any())
+            {
+                await tweetRepository.DeleteRangeAsync(userTweetIds);
+                _logger.LogInformation("Deleted {Count} tweets for user {UserId}", userTweetIds.Count(), userEvent.UserId);
+            }
+            else
+            {
+                _logger.LogInformation("No tweets found for user {UserId}", userEvent.UserId);
+            }
         }
     }
 }
