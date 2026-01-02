@@ -22,7 +22,9 @@ namespace TweetService.Data
             {
                 return await _context.Tweets
                        .AsNoTracking()
-                       .Where(t => t.Id.Equals(id))
+                       .Where(
+                            t => t.Id.Equals(id)
+                            && t.IsDeleted == false)
                        .FirstOrDefaultAsync();
             }
             catch (Exception ex)
@@ -38,7 +40,9 @@ namespace TweetService.Data
             {
                 return await _context.Tweets
                        .AsNoTracking()
-                       .Where(t => ids.Contains(t.Id))
+                       .Where(t =>
+                            t.IsDeleted == false
+                            && ids.Contains(t.Id))
                        .ToListAsync();
             }
             catch (Exception ex)
@@ -57,7 +61,9 @@ namespace TweetService.Data
                 return await _context.Tweets
                        .Include(t => t.TweetHashtags)
                        .AsNoTracking()
-                       .Where(t => ids.Contains(t.Id)
+                       .Where(t =>
+                            t.IsDeleted == false
+                            && ids.Contains(t.Id)
                             && t.TweetHashtags.Any(th => th.Hashtag.Tag.Equals(hashtag)))
                        .ToListAsync();
             }
@@ -74,7 +80,9 @@ namespace TweetService.Data
             {
                 return await _context.Tweets
                        .AsNoTracking()
-                       .Where(t => t.AuthorId.Equals(userId))
+                       .Where(t =>
+                            t.IsDeleted == false
+                            && t.AuthorId.Equals(userId))
                        .ToListAsync();
             }
             catch (Exception ex)
@@ -105,7 +113,8 @@ namespace TweetService.Data
             try
             {
                 return await _context.Tweets.Where(
-                    t => t.AuthorId == userId
+                    t => t.IsDeleted == false
+                    && t.AuthorId == userId
                     && t.Type == TweetType.Retweet
                     && tweetIds.Contains(t.ParentTweet!.Id))
                     .Select(t => t.Id)
@@ -124,7 +133,9 @@ namespace TweetService.Data
             {
                 return await _context.Tweets
                        .AsNoTracking()
-                       .Where(t => t.Type == TweetType.Reply
+                       .Where(t =>
+                           t.IsDeleted == false
+                           && t.Type == TweetType.Reply
                            && t.ParentTweetId == tweetId)
                        .ToListAsync();
             }
@@ -179,7 +190,8 @@ namespace TweetService.Data
                 if (tweet == null)
                     throw new ArgumentException(nameof(id));
 
-                _context.Tweets.Remove(tweet);
+                tweet.IsDeleted = true;
+                _context.Tweets.Update(tweet);
                 await _context.SaveChangesAsync();
                 return tweet;
             }
