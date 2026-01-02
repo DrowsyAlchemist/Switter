@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.Collections;
 using TweetService.Interfaces.Data;
 using TweetService.Models;
 
@@ -22,9 +23,7 @@ namespace TweetService.Data
             {
                 return await _context.Tweets
                        .AsNoTracking()
-                       .Where(
-                            t => t.Id.Equals(id)
-                            && t.IsDeleted == false)
+                       .Where(t => t.Id.Equals(id))
                        .FirstOrDefaultAsync();
             }
             catch (Exception ex)
@@ -40,9 +39,7 @@ namespace TweetService.Data
             {
                 return await _context.Tweets
                        .AsNoTracking()
-                       .Where(t =>
-                            t.IsDeleted == false
-                            && ids.Contains(t.Id))
+                       .Where(t => ids.Contains(t.Id))
                        .ToListAsync();
             }
             catch (Exception ex)
@@ -62,8 +59,7 @@ namespace TweetService.Data
                        .Include(t => t.TweetHashtags)
                        .AsNoTracking()
                        .Where(t =>
-                            t.IsDeleted == false
-                            && ids.Contains(t.Id)
+                            ids.Contains(t.Id)
                             && t.TweetHashtags.Any(th => th.Hashtag.Tag.Equals(hashtag)))
                        .ToListAsync();
             }
@@ -80,9 +76,24 @@ namespace TweetService.Data
             {
                 return await _context.Tweets
                        .AsNoTracking()
-                       .Where(t =>
-                            t.IsDeleted == false
-                            && t.AuthorId.Equals(userId))
+                       .Where(t => t.AuthorId.Equals(userId))
+                       .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, ErrorMessage);
+                throw new Exception(ErrorMessage, ex);
+            }
+        }
+
+        public async Task<List<Guid>> GetIdsByUserAsync(Guid userId)
+        {
+            try
+            {
+                return await _context.Tweets
+                       .AsNoTracking()
+                       .Where(t => t.AuthorId.Equals(userId))
+                       .Select(t => t.Id)
                        .ToListAsync();
             }
             catch (Exception ex)
@@ -112,9 +123,8 @@ namespace TweetService.Data
         {
             try
             {
-                return await _context.Tweets.Where(
-                    t => t.IsDeleted == false
-                    && t.AuthorId == userId
+                return await _context.Tweets.Where(t =>
+                    t.AuthorId == userId
                     && t.Type == TweetType.Retweet
                     && tweetIds.Contains(t.ParentTweet!.Id))
                     .Select(t => t.Id)
@@ -178,6 +188,21 @@ namespace TweetService.Data
             }
         }
 
+        public async Task UpdateRangeAsync(IEnumerable<Tweet> tweets)
+        {
+            ArgumentNullException.ThrowIfNull(tweets);
+            try
+            {
+                _context.Tweets.UpdateRange(tweets);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, ErrorMessage);
+                throw new Exception(ErrorMessage, ex);
+            }
+        }
+
         public async Task<Tweet> DeleteAsync(Guid id)
         {
             try
@@ -194,6 +219,31 @@ namespace TweetService.Data
                 _context.Tweets.Update(tweet);
                 await _context.SaveChangesAsync();
                 return tweet;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, ErrorMessage);
+                throw new Exception(ErrorMessage, ex);
+            }
+        }
+
+        public async Task DeleteRangeAsync(List<Guid> ids)
+        {
+            ArgumentNullException.ThrowIfNull(ids);
+            try
+            {
+                var tweets = _context.Tweets
+                    .AsNoTracking()
+                    .Where(t => ids.Contains(t.Id));
+
+                if (tweets == null)
+                    throw new ArgumentException(nameof(ids));
+
+                foreach (var tweet in tweets)
+                    tweet.IsDeleted = true;
+
+                _context.Tweets.UpdateRange(tweets);
+                await _context.SaveChangesAsync();
             }
             catch (Exception ex)
             {
