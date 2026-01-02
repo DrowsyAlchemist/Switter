@@ -1,11 +1,103 @@
+using Microsoft.EntityFrameworkCore;
+using StackExchange.Redis;
+using TweetService.Consumers;
+using TweetService.Data;
+using TweetService.Interfaces.Data;
+using TweetService.Interfaces.Infrastructure;
+using TweetService.Interfaces.Services;
+using TweetService.Services;
+using TweetService.Services.Decorators;
+using TweetService.Services.Infrastructure;
+
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+// Redis
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+    ConnectionMultiplexer.Connect(builder.Configuration["Redis:ConnectionString"]!));
+builder.Services.AddScoped<IRedisService, RedisService>();
+
+// Kafka 
+builder.Services.AddHostedService<UserEventsConsumer>();
+builder.Services.AddSingleton<IKafkaProducer, KafkaProducer>();
+
+// Database
+builder.Services.AddDbContext<TweetDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("PostgreSQL")));
+
+// Repositories
+builder.Services.AddScoped<ITweetRepository, TweetRepository>();
+builder.Services.AddScoped<ILikesRepository, LikeRepository>();
+builder.Services.AddScoped<IHashtagRepository, HashtagRepository>();
+builder.Services.AddScoped<ITweetHashtagRepository, TweetHashtagRepository>();
+
+// AutoMapper
+builder.Services.AddAutoMapper(cfg =>
+{
+    cfg.AllowNullCollections = true;
+    cfg.AllowNullDestinationValues = false;
+});
+
+// Services
+
+builder.Services.AddScoped<IUserTweetRelationship, UserTweetRelationship>();
+builder.Services.AddHttpClient<IUserServiceClient, UserServiceClient>();
+
+// TweetService
+builder.Services.AddScoped<TweetCommands>();
+builder.Services.AddScoped<ITweetCommands>(serviceProvider =>
+{
+    var baseService = serviceProvider.GetRequiredService<TweetCommands>();
+    var tweetCommandsWithKafka = new TweetCommandsWithKafka(
+        tweetCommands: baseService,
+        kafkaProducer: serviceProvider.GetRequiredService<IKafkaProducer>(),
+        logger: serviceProvider.GetRequiredService<ILogger<TweetCommandsWithKafka>>()
+        );
+    return tweetCommandsWithKafka;
+});
+
+builder.Services.AddScoped<ITweetQueries, TweetQueries>();
+
+// LikeService
+builder.Services.AddScoped<LikeService>();
+
+builder.Services.AddScoped<ILikeService>(serviceProvider =>
+{
+    var baseService = serviceProvider.GetRequiredService<LikeService>();
+
+    var likeServiceWithKafka = new LikeServiceWithKafka(
+        likeService: baseService,
+        kafkaProducer: serviceProvider.GetRequiredService<IKafkaProducer>(),
+        logger: serviceProvider.GetRequiredService<ILogger<LikeServiceWithKafka>>()
+        );
+    return likeServiceWithKafka;
+});
+
+// HashtagService
+builder.Services.AddScoped<IHashtagService, HashtagService>();
+
+// TrendService
+builder.Services.AddScoped<ITrendService, TrendService>();
+
 var app = builder.Build();
+
+//using (var scope = app.Services.CreateScope())
+//{
+//    var db = scope.ServiceProvider.GetRequiredService<TweetDbContext>();
+//    db.Database.Migrate();
+//}
 
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseRouting();
+app.UseAuthorization();
+app.MapControllers();
 
 app.Run();
