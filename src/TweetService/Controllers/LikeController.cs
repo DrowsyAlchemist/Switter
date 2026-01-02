@@ -67,7 +67,7 @@ namespace TweetService.Controllers
             }
         }
 
-        [HttpPost]
+        [HttpDelete]
         public async Task<IActionResult> UnlikeTweetAsync(Guid tweetId)
         {
             try
