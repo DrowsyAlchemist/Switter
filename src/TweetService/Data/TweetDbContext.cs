@@ -12,6 +12,11 @@ namespace TweetService.Data
         public DbSet<Hashtag> Hashtags { get; set; }
         public DbSet<TweetHashtag> TweetHashtags { get; set; }
 
+        public async Task<bool> CanConnectAsync()
+        {
+            return await Database.CanConnectAsync();
+        }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.HasDefaultSchema("tweet_service");
@@ -62,8 +67,9 @@ namespace TweetService.Data
                 entity.HasKey(th => new { th.TweetId, th.HashtagId });
 
                 entity.HasOne(th => th.Tweet)
-                      .WithMany()
+                      .WithMany(t => t.TweetHashtags)
                       .HasForeignKey(th => th.TweetId)
+                      .HasPrincipalKey(t => t.Id)
                       .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasOne(th => th.Hashtag)
@@ -71,7 +77,6 @@ namespace TweetService.Data
                       .HasForeignKey(th => th.HashtagId)
                       .OnDelete(DeleteBehavior.Cascade);
             });
-
         }
     }
 }

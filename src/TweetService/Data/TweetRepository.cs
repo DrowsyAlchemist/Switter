@@ -177,7 +177,11 @@ namespace TweetService.Data
             ArgumentNullException.ThrowIfNull(tweet);
             try
             {
-                _context.Tweets.Update(tweet);
+                var localTweet = await _context.Tweets.FirstOrDefaultAsync(t => t.Id == tweet.Id);
+                if (localTweet == null)
+                    throw new ArgumentException("Tweet not found.");
+
+                _context.Entry(localTweet).CurrentValues.SetValues(tweet);
                 await _context.SaveChangesAsync();
                 return tweet;
             }
@@ -193,7 +197,14 @@ namespace TweetService.Data
             ArgumentNullException.ThrowIfNull(tweets);
             try
             {
-                _context.Tweets.UpdateRange(tweets);
+                foreach (var tweet in tweets)
+                {
+                    var localTweet = await _context.Tweets.FirstOrDefaultAsync(t => t.Id == tweet.Id);
+                    if (localTweet == null)
+                        throw new ArgumentException($"Tweet not found.\nId:{tweet.Id}");
+
+                    _context.Entry(localTweet).CurrentValues.SetValues(tweet);
+                }
                 await _context.SaveChangesAsync();
             }
             catch (Exception ex)
@@ -210,13 +221,20 @@ namespace TweetService.Data
                 var tweet = _context.Tweets
                     .AsNoTracking()
                     .Where(t => t.Id.Equals(id))
+                    .Include(t => t.Replies)
                     .FirstOrDefault();
 
                 if (tweet == null)
                     throw new ArgumentException(nameof(id));
 
                 tweet.IsDeleted = true;
-                _context.Tweets.Update(tweet);
+
+                foreach (var reply in tweet.Replies)
+                {
+                    reply.IsDeleted = true;
+                    await UpdateAsync(reply);
+                }
+                await UpdateAsync(tweet);
                 await _context.SaveChangesAsync();
                 return tweet;
             }
@@ -233,7 +251,6 @@ namespace TweetService.Data
             try
             {
                 var tweets = _context.Tweets
-                    .AsNoTracking()
                     .Where(t => ids.Contains(t.Id));
 
                 if (tweets == null)

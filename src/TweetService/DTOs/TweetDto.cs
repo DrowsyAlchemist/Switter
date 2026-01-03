@@ -5,6 +5,7 @@ namespace TweetService.DTOs
     public class TweetDto
     {
         public Guid Id { get; set; }
+        public bool IsDeleted { get; set; }
         public required Guid AuthorId { get; set; }
         public required string AuthorDisplayName { get; set; }
         public string? AuthorAvatarUrl { get; set; }
@@ -19,8 +20,6 @@ namespace TweetService.DTOs
         public DateTime CreatedAt { get; set; }
         public bool IsLiked { get; set; } // For current user
         public bool IsRetweeted { get; set; } // For current user
-
-        public List<string> Hashtags { get; set; } = new();
     }
 
 }
