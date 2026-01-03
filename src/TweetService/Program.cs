@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
 using TweetService.Consumers;
 using TweetService.Data;
+using TweetService.HealthChecks;
 using TweetService.Interfaces.Data;
 using TweetService.Interfaces.Infrastructure;
 using TweetService.Interfaces.Services;
@@ -39,7 +40,7 @@ builder.Services.AddAutoMapper(cfg =>
 {
     cfg.AllowNullCollections = true;
     cfg.AllowNullDestinationValues = false;
-});
+}, typeof(Program).Assembly);
 
 // Services
 
@@ -82,13 +83,21 @@ builder.Services.AddScoped<IHashtagService, HashtagService>();
 // TrendService
 builder.Services.AddScoped<ITrendService, TrendService>();
 
+// Health Checks
+builder.Services.AddHealthChecks()
+    .AddNpgSql(builder.Configuration.GetConnectionString("PostgreSQL")!)
+    .AddRedis(builder.Configuration["Redis:ConnectionString"]!)
+    .AddCheck<DatabaseHealthCheck>("Database")
+    .AddCheck<TweetServiceHealthCheck>("TweetService");
+
 var app = builder.Build();
 
-//using (var scope = app.Services.CreateScope())
-//{
-//    var db = scope.ServiceProvider.GetRequiredService<TweetDbContext>();
-//    db.Database.Migrate();
-//}
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<TweetDbContext>();
+    await db.Database.EnsureCreatedAsync();
+    await db.Database.MigrateAsync();
+}
 
 if (app.Environment.IsDevelopment())
 {
@@ -99,5 +108,6 @@ if (app.Environment.IsDevelopment())
 app.UseRouting();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHealthChecks("/health");
 
 app.Run();
