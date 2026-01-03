@@ -13,7 +13,7 @@ namespace TweetService.Services.Infrastructure
         {
             var config = new ProducerConfig
             {
-                BootstrapServers = configuration["Kafka:BootstrapServers"]
+                BootstrapServers = configuration["Kafka:BootstrapServers"],
             };
             _producer = new ProducerBuilder<Null, string>(config).Build();
             _logger = logger;
