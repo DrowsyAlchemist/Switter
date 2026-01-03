@@ -10,7 +10,7 @@ namespace TweetService.Consumers
         private readonly IConsumer<Ignore, string> _consumer;
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<UserEventsConsumer> _logger;
-        private readonly TimeSpan _pollTimeout = TimeSpan.FromSeconds(1);
+        private readonly TimeSpan _pollTimeout = TimeSpan.FromMicroseconds(100);
 
         public UserEventsConsumer(IConfiguration configuration, IServiceProvider serviceProvider,
                                 ILogger<UserEventsConsumer> logger)
@@ -25,8 +25,9 @@ namespace TweetService.Consumers
                 AutoOffsetReset = AutoOffsetReset.Earliest,
                 EnableAutoOffsetStore = false,
                 EnableAutoCommit = false,
-                MaxPollIntervalMs = 300000, // 5 минут
-                SessionTimeoutMs = 45000    // 45 секунд
+                MaxPollIntervalMs = 300000,
+                SessionTimeoutMs = 10000,
+                HeartbeatIntervalMs = 3000
             };
             _consumer = new ConsumerBuilder<Ignore, string>(config).Build();
         }
@@ -138,7 +139,7 @@ namespace TweetService.Consumers
                     tweet.AuthorDisplayName = userEvent.DisplayName;
 
                 if (userEvent.AvatarUrl != null)
-                    tweet.AuthorDisplayName = userEvent.AvatarUrl;
+                    tweet.AuthorAvatarUrl = userEvent.AvatarUrl;
             }
             await tweetRepository.UpdateRangeAsync(userTweets);
         }
