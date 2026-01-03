@@ -2,7 +2,6 @@
 using TweetService.DTOs;
 using TweetService.Exceptions;
 using TweetService.Interfaces.Data;
-using TweetService.Interfaces.Infrastructure;
 using TweetService.Interfaces.Services;
 using TweetService.Models;
 
@@ -12,37 +11,30 @@ namespace TweetService.Services
     {
         private readonly ITweetRepository _tweetRepository;
         private readonly IMapper _mapper;
-        private readonly IUserServiceClient _userServiceClient;
         private readonly IHashtagService _hashtagService;
 
-        public TweetCommands(ITweetRepository tweetRepository,
-            IMapper mapper,
-            IUserServiceClient userServiceClient,
-            IHashtagService hashtagService)
+        public TweetCommands(ITweetRepository tweetRepository, IMapper mapper, IHashtagService hashtagService)
         {
             _tweetRepository = tweetRepository;
             _mapper = mapper;
-            _userServiceClient = userServiceClient;
             _hashtagService = hashtagService;
         }
 
-        public async Task<TweetDto> TweetAsync(Guid authorId, CreateTweetRequest request)
+        public async Task<TweetDto> TweetAsync(UserInfo authorInfo, CreateTweetRequest request)
         {
             Tweet? parentTweet = null;
             if (request.Type == TweetType.Retweet || request.Type == TweetType.Reply)
-                parentTweet = await TryGetParentTweetAsync(authorId, request.ParentTweetId);
+                parentTweet = await TryGetParentTweetAsync(authorInfo.Id, request.ParentTweetId);
 
             if (request.Type == TweetType.Retweet)
-                if (parentTweet!.AuthorId == authorId)
-                    throw new SelfRetweetException(parentTweet.Id, authorId);
-
-            var author = await GetUserInfoAsync(authorId);
+                if (parentTweet!.AuthorId == authorInfo.Id)
+                    throw new SelfRetweetException(parentTweet.Id, authorInfo.Id);
 
             var newTweet = new Tweet()
             {
-                AuthorId = author.Id,
-                AuthorDisplayName = author.DisplayName,
-                AuthorAvatarUrl = author.AvatarUrl,
+                AuthorId = authorInfo.Id,
+                AuthorDisplayName = authorInfo.DisplayName,
+                AuthorAvatarUrl = authorInfo.AvatarUrl,
                 Content = request.Content,
                 Type = request.Type,
                 ParentTweetId = request.ParentTweetId,
@@ -50,7 +42,8 @@ namespace TweetService.Services
             };
             var tweet = await _tweetRepository.AddAsync(newTweet);
 
-            await UpdateParentCountersAsync(request.Type, parentTweet!, 1);
+            if (parentTweet != null)
+                await UpdateParentCountersAsync(request.Type, parentTweet, 1);
 
             if (request.Type != TweetType.Reply && request.Content != string.Empty)
                 await _hashtagService.ProcessHashtagsAsync(tweet.Id);
@@ -66,9 +59,8 @@ namespace TweetService.Services
             if (tweet.AuthorId != userId)
                 throw new DeleteTweetForbiddenException(tweetId, userId);
 
-            var tweetDto = _mapper.Map<TweetDto>(tweet);
-
-            await _tweetRepository.DeleteAsync(tweetId);
+            var deletedTweet = await _tweetRepository.DeleteAsync(tweetId);
+            var tweetDto = _mapper.Map<TweetDto>(deletedTweet);
 
             if (tweet.Type == TweetType.Retweet || tweet.Type == TweetType.Reply)
             {
@@ -99,14 +91,6 @@ namespace TweetService.Services
                 parentTweet.RepliesCount += value;
 
             await _tweetRepository.UpdateAsync(parentTweet);
-        }
-
-        private async Task<UserInfo> GetUserInfoAsync(Guid userId)
-        {
-            var userInfo = await _userServiceClient.GetUserInfoAsync(userId);
-            if (userInfo == null)
-                throw new UserNotFoundException(userId);
-            return userInfo;
         }
     }
 }

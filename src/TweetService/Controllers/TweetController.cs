@@ -3,7 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using TweetService.DTOs;
 using TweetService.Exceptions;
+using TweetService.Interfaces.Infrastructure;
 using TweetService.Interfaces.Services;
+using TweetService.Services.Infrastructure;
 
 namespace TweetService.Controllers
 {
@@ -13,12 +15,18 @@ namespace TweetService.Controllers
     {
         private readonly ITweetCommands _tweetCommands;
         private readonly ITweetQueries _tweetQueries;
+        private readonly IUserServiceClient _userServiceClient;
         private readonly ILogger<TweetController> _logger;
 
-        public TweetController(ITweetCommands tweetCommands, ITweetQueries tweetQueries, ILogger<TweetController> logger)
+        public TweetController(
+            ITweetCommands tweetCommands,
+            ITweetQueries tweetQueries,
+            IUserServiceClient userServiceClient,
+            ILogger<TweetController> logger)
         {
             _tweetCommands = tweetCommands;
             _tweetQueries = tweetQueries;
+            _userServiceClient = userServiceClient;
             _logger = logger;
         }
 
@@ -32,7 +40,11 @@ namespace TweetService.Controllers
                 if (currentUserId == null)
                     throw new Exception("Current user not found.");
 
-                await _tweetCommands.TweetAsync(currentUserId.Value, request);
+                var userInfo = await _userServiceClient.GetUserInfoAsync(currentUserId.Value);
+                if (userInfo == null)
+                    throw new UserNotFoundException(currentUserId.Value);
+
+                await _tweetCommands.TweetAsync(userInfo, request);
                 _logger.LogInformation("Successfully tweet.");
                 return Ok(new { message = "Successfully tweet" });
             }
@@ -101,7 +113,7 @@ namespace TweetService.Controllers
             }
             catch (TweetNotFoundException ex)
             {
-                _logger.LogWarning("GetTweet failed. Tweet not found.\nId: {tweetId}", tweetId);
+                _logger.LogWarning(ex, "GetTweet failed. Tweet not found.\nId: {tweetId}", tweetId);
                 return NotFound("Tweet not found.");
             }
             catch (Exception ex)

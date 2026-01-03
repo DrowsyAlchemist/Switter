@@ -18,9 +18,9 @@ namespace TweetService.Services.Decorators
             _logger = logger;
         }
 
-        public async Task<TweetDto> TweetAsync(Guid authorId, CreateTweetRequest request)
+        public async Task<TweetDto> TweetAsync(UserInfo author, CreateTweetRequest request)
         {
-            var tweet = await _tweetCommands.TweetAsync(authorId, request);
+            var tweet = await _tweetCommands.TweetAsync(author, request);
             try
             {
                 var tweetEvent = new TweetCreatedEvent(tweet.Id, tweet.AuthorId, tweet.Type, tweet.CreatedAt);
