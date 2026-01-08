@@ -33,19 +33,18 @@ namespace TweetService.Services.Decorators
             return tweet;
         }
 
-        public async Task<TweetDto> DeleteTweetAsync(Guid tweetId, Guid userId)
+        public async Task DeleteTweetAsync(Guid tweetId, Guid userId)
         {
-            var tweet = await _tweetCommands.DeleteTweetAsync(tweetId, userId);
+            await _tweetCommands.DeleteTweetAsync(tweetId, userId);
             try
             {
-                var tweetEvent = new TweetDeletedEvent(tweet.Id, tweet.AuthorId, tweet.Type, tweet.CreatedAt);
+                var tweetEvent = new TweetDeletedEvent(tweetId, DateTime.UtcNow);
                 await _kafkaProducer.ProduceAsync("tweet-deleted", tweetEvent);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Can't send tweet event to kafka.");
             }
-            return tweet;
         }
     }
 }
