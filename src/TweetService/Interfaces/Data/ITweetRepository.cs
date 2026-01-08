@@ -15,8 +15,8 @@ namespace TweetService.Interfaces.Data
 
         Task<Tweet> AddAsync(Tweet tweet);
         Task<Tweet> UpdateAsync(Tweet tweet);
-        Task UpdateRangeAsync(IEnumerable<Tweet> tweets);
-        Task<Tweet> DeleteAsync(Guid id);
-        Task DeleteRangeAsync(List<Guid> ids);
+        Task UpdateRangeAsync(List<Tweet> tweets);
+        Task SoftDeleteAsync(Guid id);
+        Task SoftDeleteRangeAsync(List<Guid> ids);
     }
 }

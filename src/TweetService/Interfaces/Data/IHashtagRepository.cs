@@ -1,4 +1,5 @@
-﻿using TweetService.Models;
+﻿using Microsoft.EntityFrameworkCore;
+using TweetService.Models;
 
 namespace TweetService.Interfaces.Data
 {
@@ -9,7 +10,10 @@ namespace TweetService.Interfaces.Data
         Task<List<Hashtag>> SearchAsync(string query, int page, int pageSize);
         Task<List<Hashtag>> GetMostPopularAsync(int count);
         Task<Hashtag> AddAsync(Hashtag hashtag);
-        Task<Hashtag> UpdateAsync(Hashtag hashtag);
-        Task<Hashtag> DeleteAsync(Guid id);
+        Task AddRangeAsync(List<string> hashtags);
+        Task<Hashtag> IncrementUsageCounterAsync(string tag);
+        Task IncrementUsageCounterAsync(List<string> tags);
+        Task<bool> IsExist(string tag);
+        Task<List<string>> GetExists(List<string> tags);
     }
 }

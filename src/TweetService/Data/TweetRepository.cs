@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System.Collections;
 using TweetService.Interfaces.Data;
 using TweetService.Models;
 
@@ -7,266 +6,203 @@ namespace TweetService.Data
 {
     public class TweetRepository : ITweetRepository
     {
-        private const string ErrorMessage = "Db is unavailable";
         private readonly TweetDbContext _context;
-        private readonly ILogger<TweetRepository> _logger;
 
         public TweetRepository(TweetDbContext tweetDbContext, ILogger<TweetRepository> logger)
         {
             _context = tweetDbContext;
-            _logger = logger;
         }
 
         public async Task<Tweet?> GetByIdAsync(Guid id)
         {
-            try
-            {
-                return await _context.Tweets
-                       .AsNoTracking()
-                       .Where(t => t.Id.Equals(id))
-                       .FirstOrDefaultAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, ErrorMessage);
-                throw new Exception(ErrorMessage, ex);
-            }
+            return await _context.Tweets
+                   .AsNoTracking()
+                   .Where(t => t.Id.Equals(id))
+                   .FirstOrDefaultAsync();
         }
 
         public async Task<List<Tweet>> GetByIdsAsync(List<Guid> ids)
         {
-            try
-            {
-                return await _context.Tweets
-                       .AsNoTracking()
-                       .Where(t => ids.Contains(t.Id))
-                       .ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, ErrorMessage);
-                throw new Exception(ErrorMessage, ex);
-            }
+            if (ids == null)
+                throw new ArgumentNullException(nameof(ids));
+            if (ids.Any() == false)
+                return new List<Tweet>();
+
+            return await _context.Tweets
+                   .AsNoTracking()
+                   .Where(t => ids.Contains(t.Id))
+                   .ToListAsync();
         }
 
         public async Task<List<Tweet>> GetByHashtagAsync(List<Guid> ids, string hashtag)
         {
             if (string.IsNullOrEmpty(hashtag))
                 throw new ArgumentException(nameof(hashtag));
-            try
-            {
-                return await _context.Tweets
-                       .Include(t => t.TweetHashtags)
-                       .AsNoTracking()
-                       .Where(t =>
-                            ids.Contains(t.Id)
-                            && t.TweetHashtags.Any(th => th.Hashtag.Tag.Equals(hashtag)))
-                       .ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, ErrorMessage);
-                throw new Exception(ErrorMessage, ex);
-            }
+            if (ids == null)
+                throw new ArgumentNullException(nameof(ids));
+            if (ids.Any() == false)
+                return new List<Tweet>();
+
+            return await _context.Tweets
+                   .Include(t => t.TweetHashtags)
+                   .AsNoTracking()
+                   .Where(t =>
+                        ids.Contains(t.Id)
+                        && t.TweetHashtags.Any(th => th.Hashtag.Tag.Equals(hashtag)))
+                   .ToListAsync();
         }
 
         public async Task<List<Tweet>> GetByUserAsync(Guid userId)
         {
-            try
-            {
-                return await _context.Tweets
-                       .AsNoTracking()
-                       .Where(t => t.AuthorId.Equals(userId))
-                       .ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, ErrorMessage);
-                throw new Exception(ErrorMessage, ex);
-            }
+            return await _context.Tweets
+                   .AsNoTracking()
+                   .Where(t => t.AuthorId.Equals(userId))
+                   .ToListAsync();
         }
 
         public async Task<List<Guid>> GetIdsByUserAsync(Guid userId)
         {
-            try
-            {
-                return await _context.Tweets
-                       .AsNoTracking()
-                       .Where(t => t.AuthorId.Equals(userId))
-                       .Select(t => t.Id)
-                       .ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, ErrorMessage);
-                throw new Exception(ErrorMessage, ex);
-            }
+            return await _context.Tweets
+                   .AsNoTracking()
+                   .Where(t => t.AuthorId.Equals(userId))
+                   .Select(t => t.Id)
+                   .ToListAsync();
         }
 
         public async Task<bool> IsRetweetedAsync(Guid tweetId, Guid userId)
         {
-            try
-            {
-                return await _context.Tweets.AnyAsync(
-                    t => t.AuthorId == userId
-                    && t.Type == TweetType.Retweet
-                    && t.ParentTweet!.Id == tweetId);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, ErrorMessage);
-                throw new Exception(ErrorMessage, ex);
-            }
+            return await _context.Tweets.AnyAsync(
+                t => t.AuthorId == userId
+                && t.Type == TweetType.Retweet
+                && t.ParentTweet!.Id == tweetId);
         }
 
         public async Task<List<Guid>> GetRetweetedIdsAsync(List<Guid> tweetIds, Guid userId)
         {
-            try
-            {
-                return await _context.Tweets.Where(t =>
-                    t.AuthorId == userId
-                    && t.Type == TweetType.Retweet
-                    && tweetIds.Contains(t.ParentTweet!.Id))
-                    .Select(t => t.Id)
-                    .ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, ErrorMessage);
-                throw new Exception(ErrorMessage, ex);
-            }
+            return await _context.Tweets.Where(t =>
+                t.AuthorId == userId
+                && t.Type == TweetType.Retweet
+                && tweetIds.Contains(t.ParentTweet!.Id))
+                .Select(t => t.Id)
+                .ToListAsync();
         }
 
         public async Task<List<Tweet>> GetRepliesAsync(Guid tweetId)
         {
-            try
-            {
-                return await _context.Tweets
-                       .AsNoTracking()
-                       .Where(t =>
-                           t.IsDeleted == false
-                           && t.Type == TweetType.Reply
-                           && t.ParentTweetId == tweetId)
-                       .ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, ErrorMessage);
-                throw new Exception(ErrorMessage, ex);
-            }
+            return await _context.Tweets
+                   .AsNoTracking()
+                   .Where(t =>
+                       t.IsDeleted == false
+                       && t.Type == TweetType.Reply
+                       && t.ParentTweetId == tweetId)
+                   .ToListAsync();
         }
 
         public async Task<Tweet> AddAsync(Tweet tweet)
         {
             ArgumentNullException.ThrowIfNull(tweet);
-            try
-            {
-                await _context.Tweets.AddAsync(tweet);
-                await _context.SaveChangesAsync();
-                return tweet;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, ErrorMessage);
-                throw new Exception(ErrorMessage, ex);
-            }
+            await _context.Tweets.AddAsync(tweet);
+            await _context.SaveChangesAsync();
+            return tweet;
         }
 
-        public async Task<Tweet> UpdateAsync(Tweet tweet)
+        public async Task<Tweet> UpdateAsync(Tweet updatedTweet)
         {
-            ArgumentNullException.ThrowIfNull(tweet);
-            try
-            {
-                var localTweet = await _context.Tweets.FirstOrDefaultAsync(t => t.Id == tweet.Id);
-                if (localTweet == null)
-                    throw new ArgumentException("Tweet not found.");
+            ArgumentNullException.ThrowIfNull(updatedTweet);
+            var localTweet = await _context.Tweets.FindAsync(updatedTweet.Id);
+            if (localTweet == null)
+                throw new KeyNotFoundException($"Tweet {updatedTweet.Id} not found.");
 
-                _context.Entry(localTweet).CurrentValues.SetValues(tweet);
-                await _context.SaveChangesAsync();
-                return tweet;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, ErrorMessage);
-                throw new Exception(ErrorMessage, ex);
-            }
+            _context.Entry(localTweet).CurrentValues.SetValues(updatedTweet);
+            await _context.SaveChangesAsync();
+            _context.Tweets.Entry(localTweet).State = EntityState.Detached;
+            return localTweet;
         }
 
-        public async Task UpdateRangeAsync(IEnumerable<Tweet> tweets)
+        public async Task UpdateRangeAsync(List<Tweet> tweets)
         {
             ArgumentNullException.ThrowIfNull(tweets);
-            try
-            {
-                foreach (var tweet in tweets)
-                {
-                    var localTweet = await _context.Tweets.FirstOrDefaultAsync(t => t.Id == tweet.Id);
-                    if (localTweet == null)
-                        throw new ArgumentException($"Tweet not found.\nId:{tweet.Id}");
+            if (tweets.Count == 0)
+                return;
 
-                    _context.Entry(localTweet).CurrentValues.SetValues(tweet);
-                }
-                await _context.SaveChangesAsync();
-            }
-            catch (Exception ex)
+            var ids = tweets.Select(t => t.Id).ToHashSet();
+            var existingTweets = await _context.Tweets
+                .Where(t => ids.Contains(t.Id))
+                .ToDictionaryAsync(t => t.Id);
+
+            var missingIds = ids.Except(existingTweets.Keys);
+            if (missingIds.Any())
+                throw new KeyNotFoundException($"Tweets not found. Ids: {string.Join(", ", missingIds)}");
+
+            foreach (var tweet in tweets)
             {
-                _logger.LogError(ex, ErrorMessage);
-                throw new Exception(ErrorMessage, ex);
+                if (existingTweets.TryGetValue(tweet.Id, out var existingTweet))
+                    _context.Entry(existingTweet).CurrentValues.SetValues(tweet);
             }
+            await _context.SaveChangesAsync();
         }
 
-        public async Task<Tweet> DeleteAsync(Guid id)
+        public async Task SoftDeleteAsync(Guid id)
         {
-            try
-            {
-                var tweet = _context.Tweets
-                    .AsNoTracking()
-                    .Where(t => t.Id.Equals(id))
-                    .Include(t => t.Replies)
-                    .FirstOrDefault();
-
-                if (tweet == null)
-                    throw new ArgumentException(nameof(id));
-
-                tweet.IsDeleted = true;
-
-                foreach (var reply in tweet.Replies)
-                {
-                    reply.IsDeleted = true;
-                    await UpdateAsync(reply);
-                }
-                await UpdateAsync(tweet);
-                await _context.SaveChangesAsync();
-                return tweet;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, ErrorMessage);
-                throw new Exception(ErrorMessage, ex);
-            }
+            await SoftDeleteRangeAsync([id]);
         }
 
-        public async Task DeleteRangeAsync(List<Guid> ids)
+        public async Task SoftDeleteRangeAsync(List<Guid> ids)
         {
             ArgumentNullException.ThrowIfNull(ids);
-            try
+            if (ids.Count == 0)
+                return;
+
+            var idSet = new HashSet<Guid>(ids);
+            var foundTweets = await _context.Tweets
+                .Where(t => idSet.Contains(t.Id))
+                .Select(t => new { t.Id, t.IsDeleted })
+                .ToListAsync();
+
+            var existingIds = foundTweets.Select(t => t.Id).ToList();
+            var missingIds = idSet.Except(existingIds);
+            if (missingIds.Any())
+                throw new KeyNotFoundException($"Tweets not found: {string.Join(", ", missingIds)}");
+
+            var alreadyDeletedIds = foundTweets
+                .Where(t => t.IsDeleted == true)
+                .Select(t => t.Id)
+                .ToList();
+            idSet.ExceptWith(alreadyDeletedIds);
+
+            var allTweetIds = await GetAllTweetAndReplyIdsAsync(idSet);
+
+            await _context.Tweets
+                .Where(t => allTweetIds.Contains(t.Id))
+                .ExecuteUpdateAsync(setters =>
+                    setters
+                        .SetProperty(t => t.IsDeleted, true)
+                        .SetProperty(t => t.DeletedAt, DateTime.UtcNow)
+                );
+        }
+
+        private async Task<HashSet<Guid>> GetAllTweetAndReplyIdsAsync(HashSet<Guid> tweetIds)
+        {
+            var allIds = new HashSet<Guid>(tweetIds);
+            var queue = new Queue<Guid>(tweetIds);
+
+            while (queue.Count > 0)
             {
-                var tweets = _context.Tweets
-                    .Where(t => ids.Contains(t.Id));
+                var currentId = queue.Dequeue();
 
-                if (tweets == null)
-                    throw new ArgumentException(nameof(ids));
+                var replyIds = await _context.Tweets
+                    .Where(t =>
+                        t.Type == TweetType.Reply
+                        && t.ParentTweetId == currentId
+                        && t.IsDeleted == false)
+                    .Select(t => t.Id)
+                    .ToListAsync();
 
-                foreach (var tweet in tweets)
-                    tweet.IsDeleted = true;
-
-                _context.Tweets.UpdateRange(tweets);
-                await _context.SaveChangesAsync();
+                foreach (var replyId in replyIds)
+                    if (allIds.Add(replyId))
+                        queue.Enqueue(replyId);
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, ErrorMessage);
-                throw new Exception(ErrorMessage, ex);
-            }
+            return allIds;
         }
     }
 }

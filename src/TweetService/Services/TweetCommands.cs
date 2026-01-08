@@ -51,7 +51,7 @@ namespace TweetService.Services
             return _mapper.Map<TweetDto>(tweet);
         }
 
-        public async Task<TweetDto> DeleteTweetAsync(Guid tweetId, Guid userId)
+        public async Task DeleteTweetAsync(Guid tweetId, Guid userId)
         {
             var tweet = await _tweetRepository.GetByIdAsync(tweetId);
             if (tweet == null)
@@ -59,15 +59,13 @@ namespace TweetService.Services
             if (tweet.AuthorId != userId)
                 throw new DeleteTweetForbiddenException(tweetId, userId);
 
-            var deletedTweet = await _tweetRepository.DeleteAsync(tweetId);
-            var tweetDto = _mapper.Map<TweetDto>(deletedTweet);
+            await _tweetRepository.SoftDeleteAsync(tweetId);
 
             if (tweet.Type == TweetType.Retweet || tweet.Type == TweetType.Reply)
             {
                 var parentTweet = await TryGetParentTweetAsync(userId, tweet.ParentTweetId);
                 await UpdateParentCountersAsync(tweet.Type, parentTweet, -1);
             }
-            return tweetDto;
         }
 
         private async Task<Tweet> TryGetParentTweetAsync(Guid authorId, Guid? parentTweetId)

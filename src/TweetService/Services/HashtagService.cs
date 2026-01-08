@@ -29,30 +29,11 @@ namespace TweetService.Services
             var content = tweet.Content;
             var hashtags = ExtractHashtags(content);
 
-            var hashtagModels = await _hashtagRepository.GetByTagsAsync(hashtags);
+            var existingHashtags = await _hashtagRepository.GetExists(hashtags);
+            var newHashtags = hashtags.Except(existingHashtags).ToList();
 
-            foreach (var hashtag in hashtags)
-            {
-                var hashtagModel = hashtagModels.Where(hm => hm.Tag.Equals(hashtag.ToLower())).FirstOrDefault();
-
-                if (hashtagModel == null)
-                {
-                    hashtagModel = new Hashtag() { Tag = hashtag };
-                    await _hashtagRepository.AddAsync(hashtagModel);
-                }
-                else
-                {
-                    hashtagModel.UsageCount++;
-                    hashtagModel.LastUsed = DateTime.UtcNow;
-                    await _hashtagRepository.UpdateAsync(hashtagModel);
-                }
-                var tweetHashtag = new TweetHashtag()
-                {
-                    TweetId = tweetId,
-                    HashtagId = hashtagModel.Id
-                };
-                await _tweetHashtagRepository.AddAsync(tweetHashtag);
-            }
+            await _hashtagRepository.AddRangeAsync(newHashtags);
+            await _hashtagRepository.IncrementUsageCounterAsync(existingHashtags);
         }
 
         private static List<string> ExtractHashtags(string content)

@@ -158,7 +158,7 @@ namespace TweetService.Consumers
 
             if (userTweetIds.Any())
             {
-                await tweetRepository.DeleteRangeAsync(userTweetIds);
+                await tweetRepository.SoftDeleteRangeAsync(userTweetIds);
                 _logger.LogInformation("Deleted {Count} tweets for user {UserId}", userTweetIds.Count(), userEvent.UserId);
             }
             else

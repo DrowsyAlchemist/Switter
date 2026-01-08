@@ -10,7 +10,7 @@ namespace TweetService.Interfaces.Data
         Task<List<Guid>> GetLikedTweetIdsAsync(Guid userId);
         Task<Like?> GetAsync(Guid tweetId, Guid userId);
         Task<Like> AddAsync(Like like);
-        Task<Like> DeleteAsync(Guid id);
+        Task DeleteAsync(Guid id);
         Task<bool> IsExistAsync(Guid tweetId, Guid userId);
     }
 }
