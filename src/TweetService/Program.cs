@@ -88,7 +88,8 @@ builder.Services.AddHealthChecks()
     .AddNpgSql(builder.Configuration.GetConnectionString("PostgreSQL")!)
     .AddRedis(builder.Configuration["Redis:ConnectionString"]!)
     .AddCheck<DatabaseHealthCheck>("Database")
-    .AddCheck<TweetServiceHealthCheck>("TweetService");
+    .AddCheck<TweetServiceHealthCheck>("TweetService")
+    .AddCheck<LikeServiceHealthCheck>("LikeService");
 
 var app = builder.Build();
 
