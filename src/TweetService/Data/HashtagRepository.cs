@@ -44,6 +44,20 @@ namespace TweetService.Data
                    .ToListAsync();
         }
 
+        public async Task<List<Guid>> GetIdByTag(List<string> tags)
+        {
+            ArgumentNullException.ThrowIfNull(tags);
+            if (tags.Count == 0)
+                return new List<Guid>();
+
+            tags = tags.Select(t => t.ToLower()).ToList();
+            return await _context.Hashtags
+                   .AsNoTracking()
+                   .Where(h => tags.Contains(h.Tag))
+                   .Select(h => h.Id)
+                   .ToListAsync();
+        }
+
         public async Task<List<Hashtag>> SearchAsync(string query, int page, int pageSize)
         {
             var hashtags = await _context.Hashtags

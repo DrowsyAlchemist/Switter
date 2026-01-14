@@ -1,4 +1,5 @@
-﻿using TweetService.Exceptions;
+﻿using TweetService.DTOs;
+using TweetService.Exceptions;
 using TweetService.Interfaces.Data;
 using TweetService.Interfaces.Services;
 using TweetService.Models;
@@ -20,31 +21,40 @@ namespace TweetService.Services
             _tweetHashtagRepository = tweetHashtagRepository;
         }
 
-        public async Task ProcessHashtagsAsync(Guid tweetId)
+        public async Task ProcessHashtagsAsync(Guid tweetId, string content)
         {
-            var tweet = await _tweetRepository.GetByIdAsync(tweetId);
-            if (tweet == null)
-                throw new TweetNotFoundException(tweetId);
-
-            var content = tweet.Content;
+            ArgumentNullException.ThrowIfNull(content);
             var hashtags = ExtractHashtags(content);
+            if (hashtags.Count == 0)
+                return;
+
+            foreach (var hashtag in hashtags)
+            {
+                if (hashtag.Length == 0 || hashtag.Length > 50)
+                    throw new InvalidHashtagException($"Invalid hashtag length ({hashtag.Length}).");
+            }
 
             var existingHashtags = await _hashtagRepository.GetExists(hashtags);
             var newHashtags = hashtags.Except(existingHashtags).ToList();
 
             await _hashtagRepository.AddRangeAsync(newHashtags);
             await _hashtagRepository.IncrementUsageCounterAsync(existingHashtags);
+
+            var hashtagIds = await _hashtagRepository.GetIdByTag(hashtags);
+            var tweetHashtags = new List<TweetHashtag>();
+            foreach (var id in hashtagIds)
+                tweetHashtags.Add(new TweetHashtag { HashtagId = id, TweetId = tweetId });
+            await _tweetHashtagRepository.AddRangeAsync(tweetHashtags);
         }
 
-        private static List<string> ExtractHashtags(string content)
+        private List<string> ExtractHashtags(string content)
         {
-            List<string> hashtags = content
+            return content
                 .Split(' ')
                 .Where(w => w.StartsWith('#'))
                 .Select(w => w.Substring(1))
+                .Distinct()
                 .ToList();
-
-            return hashtags;
         }
     }
 }

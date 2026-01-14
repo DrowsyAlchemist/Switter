@@ -27,7 +27,7 @@ builder.Services.AddSingleton<IKafkaProducer, KafkaProducer>();
 
 // Database
 builder.Services.AddDbContext<TweetDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("PostgreSQL")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("PostgreSQL")), ServiceLifetime.Scoped);
 
 // Repositories
 builder.Services.AddScoped<ITweetRepository, TweetRepository>();
@@ -47,13 +47,21 @@ builder.Services.AddAutoMapper(cfg =>
 builder.Services.AddScoped<IUserTweetRelationship, UserTweetRelationship>();
 builder.Services.AddHttpClient<IUserServiceClient, UserServiceClient>();
 
+// HashtagService
+builder.Services.AddScoped<IHashtagService, HashtagService>();
+
 // TweetService
 builder.Services.AddScoped<TweetCommands>();
 builder.Services.AddScoped<ITweetCommands>(serviceProvider =>
 {
     var baseService = serviceProvider.GetRequiredService<TweetCommands>();
-    var tweetCommandsWithKafka = new TweetCommandsWithKafka(
+    var tweetWithHashtags = new TweetCommandsWithHashtags(
         tweetCommands: baseService,
+        hashtagService: serviceProvider.GetRequiredService<IHashtagService>(),
+        context: serviceProvider.GetRequiredService<TweetDbContext>()
+        );
+    var tweetCommandsWithKafka = new TweetCommandsWithKafka(
+        tweetCommands: tweetWithHashtags,
         kafkaProducer: serviceProvider.GetRequiredService<IKafkaProducer>(),
         logger: serviceProvider.GetRequiredService<ILogger<TweetCommandsWithKafka>>()
         );
@@ -77,8 +85,6 @@ builder.Services.AddScoped<ILikeService>(serviceProvider =>
     return likeServiceWithKafka;
 });
 
-// HashtagService
-builder.Services.AddScoped<IHashtagService, HashtagService>();
 
 // TrendService
 builder.Services.AddScoped<ITrendService, TrendService>();

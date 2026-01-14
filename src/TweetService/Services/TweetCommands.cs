@@ -11,13 +11,11 @@ namespace TweetService.Services
     {
         private readonly ITweetRepository _tweetRepository;
         private readonly IMapper _mapper;
-        private readonly IHashtagService _hashtagService;
 
-        public TweetCommands(ITweetRepository tweetRepository, IMapper mapper, IHashtagService hashtagService)
+        public TweetCommands(ITweetRepository tweetRepository, IMapper mapper)
         {
             _tweetRepository = tweetRepository;
             _mapper = mapper;
-            _hashtagService = hashtagService;
         }
 
         public async Task<TweetDto> TweetAsync(UserInfo authorInfo, CreateTweetRequest request)
@@ -44,9 +42,6 @@ namespace TweetService.Services
 
             if (parentTweet != null)
                 await UpdateParentCountersAsync(request.Type, parentTweet, 1);
-
-            if (request.Type != TweetType.Reply && request.Content != string.Empty)
-                await _hashtagService.ProcessHashtagsAsync(tweet.Id);
 
             return _mapper.Map<TweetDto>(tweet);
         }
