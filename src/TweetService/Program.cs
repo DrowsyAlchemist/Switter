@@ -28,6 +28,7 @@ builder.Services.AddSingleton<IKafkaProducer, KafkaProducer>();
 // Database
 builder.Services.AddDbContext<TweetDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("PostgreSQL")), ServiceLifetime.Scoped);
+builder.Services.AddScoped<ITransactionManager, EfTransactionManager>();
 
 // Repositories
 builder.Services.AddScoped<ITweetRepository, TweetRepository>();
@@ -58,7 +59,7 @@ builder.Services.AddScoped<ITweetCommands>(serviceProvider =>
     var tweetWithHashtags = new TweetCommandsWithHashtags(
         tweetCommands: baseService,
         hashtagService: serviceProvider.GetRequiredService<IHashtagService>(),
-        context: serviceProvider.GetRequiredService<TweetDbContext>()
+        transactionManager: serviceProvider.GetRequiredService<ITransactionManager>()
         );
     var tweetCommandsWithKafka = new TweetCommandsWithKafka(
         tweetCommands: tweetWithHashtags,

@@ -131,7 +131,7 @@ namespace TweetService.Consumers
             }
 
             var tweetRepository = services.GetRequiredService<ITweetRepository>();
-            var userTweets = await tweetRepository.GetByUserAsync(userEvent.UserId);
+            var userTweets = await tweetRepository.GetByUserAsync(userEvent.UserId, 1, int.MaxValue);
 
             foreach (var tweet in userTweets)
             {
@@ -154,7 +154,7 @@ namespace TweetService.Consumers
             _logger.LogInformation("Processing user profile update for user {UserId}", userEvent.UserId);
 
             var tweetRepository = services.GetRequiredService<ITweetRepository>();
-            var userTweetIds = await tweetRepository.GetIdsByUserAsync(userEvent.UserId);
+            var userTweetIds = await tweetRepository.GetIdsByUserAsync(userEvent.UserId, 1, int.MaxValue);
 
             if (userTweetIds.Any())
             {

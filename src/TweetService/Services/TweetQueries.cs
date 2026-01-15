@@ -35,10 +35,9 @@ namespace TweetService.Services
             return tweetDto;
         }
 
-        public async Task<List<TweetDto>> GetTweetRepliesAsync(Guid tweetId, int page = 1, int pageSize = 20, Guid? currentUserId = null)
+        public async Task<List<TweetDto>> GetTweetRepliesAsync(Guid tweetId, int page, int pageSize, Guid? currentUserId = null)
         {
-            var replies = await _tweetRepository.GetRepliesAsync(tweetId);
-            replies = replies.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+            var replies = await _tweetRepository.GetRepliesAsync(tweetId, page, pageSize);
             var tweetDtos = _mapper.Map<List<TweetDto>>(replies);
 
             if (currentUserId.HasValue)
@@ -47,10 +46,9 @@ namespace TweetService.Services
             return tweetDtos;
         }
 
-        public async Task<List<TweetDto>> GetUserTweetsAsync(Guid userId, int page = 1, int pageSize = 20, Guid? currentUserId = null)
+        public async Task<List<TweetDto>> GetUserTweetsAsync(Guid userId, int page, int pageSize, Guid? currentUserId = null)
         {
-            var tweets = await _tweetRepository.GetByUserAsync(userId);
-            tweets = tweets.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+            var tweets = await _tweetRepository.GetByUserAsync(userId, page, pageSize);
             var tweetDtos = _mapper.Map<List<TweetDto>>(tweets);
 
             if (currentUserId.HasValue)

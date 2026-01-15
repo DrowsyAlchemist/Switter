@@ -17,11 +17,13 @@ namespace TweetService.Data
         {
             return await _context.Tweets
                    .AsNoTracking()
-                   .Where(t => t.Id.Equals(id))
+                   .Where(t =>
+                        t.Id.Equals(id)
+                        && t.IsDeleted == false)
                    .FirstOrDefaultAsync();
         }
 
-        public async Task<List<Tweet>> GetByIdsAsync(List<Guid> ids)
+        public async Task<List<Tweet>> GetByIdsAsync(List<Guid> ids, int page, int pageSize)
         {
             if (ids == null)
                 throw new ArgumentNullException(nameof(ids));
@@ -30,11 +32,15 @@ namespace TweetService.Data
 
             return await _context.Tweets
                    .AsNoTracking()
-                   .Where(t => ids.Contains(t.Id))
+                   .Where(t =>
+                        t.IsDeleted == false
+                        && ids.Contains(t.Id))
+                   .Skip((page - 1) * pageSize)
+                   .Take(pageSize)
                    .ToListAsync();
         }
 
-        public async Task<List<Tweet>> GetByHashtagAsync(List<Guid> ids, string hashtag)
+        public async Task<List<Tweet>> GetByHashtagAsync(List<Guid> ids, string hashtag, int page, int pageSize)
         {
             if (string.IsNullOrEmpty(hashtag))
                 throw new ArgumentException(nameof(hashtag));
@@ -48,24 +54,35 @@ namespace TweetService.Data
                    .AsNoTracking()
                    .Where(t =>
                         ids.Contains(t.Id)
+                        && t.IsDeleted == false
                         && t.TweetHashtags.Any(th => th.Hashtag.Tag.Equals(hashtag)))
+                   .Skip((page - 1) * pageSize)
+                   .Take(pageSize)
                    .ToListAsync();
         }
 
-        public async Task<List<Tweet>> GetByUserAsync(Guid userId)
+        public async Task<List<Tweet>> GetByUserAsync(Guid userId, int page, int pageSize)
         {
             return await _context.Tweets
                    .AsNoTracking()
-                   .Where(t => t.AuthorId.Equals(userId))
+                   .Where(t =>
+                        t.AuthorId.Equals(userId)
+                        && t.IsDeleted == false)
+                   .Skip((page - 1) * pageSize)
+                   .Take(pageSize)
                    .ToListAsync();
         }
 
-        public async Task<List<Guid>> GetIdsByUserAsync(Guid userId)
+        public async Task<List<Guid>> GetIdsByUserAsync(Guid userId, int page, int pageSize)
         {
             return await _context.Tweets
                    .AsNoTracking()
-                   .Where(t => t.AuthorId.Equals(userId))
+                   .Where(t =>
+                        t.AuthorId.Equals(userId)
+                        && t.IsDeleted == false)
                    .Select(t => t.Id)
+                   .Skip((page - 1) * pageSize)
+                   .Take(pageSize)
                    .ToListAsync();
         }
 
@@ -87,7 +104,7 @@ namespace TweetService.Data
                 .ToListAsync();
         }
 
-        public async Task<List<Tweet>> GetRepliesAsync(Guid tweetId)
+        public async Task<List<Tweet>> GetRepliesAsync(Guid tweetId, int page, int pageSize)
         {
             return await _context.Tweets
                    .AsNoTracking()
@@ -95,6 +112,8 @@ namespace TweetService.Data
                        t.IsDeleted == false
                        && t.Type == TweetType.Reply
                        && t.ParentTweetId == tweetId)
+                   .Skip((page - 1) * pageSize)
+                   .Take(pageSize)
                    .ToListAsync();
         }
 
@@ -106,13 +125,24 @@ namespace TweetService.Data
             return tweet;
         }
 
+        public async Task IncrementLikesCount(Guid tweetId)
+        {
+            var localTweet = await GetLocalTweet(tweetId);
+            localTweet.LikesCount++;
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task DecrementLikesCount(Guid tweetId)
+        {
+            var localTweet = await GetLocalTweet(tweetId);
+            localTweet.LikesCount--;
+            await _context.SaveChangesAsync();
+        }
+
         public async Task<Tweet> UpdateAsync(Tweet updatedTweet)
         {
             ArgumentNullException.ThrowIfNull(updatedTweet);
-            var localTweet = await _context.Tweets.FindAsync(updatedTweet.Id);
-            if (localTweet == null)
-                throw new KeyNotFoundException($"Tweet {updatedTweet.Id} not found.");
-
+            var localTweet = await GetLocalTweet(updatedTweet.Id);
             _context.Entry(localTweet).CurrentValues.SetValues(updatedTweet);
             await _context.SaveChangesAsync();
             _context.Tweets.Entry(localTweet).State = EntityState.Detached;
@@ -127,7 +157,9 @@ namespace TweetService.Data
 
             var ids = tweets.Select(t => t.Id).ToHashSet();
             var existingTweets = await _context.Tweets
-                .Where(t => ids.Contains(t.Id))
+                .Where(t =>
+                    t.IsDeleted == false
+                    && ids.Contains(t.Id))
                 .ToDictionaryAsync(t => t.Id);
 
             var missingIds = ids.Except(existingTweets.Keys);
@@ -203,6 +235,18 @@ namespace TweetService.Data
                         queue.Enqueue(replyId);
             }
             return allIds;
+        }
+
+        private async Task<Tweet> GetLocalTweet(Guid id)
+        {
+            var localTweet = await _context.Tweets.FindAsync(id);
+
+            if (localTweet == null)
+                throw new KeyNotFoundException($"Tweet {id} not found.");
+            if (localTweet.IsDeleted)
+                throw new KeyNotFoundException($"Tweet {id} is deleted.");
+
+            return localTweet;
         }
     }
 }

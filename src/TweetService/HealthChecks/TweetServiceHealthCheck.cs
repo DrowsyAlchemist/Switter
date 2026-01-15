@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Diagnostics.HealthChecks;
 using TweetService.DTOs;
+using TweetService.Exceptions;
 using TweetService.Interfaces.Services;
 using TweetService.Models;
 
@@ -75,20 +76,28 @@ namespace TweetService.HealthChecks
                     && tweetInDb.RepliesCount == 1
                     && tweetInDb.RetweetsCount == 1;
 
-                await _tweetCommands.DeleteTweetAsync(tweet.Id, testUserInfo.Id);
                 await _tweetCommands.DeleteTweetAsync(retweet.Id, anotherTestUserInfo.Id);
+                await _tweetCommands.DeleteTweetAsync(reply.Id, anotherTestUserInfo.Id);
+                await _tweetCommands.DeleteTweetAsync(tweet.Id, testUserInfo.Id);
 
-                tweetInDb = await _tweetQueries.GetTweetAsync(tweet.Id, TestGuid1);
-                var replyInDb = await _tweetQueries.GetTweetAsync(reply.Id, TestGuid2);
-                var retweetInDb = await _tweetQueries.GetTweetAsync(retweet.Id, TestGuid2);
-
-                isHealthy = isHealthy
-                    && tweetInDb != null
-                    && tweetInDb.IsDeleted == true
-                    && replyInDb != null
-                    && replyInDb.IsDeleted == true
-                    && retweetInDb != null
-                    && retweetInDb.IsDeleted == true;
+                try
+                {
+                    tweetInDb = await _tweetQueries.GetTweetAsync(tweet.Id, TestGuid1);
+                    isHealthy = false;
+                }
+                catch (TweetNotFoundException) { }
+                try
+                {
+                    var replyInDb = await _tweetQueries.GetTweetAsync(reply.Id, TestGuid2);
+                    isHealthy = false;
+                }
+                catch (TweetNotFoundException) { }
+                try
+                {
+                    var retweetInDb = await _tweetQueries.GetTweetAsync(retweet.Id, TestGuid2);
+                    isHealthy = false;
+                }
+                catch (TweetNotFoundException) { }
 
                 return isHealthy
                    ? HealthCheckResult.Healthy("Tweet service is working")

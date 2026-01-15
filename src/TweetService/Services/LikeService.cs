@@ -11,21 +11,21 @@ namespace TweetService.Services
     {
         private readonly ILikesRepository _likesRepository;
         private readonly ITweetRepository _tweetRepository;
+        private readonly ITransactionManager _transactionManager;
         private readonly IMapper _mapper;
 
-        public LikeService(ILikesRepository likesRepository, ITweetRepository tweetRepository, IMapper mapper)
+        public LikeService(ILikesRepository likesRepository, ITweetRepository tweetRepository, IMapper mapper, ITransactionManager transactionManager)
         {
             _likesRepository = likesRepository;
             _tweetRepository = tweetRepository;
+            _transactionManager = transactionManager;
             _mapper = mapper;
         }
 
-        public async Task<List<TweetDto>> GetLikedTweetsAsync(Guid userId, int page = 1, int pageSize = 20)
+        public async Task<List<TweetDto>> GetLikedTweetsAsync(Guid userId, int page, int pageSize)
         {
-            var likedTweetIds = await _likesRepository.GetLikedTweetIdsAsync(userId);
-            likedTweetIds = likedTweetIds.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-
-            var likedTweets = await _tweetRepository.GetByIdsAsync(likedTweetIds);
+            var likedTweetIds = await _likesRepository.GetLikedTweetIdsAsync(userId, page, pageSize);
+            var likedTweets = await _tweetRepository.GetByIdsAsync(likedTweetIds, page, pageSize);
             var likedTweetsDtos = _mapper.Map<List<TweetDto>>(likedTweets);
 
             var retweetedIds = await _tweetRepository.GetRetweetedIdsAsync(likedTweetIds, userId);
@@ -39,37 +39,55 @@ namespace TweetService.Services
 
         public async Task LikeTweetAsync(Guid tweetId, Guid userId)
         {
-            bool isLikeExist = await _likesRepository.IsExistAsync(tweetId, userId);
-            if (isLikeExist)
-                throw new DoubleLikeException(tweetId, userId);
-
-            var tweet = await _tweetRepository.GetByIdAsync(tweetId);
-            if (tweet == null)
-                throw new TweetNotFoundException(tweetId);
-
-            var like = new Like()
+            await using var transaction = await _transactionManager.BeginTransactionAsync();
+            try
             {
-                TweetId = tweetId,
-                UserId = userId
-            };
-            await _likesRepository.AddAsync(like);
-            tweet.LikesCount++;
-            await _tweetRepository.UpdateAsync(tweet);
+                bool isLikeExist = await _likesRepository.IsExistAsync(tweetId, userId);
+                if (isLikeExist)
+                    throw new DoubleLikeException(tweetId, userId);
+
+                var tweet = await _tweetRepository.GetByIdAsync(tweetId);
+                if (tweet == null)
+                    throw new TweetNotFoundException(tweetId);
+
+                var like = new Like()
+                {
+                    TweetId = tweetId,
+                    UserId = userId
+                };
+                var likeInDb = await _likesRepository.AddAsync(like);
+                await _tweetRepository.IncrementLikesCount(tweet.Id);
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         public async Task UnlikeTweetAsync(Guid tweetId, Guid userId)
         {
-            var like = await _likesRepository.GetAsync(tweetId, userId);
-            if (like == null)
-                throw new LikeNotFoundException(tweetId, userId);
+            await using var transaction = await _transactionManager.BeginTransactionAsync();
+            try
+            {
+                var like = await _likesRepository.GetAsync(tweetId, userId);
+                if (like == null)
+                    throw new LikeNotFoundException(tweetId, userId);
 
-            var tweet = await _tweetRepository.GetByIdAsync(tweetId);
-            if (tweet == null)
-                throw new TweetNotFoundException(tweetId);
+                var tweet = await _tweetRepository.GetByIdAsync(tweetId);
+                if (tweet == null)
+                    throw new TweetNotFoundException(tweetId);
 
-            await _likesRepository.DeleteAsync(like.Id);
-            tweet.LikesCount--;
-            await _tweetRepository.UpdateAsync(tweet);
+                await _likesRepository.DeleteAsync(like.Id);
+                await _tweetRepository.DecrementLikesCount(tweet.Id);
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
     }
 }

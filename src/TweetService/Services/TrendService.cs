@@ -69,7 +69,7 @@ namespace TweetService.Services
             return trendHashtags;
         }
 
-        public async Task<List<TweetDto>> GetTrendTweetsAsync(Guid? userId)
+        public async Task<List<TweetDto>> GetTrendTweetsAsync(Guid? userId, int page, int pageSize)
         {
             var trendTweetIds = await GetTrendsTweetIdsFromCacheAsync();
 
@@ -82,19 +82,19 @@ namespace TweetService.Services
             if (trendTweetIds.Count == 0)
                 return new List<TweetDto>();
 
-            var trendTweets = await _tweetRepository.GetByIdsAsync(trendTweetIds);
+            var trendTweets = await _tweetRepository.GetByIdsAsync(trendTweetIds, page, pageSize);
             var tweetDtos = await GetTweetDtosWithUserRelationshipsAsync(trendTweets, userId);
             return tweetDtos;
         }
 
-        public async Task<List<TweetDto>> GetTrendTweetsAsync(string hashtag, Guid? userId)
+        public async Task<List<TweetDto>> GetTrendTweetsAsync(string hashtag, Guid? userId, int page, int pageSize)
         {
 
             var trendTweetIds = await GetTrendsTweetIdsAsync();
             if (trendTweetIds.Count == 0)
                 return new List<TweetDto>();
 
-            var trendTweets = await _tweetRepository.GetByHashtagAsync(trendTweetIds, hashtag);
+            var trendTweets = await _tweetRepository.GetByHashtagAsync(trendTweetIds, hashtag, page, pageSize);
             var tweetDtos = await GetTweetDtosWithUserRelationshipsAsync(trendTweets, userId);
             return tweetDtos;
         }

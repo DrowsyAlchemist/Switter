@@ -1,5 +1,5 @@
-﻿using TweetService.Data;
-using TweetService.DTOs;
+﻿using TweetService.DTOs;
+using TweetService.Interfaces.Data;
 using TweetService.Interfaces.Services;
 using TweetService.Models;
 
@@ -9,21 +9,21 @@ namespace TweetService.Services.Decorators
     {
         private readonly ITweetCommands _tweetCommands;
         private readonly IHashtagService _hashtagService;
-        private readonly TweetDbContext _context;
+        private readonly ITransactionManager _transactionManager;
 
         public TweetCommandsWithHashtags(
             ITweetCommands tweetCommands,
             IHashtagService hashtagService,
-            TweetDbContext context)
+            ITransactionManager transactionManager)
         {
             _tweetCommands = tweetCommands;
             _hashtagService = hashtagService;
-            _context = context;
+            _transactionManager = transactionManager;
         }
 
         public async Task<TweetDto> TweetAsync(UserInfo authorInfo, CreateTweetRequest request)
         {
-            await using var transaction = await _context.Database.BeginTransactionAsync();
+            await using var transaction = await _transactionManager.BeginTransactionAsync();
 
             try
             {
@@ -32,6 +32,7 @@ namespace TweetService.Services.Decorators
                 if (request.Type != TweetType.Reply)
                     await _hashtagService.ProcessHashtagsAsync(tweetDto.Id, tweetDto.Content);
 
+                await transaction.CommitAsync();
                 return tweetDto;
             }
             catch

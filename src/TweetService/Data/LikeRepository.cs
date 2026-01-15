@@ -53,12 +53,17 @@ namespace TweetService.Data
                        .ToListAsync();
         }
 
-        public async Task<List<Guid>> GetLikedTweetIdsAsync(Guid userId)
+        public async Task<List<Guid>> GetLikedTweetIdsAsync(Guid userId, int page, int pageSize)
         {
             return await _context.Likes
                    .AsNoTracking()
-                   .Where(l => l.UserId.Equals(userId))
+                   .Include(l => l.Tweet)
+                   .Where(l =>
+                        l.UserId.Equals(userId)
+                        && l.Tweet.IsDeleted == false)
                    .Select(l => l.TweetId)
+                   .Skip((page - 1) * pageSize)
+                   .Take(pageSize)
                    .ToListAsync();
         }
 

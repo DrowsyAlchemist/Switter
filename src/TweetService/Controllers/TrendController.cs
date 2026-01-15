@@ -37,12 +37,12 @@ namespace TweetService.Controllers
         }
 
         [HttpGet("tweets")]
-        public async Task<IActionResult> GetTrendTweetsAsync()
+        public async Task<IActionResult> GetTrendTweetsAsync(int page = 1, int pageSize = 20)
         {
             try
             {
                 var currentUserId = GetCurrentUserId();
-                var tweetDto = await _trendService.GetTrendTweetsAsync(currentUserId);
+                var tweetDto = await _trendService.GetTrendTweetsAsync(currentUserId, page, pageSize);
                 _logger.LogInformation("Trend tweets successfully sent.");
                 return Ok(tweetDto);
             }
@@ -54,7 +54,7 @@ namespace TweetService.Controllers
         }
 
         [HttpGet("tweets/{hashtag}")]
-        public async Task<IActionResult> GetTrendTweetsAsync(string hashtag)
+        public async Task<IActionResult> GetTrendTweetsAsync(string hashtag, int page = 1, int pageSize = 20)
         {
             try
             {
@@ -62,7 +62,7 @@ namespace TweetService.Controllers
                     return BadRequest("Hashtag shouldn't be null or empty.");
 
                 var currentUserId = GetCurrentUserId();
-                var tweetDto = await _trendService.GetTrendTweetsAsync(hashtag, currentUserId);
+                var tweetDto = await _trendService.GetTrendTweetsAsync(hashtag, currentUserId, page, pageSize);
                 _logger.LogInformation("Trend tweets by hashtag successfully sent.\nHashtag: {hashtag}", hashtag);
                 return Ok(tweetDto);
             }
