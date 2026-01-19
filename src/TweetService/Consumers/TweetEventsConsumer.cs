@@ -1,12 +1,17 @@
 ﻿using System.Text.Json;
 using TweetService.Events;
-using TweetService.Interfaces.Data;
+using TweetService.Interfaces.Infrastructure;
 
 namespace TweetService.Consumers
 {
     public class TweetEventsConsumer : EventsConsumer
     {
-        public TweetEventsConsumer(IConfiguration configuration, IServiceProvider serviceProvider, ILogger<TweetEventsConsumer> logger)
+        private const string KeyForLikes = "KeyForTweetLikes";
+
+        public TweetEventsConsumer(
+            IConfiguration configuration,
+            IServiceProvider serviceProvider,
+            ILogger<TweetEventsConsumer> logger)
            : base(configuration, serviceProvider, logger)
         {
         }
@@ -24,12 +29,8 @@ namespace TweetService.Consumers
             {
                 switch (topic)
                 {
-                    case "user-profile-changed":
-                        await HandleUserProfileChanged(message, scope.ServiceProvider, cancellationToken);
-                        break;
-
-                    case "user-profile-deleted":
-                        await HandleUserProfileDeleted(message, scope.ServiceProvider, cancellationToken);
+                    case "like-set":
+                        await HandleLikeSetAsync(message, scope.ServiceProvider);
                         break;
 
                     default:
@@ -49,56 +50,18 @@ namespace TweetService.Consumers
             }
         }
 
-        private async Task HandleUserProfileChanged(string message, IServiceProvider services, CancellationToken cancellationToken)
+        private async Task HandleLikeSetAsync(string message, IServiceProvider services)
         {
-            var userEvent = JsonSerializer.Deserialize<UserProfileChangedEvent>(message);
+            var likeEvent = JsonSerializer.Deserialize<LikeSetEvent>(message);
 
-            if (userEvent == null)
-                throw new InvalidOperationException("Failed to deserialize user profile changed event");
+            if (likeEvent == null)
+                throw new JsonException("Failed to deserialize like-set event");
 
-            Logger.LogInformation("Processing user profile update for user {UserId}", userEvent.UserId);
+            Logger.LogInformation("Processing like-set for user {UserId}", likeEvent.UserId);
 
-            if (userEvent.DisplayName == null && userEvent.AvatarUrl == null)
-            {
-                Logger.LogInformation("No changes required for user {UserId}", userEvent.UserId);
-                return;
-            }
-
-            var tweetRepository = services.GetRequiredService<ITweetRepository>();
-            var userTweets = await tweetRepository.GetByUserAsync(userEvent.UserId, 1, int.MaxValue);
-
-            foreach (var tweet in userTweets)
-            {
-                if (userEvent.DisplayName != null)
-                    tweet.AuthorDisplayName = userEvent.DisplayName;
-
-                if (userEvent.AvatarUrl != null)
-                    tweet.AuthorAvatarUrl = userEvent.AvatarUrl;
-            }
-            await tweetRepository.UpdateRangeAsync(userTweets);
-        }
-
-        private async Task HandleUserProfileDeleted(string message, IServiceProvider services, CancellationToken cancellationToken)
-        {
-            var userEvent = JsonSerializer.Deserialize<UserProfileDeletedEvent>(message);
-
-            if (userEvent == null)
-                throw new InvalidOperationException("Failed to deserialize user profile changed event");
-
-            Logger.LogInformation("Processing user profile update for user {UserId}", userEvent.UserId);
-
-            var tweetRepository = services.GetRequiredService<ITweetRepository>();
-            var userTweetIds = await tweetRepository.GetIdsByUserAsync(userEvent.UserId, 1, int.MaxValue);
-
-            if (userTweetIds.Any())
-            {
-                await tweetRepository.SoftDeleteRangeAsync(userTweetIds);
-                Logger.LogInformation("Deleted {Count} tweets for user {UserId}", userTweetIds.Count(), userEvent.UserId);
-            }
-            else
-            {
-                Logger.LogInformation("No tweets found for user {UserId}", userEvent.UserId);
-            }
+            var redis = services.GetRequiredService<IRedisService>();
+            var likedTweetId = likeEvent.TweetId.ToString();
+            await redis.AddToListAsync(KeyForLikes, [likedTweetId]);
         }
     }
 }
