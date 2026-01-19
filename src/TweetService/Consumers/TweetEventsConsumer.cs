@@ -4,16 +4,16 @@ using TweetService.Interfaces.Data;
 
 namespace TweetService.Consumers
 {
-    public class UserEventsConsumer : EventsConsumer
+    public class TweetEventsConsumer : EventsConsumer
     {
-        public UserEventsConsumer(IConfiguration configuration, IServiceProvider serviceProvider,  ILogger<UserEventsConsumer> logger)
-            : base(configuration, serviceProvider, logger)
+        public TweetEventsConsumer(IConfiguration configuration, IServiceProvider serviceProvider, ILogger<TweetEventsConsumer> logger)
+           : base(configuration, serviceProvider, logger)
         {
         }
 
         protected override IEnumerable<string> GetTopics()
         {
-            return ["user-profile-changed", "user-profile-deleted"];
+            return ["like-set"];
         }
 
         protected override async Task ProcessMessageAsync(string topic, string message, CancellationToken cancellationToken)
