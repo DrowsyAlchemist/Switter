@@ -1,5 +1,4 @@
-﻿using TweetService.DTOs;
-using TweetService.Exceptions;
+﻿using TweetService.Exceptions;
 using TweetService.Interfaces.Data;
 using TweetService.Interfaces.Services;
 using TweetService.Models;
@@ -12,7 +11,8 @@ namespace TweetService.Services
         private readonly ITweetRepository _tweetRepository;
         private readonly ITweetHashtagRepository _tweetHashtagRepository;
 
-        public HashtagService(IHashtagRepository hashtagRepository,
+        public HashtagService(
+            IHashtagRepository hashtagRepository,
             ITweetRepository tweetRepository,
             ITweetHashtagRepository tweetHashtagRepository)
         {
@@ -21,21 +21,22 @@ namespace TweetService.Services
             _tweetHashtagRepository = tweetHashtagRepository;
         }
 
-        public async Task ProcessHashtagsAsync(Guid tweetId, string content)
+        public async Task<IEnumerable<string>> ProcessHashtagsAsync(Guid tweetId, string content)
         {
             ArgumentNullException.ThrowIfNull(content);
             var hashtags = ExtractHashtags(content);
-            if (hashtags.Count == 0)
-                return;
+            if (hashtags.Any() == false)
+                return [];
 
-            foreach (var hashtag in hashtags)
+            var hashtagSet = new HashSet<string>(hashtags);
+            foreach (var hashtag in hashtagSet)
             {
                 if (hashtag.Length == 0 || hashtag.Length > 50)
                     throw new InvalidHashtagException($"Invalid hashtag length ({hashtag.Length}).");
             }
 
-            var existingHashtags = await _hashtagRepository.GetExists(hashtags);
-            var newHashtags = hashtags.Except(existingHashtags).ToList();
+            var existingHashtags = await _hashtagRepository.GetExists(hashtagSet);
+            var newHashtags = hashtagSet.Except(existingHashtags).ToList();
 
             await _hashtagRepository.AddRangeAsync(newHashtags);
             await _hashtagRepository.IncrementUsageCounterAsync(existingHashtags);
@@ -45,16 +46,16 @@ namespace TweetService.Services
             foreach (var id in hashtagIds)
                 tweetHashtags.Add(new TweetHashtag { HashtagId = id, TweetId = tweetId });
             await _tweetHashtagRepository.AddRangeAsync(tweetHashtags);
+            return hashtags;
         }
 
-        private List<string> ExtractHashtags(string content)
+        private IEnumerable<string> ExtractHashtags(string content)
         {
             return content
                 .Split(' ')
                 .Where(w => w.StartsWith('#'))
                 .Select(w => w.Substring(1))
-                .Distinct()
-                .ToList();
+                .Distinct();
         }
     }
 }

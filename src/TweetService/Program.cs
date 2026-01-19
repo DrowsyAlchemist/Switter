@@ -49,7 +49,17 @@ builder.Services.AddScoped<IUserTweetRelationship, UserTweetRelationship>();
 builder.Services.AddHttpClient<IUserServiceClient, UserServiceClient>();
 
 // HashtagService
-builder.Services.AddScoped<IHashtagService, HashtagService>();
+builder.Services.AddScoped<HashtagService>();
+builder.Services.AddScoped<IHashtagService>(serviceProvider =>
+{
+    var baseService = serviceProvider.GetRequiredService<HashtagService>();
+    var hashtagServiceWithUsage = new HashtagServiceWithUsage(
+        hashtagService: baseService,
+        redisService: serviceProvider.GetRequiredService<IRedisService>(),
+        transactionManager: serviceProvider.GetRequiredService<ITransactionManager>()
+        );
+    return hashtagServiceWithUsage;
+});
 
 // TweetService
 builder.Services.AddScoped<TweetCommands>();

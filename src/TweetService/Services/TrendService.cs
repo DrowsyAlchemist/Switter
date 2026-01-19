@@ -10,12 +10,14 @@ namespace TweetService.Services
 {
     public class TrendService : ITrendService
     {
-        private const string KeyForTrendHashtags = "TrendHashtags";
-        private const string KeyForHashtagUsage = "HashtagUsages";
-        private const string KeyForLikes = "TweetLikes";
-        private const string KeyForTrendTweets = "TrendTweets";
-        private const int TrendHashtagsCount = 100;
-        private const int TrendTweetsCount = 500;
+        private const string KeyForTrendHashtags = "KeyForTrendHashtags";
+        private const string KeyForHashtagUsage = "KeyForHashtagUsages";
+        private const string KeyForLikes = "KeyForTweetLikes";
+        private const string KeyForTrendTweets = "KeyForTrendTweets";
+        private const int TrendHashtagsCacheSize = 100;
+        private const int TrendTweetsCountCacheSize = 500;
+        private const int TrendsPeriodInHours = 24;
+        private const int CacheExpiryInMinutes = 30;
 
         private readonly ITweetRepository _tweetRepository;
         private readonly IUserTweetRelationship _userTweetRelationship;
@@ -33,55 +35,41 @@ namespace TweetService.Services
             _userTweetRelationship = userTweetRelationship;
         }
 
-        public async Task<List<string>> GetTrendCategoriesAsync()
+        public async Task<List<string>> GetTrendCategoriesAsync(int page, int pageSize)
         {
-            var trendsJson = await _redisService.GetAsync(KeyForTrendHashtags);
-            List<string>? trendHashtags = new();
-            if (trendsJson != null)
+            string? trendsJson;
+            List<string>? trendHashtags;
+
+            int maxIndex = page * pageSize;
+            if (maxIndex <= TrendHashtagsCacheSize)
             {
-                trendHashtags = JsonSerializer.Deserialize<List<string>>(trendsJson);
-                if (trendHashtags == null)
-                    throw new JsonException("Cant deserialize trends from redis.");
-                return trendHashtags;
+                trendHashtags = await GetTrendCategoriesFromCacheAsync();
+                if (trendHashtags.Count >= maxIndex)
+                    return trendHashtags.Skip((page - 1) * pageSize).Take(pageSize).ToList();
             }
 
-            var startDateTime = DateTime.UtcNow - TimeSpan.FromHours(24);
-            var lastHashtags = await _redisService.GetListFromDateAsync(KeyForHashtagUsage, startDateTime);
-            if (lastHashtags.Count == 0)
-                return lastHashtags;
+            trendHashtags = await CalculateTrendCategoriesAsync();
 
-            var hashtagsUsage = new Dictionary<string, int>();
-            foreach (var tag in lastHashtags)
-            {
-                if (hashtagsUsage.ContainsKey(tag))
-                    hashtagsUsage[tag]++;
-                else
-                    hashtagsUsage.Add(tag, 1);
-            }
-            trendHashtags = hashtagsUsage
-                .OrderByDescending(h => h.Value)
-                .Take(TrendHashtagsCount)
-                .Select(h => h.Key)
-                .ToList();
+            trendsJson = JsonSerializer.Serialize(trendHashtags.Take(TrendHashtagsCacheSize).ToList());
+            await _redisService.SetAsync(KeyForTrendHashtags, trendsJson, TimeSpan.FromMinutes(CacheExpiryInMinutes));
 
-            trendsJson = JsonSerializer.Serialize(trendHashtags);
-            await _redisService.SetAsync(KeyForTrendHashtags, trendsJson, TimeSpan.FromMinutes(30));
-            return trendHashtags;
+            return trendHashtags.Skip((page - 1) * pageSize).Take(pageSize).ToList();
         }
 
         public async Task<List<TweetDto>> GetTrendTweetsAsync(Guid? userId, int page, int pageSize)
         {
-            var trendTweetIds = await GetTrendsTweetIdsFromCacheAsync();
+            int maxIndex = page * pageSize;
+            List<Guid>? trendTweetIds = null;
 
-            if (trendTweetIds == null)
+            if (maxIndex <= TrendTweetsCountCacheSize)
+                trendTweetIds = await GetTrendsTweetIdsFromCacheAsync();
+
+            if (trendTweetIds!.Count < maxIndex)
             {
-                trendTweetIds = await GetTrendsTweetIdsAsync();
-                var trendsJson = JsonSerializer.Serialize(trendTweetIds);
-                await _redisService.SetAsync(KeyForTrendTweets, trendsJson, TimeSpan.FromMinutes(30));
+                trendTweetIds = await CalculateTrendsTweetIdsAsync(maxIndex);
+                var trendsJson = JsonSerializer.Serialize(trendTweetIds.Take(TrendTweetsCountCacheSize).ToList());
+                await _redisService.SetAsync(KeyForTrendTweets, trendsJson, TimeSpan.FromMinutes(CacheExpiryInMinutes));
             }
-            if (trendTweetIds.Count == 0)
-                return new List<TweetDto>();
-
             var trendTweets = await _tweetRepository.GetByIdsAsync(trendTweetIds, page, pageSize);
             var tweetDtos = await GetTweetDtosWithUserRelationshipsAsync(trendTweets, userId);
             return tweetDtos;
@@ -89,14 +77,24 @@ namespace TweetService.Services
 
         public async Task<List<TweetDto>> GetTrendTweetsAsync(string hashtag, Guid? userId, int page, int pageSize)
         {
-
-            var trendTweetIds = await GetTrendsTweetIdsAsync();
-            if (trendTweetIds.Count == 0)
-                return new List<TweetDto>();
-
+            int maxIndex = page * pageSize;
+            var trendTweetIds = await CalculateTrendsTweetIdsAsync(maxIndex);
             var trendTweets = await _tweetRepository.GetByHashtagAsync(trendTweetIds, hashtag, page, pageSize);
             var tweetDtos = await GetTweetDtosWithUserRelationshipsAsync(trendTweets, userId);
             return tweetDtos;
+        }
+
+        private async Task<List<string>> GetTrendCategoriesFromCacheAsync()
+        {
+            var trendsJson = await _redisService.GetAsync(KeyForTrendHashtags);
+            if (trendsJson != null)
+            {
+                var trendHashtags = JsonSerializer.Deserialize<List<string>>(trendsJson);
+                if (trendHashtags == null)
+                    throw new JsonException("Cant deserialize trends from redis.");
+                return trendHashtags;
+            }
+            return new List<string>();
         }
 
         private async Task<List<Guid>> GetTrendsTweetIdsFromCacheAsync()
@@ -114,22 +112,38 @@ namespace TweetService.Services
             return new List<Guid>();
         }
 
-        private async Task<List<Guid>> GetTrendsTweetIdsAsync()
+        private async Task<List<string>> CalculateTrendCategoriesAsync()
         {
-            var startDateTime = DateTime.UtcNow - TimeSpan.FromHours(24);
-            var lastLikesJson = await _redisService.GetListFromDateAsync(KeyForLikes, startDateTime);
+            var period = TimeSpan.FromHours(TrendsPeriodInHours);
+            var lastHashtags = await _redisService.GetListFromDateAsync(KeyForHashtagUsage, period);
+            if (lastHashtags.Count == 0)
+                return lastHashtags;
 
-            if (lastLikesJson.Count == 0)
+            var hashtagsUsage = new Dictionary<string, int>();
+            foreach (var tag in lastHashtags)
+            {
+                if (hashtagsUsage.ContainsKey(tag))
+                    hashtagsUsage[tag]++;
+                else
+                    hashtagsUsage.Add(tag, 1);
+            }
+            return hashtagsUsage
+                .OrderByDescending(h => h.Value)
+                .Select(h => h.Key)
+                .ToList();
+        }
+
+        private async Task<List<Guid>> CalculateTrendsTweetIdsAsync(int count)
+        {
+            var period = TimeSpan.FromHours(TrendsPeriodInHours);
+            var lastLikedIds = await _redisService.GetListFromDateAsync(KeyForLikes, period);
+
+            if (lastLikedIds.Count == 0)
                 return new List<Guid>();
 
             var likesCount = new Dictionary<string, int>();
-            foreach (string likeJson in lastLikesJson)
+            foreach (string tweetId in lastLikedIds)
             {
-                var like = JsonSerializer.Deserialize<LikeUsage>(likeJson);
-                if (like == null)
-                    throw new JsonException("Cant deserialize like from redis.");
-
-                string tweetId = like.TweetId.ToString();
                 if (likesCount.ContainsKey(tweetId))
                     likesCount[tweetId]++;
                 else
@@ -137,7 +151,7 @@ namespace TweetService.Services
             }
             return likesCount
                 .OrderByDescending(t => t.Value)
-                .Take(TrendTweetsCount)
+                .Take(count)
                 .Select(t => Guid.Parse(t.Key))
                 .ToList();
         }
