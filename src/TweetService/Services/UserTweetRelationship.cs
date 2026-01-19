@@ -24,6 +24,10 @@ namespace TweetService.Services
 
         public async Task<List<TweetDto>> GetTweetsWithRelationshipsAsync(List<TweetDto> tweetDtos, Guid userId)
         {
+            ArgumentNullException.ThrowIfNull(tweetDtos);
+            if (tweetDtos.Count == 0)
+                return tweetDtos;
+
             var tweetIds = tweetDtos.Select(t => t.Id).ToList();
 
             var likedTweetIds = await _likesRepository.GetLikedTweetIdsAsync(tweetIds, userId);

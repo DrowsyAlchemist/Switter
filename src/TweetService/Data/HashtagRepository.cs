@@ -31,10 +31,10 @@ namespace TweetService.Data
                    .FirstOrDefaultAsync();
         }
 
-        public async Task<List<Hashtag>> GetByTagsAsync(List<string> tags)
+        public async Task<List<Hashtag>> GetByTagsAsync(IEnumerable<string> tags)
         {
             ArgumentNullException.ThrowIfNull(tags);
-            if (tags.Count == 0)
+            if (tags.Any() == false)
                 return new List<Hashtag>();
 
             tags = tags.Select(t => t.ToLower()).ToList();
@@ -44,10 +44,10 @@ namespace TweetService.Data
                    .ToListAsync();
         }
 
-        public async Task<List<Guid>> GetIdByTag(List<string> tags)
+        public async Task<List<Guid>> GetIdByTag(IEnumerable<string> tags)
         {
             ArgumentNullException.ThrowIfNull(tags);
-            if (tags.Count == 0)
+            if (tags.Any() == false)
                 return new List<Guid>();
 
             tags = tags.Select(t => t.ToLower()).ToList();
@@ -158,10 +158,10 @@ namespace TweetService.Data
             return await _context.Hashtags.AnyAsync(t => t.Tag.Equals(tag.ToLower()));
         }
 
-        public async Task<List<string>> GetExists(List<string> tags)
+        public async Task<List<string>> GetExists(IEnumerable<string> tags)
         {
             ArgumentNullException.ThrowIfNull(tags);
-            if (tags.Count == 0)
+            if (tags.Any() == false)
                 return new List<string>();
 
             tags = tags.Select(t => t.ToLower()).ToList();

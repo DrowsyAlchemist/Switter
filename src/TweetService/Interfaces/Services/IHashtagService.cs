@@ -2,6 +2,6 @@
 {
     public interface IHashtagService
     {
-        Task ProcessHashtagsAsync(Guid tweetId, string content);
+        Task<IEnumerable<string>> ProcessHashtagsAsync(Guid tweetId, string content);
     }
 }

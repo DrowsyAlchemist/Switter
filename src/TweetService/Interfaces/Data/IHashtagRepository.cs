@@ -5,8 +5,8 @@ namespace TweetService.Interfaces.Data
     public interface IHashtagRepository
     {
         Task<Hashtag?> GetByTagAsync(string tag);
-        Task<List<Hashtag>> GetByTagsAsync(List<string> tags);
-        Task<List<Guid>> GetIdByTag(List<string> tags);
+        Task<List<Hashtag>> GetByTagsAsync(IEnumerable<string> tags);
+        Task<List<Guid>> GetIdByTag(IEnumerable<string> tags);
         Task<List<Hashtag>> SearchAsync(string query, int page, int pageSize);
         Task<List<Hashtag>> GetMostPopularAsync(int count);
         Task<Hashtag> AddAsync(Hashtag hashtag);
@@ -14,6 +14,6 @@ namespace TweetService.Interfaces.Data
         Task<Hashtag> IncrementUsageCounterAsync(string tag);
         Task IncrementUsageCounterAsync(List<string> tags);
         Task<bool> IsExist(string tag);
-        Task<List<string>> GetExists(List<string> tags);
+        Task<List<string>> GetExists(IEnumerable<string> tags);
     }
 }
