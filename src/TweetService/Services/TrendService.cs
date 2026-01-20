@@ -12,7 +12,7 @@ namespace TweetService.Services
     {
         private const string KeyForTrendHashtags = "KeyForTrendHashtags";
         private const string KeyForHashtagUsage = "KeyForHashtagUsages";
-        private const string KeyForLikes = "KeyForTweetLikes";
+        private const string KeyForLikes = "KeyForLikes";
         private const string KeyForTrendTweets = "KeyForTrendTweets";
         private const int TrendHashtagsCacheSize = 100;
         private const int TrendTweetsCountCacheSize = 500;

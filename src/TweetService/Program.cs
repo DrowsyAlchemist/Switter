@@ -23,6 +23,7 @@ builder.Services.AddScoped<IRedisService, RedisService>();
 
 // Kafka 
 builder.Services.AddHostedService<UserEventsConsumer>();
+builder.Services.AddHostedService<TweetEventsConsumer>();
 builder.Services.AddSingleton<IKafkaProducer, KafkaProducer>();
 
 // Database
@@ -88,14 +89,17 @@ builder.Services.AddScoped<ILikeService>(serviceProvider =>
 {
     var baseService = serviceProvider.GetRequiredService<LikeService>();
 
-    var likeServiceWithKafka = new LikeServiceWithKafka(
+    var likeServiceWithUsage = new LikeServiceWithUsage(
         likeService: baseService,
+        redisService: serviceProvider.GetRequiredService<IRedisService>()
+        );
+    var likeServiceWithKafka = new LikeServiceWithKafka(
+        likeService: likeServiceWithUsage,
         kafkaProducer: serviceProvider.GetRequiredService<IKafkaProducer>(),
         logger: serviceProvider.GetRequiredService<ILogger<LikeServiceWithKafka>>()
         );
     return likeServiceWithKafka;
 });
-
 
 // TrendService
 builder.Services.AddScoped<ITrendService, TrendService>();
