@@ -17,7 +17,6 @@ namespace TweetService.Services
 
         private readonly TrendCalculator _trendCalculator;
         private readonly ITweetRepository _tweetRepository;
-        private readonly IUserTweetRelationship _userTweetRelationship;
         private readonly IRedisService _redisService;
         private readonly IMapper _mapper;
 
@@ -25,14 +24,12 @@ namespace TweetService.Services
             TrendCalculator trendCalculator,
             ITweetRepository tweetRepository,
             IRedisService redisService,
-            IMapper mapper,
-            IUserTweetRelationship userTweetRelationship)
+            IMapper mapper)
         {
             _tweetRepository = tweetRepository;
             _trendCalculator = trendCalculator;
             _redisService = redisService;
             _mapper = mapper;
-            _userTweetRelationship = userTweetRelationship;
         }
 
         public async Task<IEnumerable<string>> GetTrendCategoriesAsync(int page, int pageSize)
@@ -72,8 +69,7 @@ namespace TweetService.Services
         {
             var trendTweetIds = await _trendCalculator.CalculateTrendTweetByLastLikesIdsAsync(int.MaxValue);
             var trendTweets = await _tweetRepository.GetByHashtagAsync(trendTweetIds, hashtag, page, pageSize);
-            var tweetDtos = await GetTweetDtosWithUserRelationshipsAsync(trendTweets, userId);
-            return tweetDtos;
+            return _mapper.Map<IEnumerable<TweetDto>>(trendTweets);
         }
 
         private async Task<IEnumerable<string>> GetTrendCategoriesFromCacheAsync()
@@ -111,13 +107,8 @@ namespace TweetService.Services
             return new List<Guid>();
         }
 
-        private async Task<List<TweetDto>> GetTweetDtosWithUserRelationshipsAsync(List<Tweet> tweets, Guid? userId)
         private async Task SaveTrendTweetsToCacheAsync(IEnumerable<Guid> trendTweets)
         {
-            var tweetDtos = _mapper.Map<List<TweetDto>>(tweets);
-            if (userId.HasValue)
-                tweetDtos = await _userTweetRelationship.GetTweetsWithRelationshipsAsync(tweetDtos, userId.Value);
-            return tweetDtos;
             var trendTweetsToSave = trendTweets.Take(TrendHashtagsCacheSize).ToList();
             var trendsJson = JsonSerializer.Serialize(trendTweetsToSave);
             await _redisService.SetAsync(KeyForCachedTrendTweets, trendsJson, TimeSpan.FromMinutes(CacheExpiryInMinutes));

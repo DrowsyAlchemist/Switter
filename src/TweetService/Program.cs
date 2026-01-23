@@ -106,6 +106,17 @@ builder.Services.AddScoped<ILikeService>(serviceProvider =>
 
 // TrendService
 builder.Services.AddScoped<TrendCalculator>();
+builder.Services.AddScoped<TrendService>();
+builder.Services.AddScoped<ITrendService>(serviceProvider =>
+{
+    var baseService = serviceProvider.GetRequiredService<TrendService>();
+    var trendServiceWithUserRelationships = new TrendServiceWithUserRelationship(
+        trendService: baseService,
+        userTweetRelationship: serviceProvider.GetRequiredService<IUserTweetRelationship>()
+        );
+    return trendServiceWithUserRelationships;
+});
+
 
 // Health Checks
 builder.Services.AddHealthChecks()
