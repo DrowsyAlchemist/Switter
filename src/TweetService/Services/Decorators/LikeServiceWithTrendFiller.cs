@@ -1,20 +1,17 @@
 ﻿using TweetService.DTOs;
-using TweetService.Interfaces.Infrastructure;
 using TweetService.Interfaces.Services;
-using TweetService.Services.Infrastructure;
 
 namespace TweetService.Services.Decorators
 {
-    public class LikeServiceWithUsage : ILikeService
+    public class LikeServiceWithTrendFiller : ILikeService
     {
-        private const string KeyForLikes = "KeyForTweetLikes";
+        private readonly TrendFiller _trendFiller;
         private readonly ILikeService _likeService;
-        private readonly IRedisService _redisService;
 
-        public LikeServiceWithUsage(ILikeService likeService, IRedisService redisService)
+        public LikeServiceWithTrendFiller(ILikeService likeService, TrendFiller trendFiller)
         {
+            _trendFiller = trendFiller;
             _likeService = likeService;
-            _redisService = redisService;
         }
 
         public async Task<List<TweetDto>> GetLikedTweetsAsync(Guid userId, int page, int pageSize)
@@ -25,7 +22,7 @@ namespace TweetService.Services.Decorators
         public async Task LikeTweetAsync(Guid tweetId, Guid userId)
         {
             await _likeService.LikeTweetAsync(tweetId, userId);
-            await _redisService.AddToListAsync(KeyForLikes, [tweetId.ToString()]);
+            await _trendFiller.SetLikedTweetAsync(tweetId);
         }
 
         public async Task UnlikeTweetAsync(Guid tweetId, Guid userId)

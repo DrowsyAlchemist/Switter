@@ -1,20 +1,18 @@
 ﻿using TweetService.Interfaces.Data;
-using TweetService.Interfaces.Infrastructure;
 using TweetService.Interfaces.Services;
 
 namespace TweetService.Services.Decorators
 {
-    public class HashtagServiceWithUsage : IHashtagService
+    public class HashtagServiceWithTrendFiller : IHashtagService
     {
-        private const string KeyForHashtagUsage = "KeyForHashtagUsages";
+        private readonly TrendFiller _trendFiller;
         private readonly IHashtagService _hashtagService;
-        private readonly IRedisService _redisService;
         private readonly ITransactionManager _transactionManager;
 
-        public HashtagServiceWithUsage(IHashtagService hashtagService, IRedisService redisService, ITransactionManager transactionManager)
+        public HashtagServiceWithTrendFiller(IHashtagService hashtagService, TrendFiller trendFiller, ITransactionManager transactionManager)
         {
+            _trendFiller = trendFiller;
             _hashtagService = hashtagService;
-            _redisService = redisService;
             _transactionManager = transactionManager;
         }
 
@@ -27,7 +25,7 @@ namespace TweetService.Services.Decorators
                 if (hashtags.Any() == false)
                     return [];
 
-                await _redisService.AddToListAsync(KeyForHashtagUsage, hashtags);
+                await _trendFiller.SetHashtagsUsageAsync(hashtags);
                 await transaction.CommitAsync();
                 return hashtags;
             }

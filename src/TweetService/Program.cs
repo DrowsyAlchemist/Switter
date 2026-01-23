@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using StackExchange.Redis;
+using System;
 using TweetService.Consumers;
 using TweetService.Data;
 using TweetService.HealthChecks;
@@ -48,18 +50,19 @@ builder.Services.AddAutoMapper(cfg =>
 
 builder.Services.AddScoped<IUserTweetRelationship, UserTweetRelationship>();
 builder.Services.AddHttpClient<IUserServiceClient, UserServiceClient>();
+builder.Services.AddScoped<TrendFiller>();
 
 // HashtagService
 builder.Services.AddScoped<HashtagService>();
 builder.Services.AddScoped<IHashtagService>(serviceProvider =>
 {
     var baseService = serviceProvider.GetRequiredService<HashtagService>();
-    var hashtagServiceWithUsage = new HashtagServiceWithUsage(
+    var hashtagServiceWithTrendFiller = new HashtagServiceWithTrendFiller(
         hashtagService: baseService,
-        redisService: serviceProvider.GetRequiredService<IRedisService>(),
+        trendFiller: serviceProvider.GetRequiredService<TrendFiller>(),
         transactionManager: serviceProvider.GetRequiredService<ITransactionManager>()
         );
-    return hashtagServiceWithUsage;
+    return hashtagServiceWithTrendFiller;
 });
 
 // TweetService
@@ -89,12 +92,12 @@ builder.Services.AddScoped<ILikeService>(serviceProvider =>
 {
     var baseService = serviceProvider.GetRequiredService<LikeService>();
 
-    var likeServiceWithUsage = new LikeServiceWithUsage(
+    var likeServiceWithTrendFiller = new LikeServiceWithTrendFiller(
         likeService: baseService,
-        redisService: serviceProvider.GetRequiredService<IRedisService>()
+        trendFiller: serviceProvider.GetRequiredService<TrendFiller>()
         );
     var likeServiceWithKafka = new LikeServiceWithKafka(
-        likeService: likeServiceWithUsage,
+        likeService: likeServiceWithTrendFiller,
         kafkaProducer: serviceProvider.GetRequiredService<IKafkaProducer>(),
         logger: serviceProvider.GetRequiredService<ILogger<LikeServiceWithKafka>>()
         );
@@ -102,7 +105,7 @@ builder.Services.AddScoped<ILikeService>(serviceProvider =>
 });
 
 // TrendService
-builder.Services.AddScoped<ITrendService, TrendService>();
+builder.Services.AddScoped<TrendCalculator>();
 
 // Health Checks
 builder.Services.AddHealthChecks()
