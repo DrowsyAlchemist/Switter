@@ -5,8 +5,8 @@ namespace TweetService.Interfaces.Data
     public interface ITweetRepository
     {
         Task<Tweet?> GetByIdAsync(Guid id);
-        Task<List<Tweet>> GetByIdsAsync(List<Guid> ids, int page, int pageSize);
-        Task<List<Tweet>> GetByHashtagAsync(List<Guid> ids, string hashtag, int page, int pageSize);
+        Task<List<Tweet>> GetByIdsAsync(IEnumerable<Guid> ids, int page, int pageSize);
+        Task<List<Tweet>> GetByHashtagAsync(IEnumerable<Guid> ids, string hashtag, int page, int pageSize);
         Task<List<Tweet>> GetByUserAsync(Guid userId, int page, int pageSize);
         Task<List<Guid>> GetIdsByUserAsync(Guid userId, int page, int pageSize);
         Task<bool> IsRetweetedAsync(Guid tweet, Guid userId);

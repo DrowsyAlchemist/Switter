@@ -5,7 +5,6 @@ using TweetService.DTOs;
 using TweetService.Exceptions;
 using TweetService.Interfaces.Infrastructure;
 using TweetService.Interfaces.Services;
-using TweetService.Services.Infrastructure;
 
 namespace TweetService.Controllers
 {

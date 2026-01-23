@@ -44,7 +44,7 @@ namespace TweetService.HealthChecks
                 };
                 var tweet = await _tweetRepository.AddAsync(testTweet);
                 await _likeService.LikeTweetAsync(tweet.Id, testUserInfo.Id);
-                var likedTweets = await _likeService.GetLikedTweetsAsync(testUserInfo.Id);
+                var likedTweets = await _likeService.GetLikedTweetsAsync(testUserInfo.Id, 1, 100);
                 tweet = await _tweetRepository.GetByIdAsync(tweet.Id);
 
                 bool isHealthy =
@@ -54,7 +54,7 @@ namespace TweetService.HealthChecks
                     && likedTweets.Any(t => t.Id == tweet.Id);
 
                 await _likeService.UnlikeTweetAsync(tweet.Id, testUserInfo.Id);
-                likedTweets = await _likeService.GetLikedTweetsAsync(testUserInfo.Id);
+                likedTweets = await _likeService.GetLikedTweetsAsync(testUserInfo.Id, 1, 100);
                 tweet = await _tweetRepository.GetByIdAsync(tweet.Id);
 
                 isHealthy = isHealthy

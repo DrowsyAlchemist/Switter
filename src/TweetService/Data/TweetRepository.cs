@@ -23,7 +23,7 @@ namespace TweetService.Data
                    .FirstOrDefaultAsync();
         }
 
-        public async Task<List<Tweet>> GetByIdsAsync(List<Guid> ids, int page, int pageSize)
+        public async Task<List<Tweet>> GetByIdsAsync(IEnumerable<Guid> ids, int page, int pageSize)
         {
             if (ids == null)
                 throw new ArgumentNullException(nameof(ids));
@@ -40,7 +40,7 @@ namespace TweetService.Data
                    .ToListAsync();
         }
 
-        public async Task<List<Tweet>> GetByHashtagAsync(List<Guid> ids, string hashtag, int page, int pageSize)
+        public async Task<List<Tweet>> GetByHashtagAsync(IEnumerable<Guid> ids, string hashtag, int page, int pageSize)
         {
             if (string.IsNullOrEmpty(hashtag))
                 throw new ArgumentException(nameof(hashtag));

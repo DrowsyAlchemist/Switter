@@ -22,10 +22,10 @@ namespace TweetService.Services
             return tweetDto;
         }
 
-        public async Task<List<TweetDto>> GetTweetsWithRelationshipsAsync(List<TweetDto> tweetDtos, Guid userId)
+        public async Task<IEnumerable<TweetDto>> GetTweetsWithRelationshipsAsync(IEnumerable<TweetDto> tweetDtos, Guid userId)
         {
             ArgumentNullException.ThrowIfNull(tweetDtos);
-            if (tweetDtos.Count == 0)
+            if (tweetDtos.Any() == false)
                 return tweetDtos;
 
             var tweetIds = tweetDtos.Select(t => t.Id).ToList();

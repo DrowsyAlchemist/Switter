@@ -35,10 +35,10 @@ namespace TweetService.Services
             return tweetDto;
         }
 
-        public async Task<List<TweetDto>> GetTweetRepliesAsync(Guid tweetId, int page, int pageSize, Guid? currentUserId = null)
+        public async Task<IEnumerable<TweetDto>> GetTweetRepliesAsync(Guid tweetId, int page, int pageSize, Guid? currentUserId = null)
         {
             var replies = await _tweetRepository.GetRepliesAsync(tweetId, page, pageSize);
-            var tweetDtos = _mapper.Map<List<TweetDto>>(replies);
+            var tweetDtos = _mapper.Map<IEnumerable<TweetDto>>(replies);
 
             if (currentUserId.HasValue)
                 tweetDtos = await _userTweetRelationship.GetTweetsWithRelationshipsAsync(tweetDtos, currentUserId.Value);
@@ -46,10 +46,10 @@ namespace TweetService.Services
             return tweetDtos;
         }
 
-        public async Task<List<TweetDto>> GetUserTweetsAsync(Guid userId, int page, int pageSize, Guid? currentUserId = null)
+        public async Task<IEnumerable<TweetDto>> GetUserTweetsAsync(Guid userId, int page, int pageSize, Guid? currentUserId = null)
         {
             var tweets = await _tweetRepository.GetByUserAsync(userId, page, pageSize);
-            var tweetDtos = _mapper.Map<List<TweetDto>>(tweets);
+            var tweetDtos = _mapper.Map<IEnumerable<TweetDto>>(tweets);
 
             if (currentUserId.HasValue)
                 tweetDtos = await _userTweetRelationship.GetTweetsWithRelationshipsAsync(tweetDtos, currentUserId.Value);
