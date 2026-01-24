@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using TweetService.Attributes;
 using TweetService.Exceptions;
+using TweetService.Infrastructure.Attributes;
 using TweetService.Interfaces.Services;
 
 namespace TweetService.Controllers
@@ -23,12 +23,17 @@ namespace TweetService.Controllers
 
         [HttpGet("liked")]
         [ValidatePagination]
-        public async Task<IActionResult> GetLikedTweetsAsync([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        public async Task<IActionResult> GetLikedTweetsAsync(
+            [CurrentUserId] Guid? currentUserId,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20)
         {
             try
             {
-                var currentUserId = GetCurrentUserId();
-                var tweetDtos = await _likeService.GetLikedTweetsAsync(currentUserId, page, pageSize);
+                if (currentUserId.HasValue == false)
+                    throw new Exception("Current user not found.");
+
+                var tweetDtos = await _likeService.GetLikedTweetsAsync(currentUserId.Value, page, pageSize);
                 _logger.LogInformation("Liked tweets successfully sent.");
                 return Ok(tweetDtos);
             }
@@ -40,12 +45,14 @@ namespace TweetService.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> LikeTweetAsync(Guid tweetId)
+        public async Task<IActionResult> LikeTweetAsync(Guid tweetId, [CurrentUserId] Guid? currentUserId)
         {
             try
             {
-                var currentUserId = GetCurrentUserId();
-                await _likeService.LikeTweetAsync(tweetId, currentUserId);
+                if (currentUserId.HasValue == false)
+                    throw new Exception("Current user not found.");
+
+                await _likeService.LikeTweetAsync(tweetId, currentUserId.Value);
                 _logger.LogInformation("Successfully liked.\nTweetId: {tweetId}.", tweetId);
                 return Ok(new { message = "Tweet successfully liked." });
             }
@@ -67,12 +74,14 @@ namespace TweetService.Controllers
         }
 
         [HttpDelete]
-        public async Task<IActionResult> UnlikeTweetAsync(Guid tweetId)
+        public async Task<IActionResult> UnlikeTweetAsync(Guid tweetId, [CurrentUserId] Guid? currentUserId)
         {
             try
             {
-                var currentUserId = GetCurrentUserId();
-                await _likeService.UnlikeTweetAsync(tweetId, currentUserId);
+                if (currentUserId.HasValue == false)
+                    throw new Exception("Current user not found.");
+
+                await _likeService.UnlikeTweetAsync(tweetId, currentUserId.Value);
                 _logger.LogInformation("Successfully unliked.\nTweetId: {tweetId}.", tweetId);
                 return Ok(new { message = "Tweet successfully unliked." });
             }
@@ -91,16 +100,6 @@ namespace TweetService.Controllers
                 _logger.LogError(ex, "Error during UnlikeTweet.");
                 return StatusCode(500, new { message = "Internal server error" });
             }
-        }
-
-        private Guid GetCurrentUserId()
-        {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (userId != null)
-                return Guid.Parse(userId!);
-
-            throw new Exception("Current user not found.");
         }
     }
 }

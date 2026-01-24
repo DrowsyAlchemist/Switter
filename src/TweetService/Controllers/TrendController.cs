@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using TweetService.Attributes;
+using TweetService.Infrastructure.Attributes;
 using TweetService.Interfaces.Services;
 
 namespace TweetService.Controllers
@@ -37,11 +37,13 @@ namespace TweetService.Controllers
 
         [HttpGet("tweets")]
         [ValidatePagination]
-        public async Task<IActionResult> GetTrendTweetsAsync([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        public async Task<IActionResult> GetTrendTweetsAsync(
+            [CurrentUserId] Guid? currentUserId,
+            [FromQuery] int page = 1, 
+            [FromQuery] int pageSize = 20)
         {
             try
             {
-                var currentUserId = GetCurrentUserId();
                 var tweetDto = await _trendService.GetTrendTweetsAsync(currentUserId, page, pageSize);
                 _logger.LogInformation("Trend tweets successfully sent.");
                 return Ok(tweetDto);
@@ -55,14 +57,17 @@ namespace TweetService.Controllers
 
         [HttpGet("tweets/{hashtag}")]
         [ValidatePagination]
-        public async Task<IActionResult> GetTrendTweetsAsync(string hashtag, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        public async Task<IActionResult> GetTrendTweetsAsync(
+            string hashtag,
+            [CurrentUserId] Guid? currentUserId, 
+            [FromQuery] int page = 1, 
+            [FromQuery] int pageSize = 20)
         {
             try
             {
                 if (string.IsNullOrEmpty(hashtag))
                     return BadRequest("Hashtag shouldn't be null or empty.");
 
-                var currentUserId = GetCurrentUserId();
                 var tweetDto = await _trendService.GetTrendTweetsAsync(hashtag, currentUserId, page, pageSize);
                 _logger.LogInformation("Trend tweets by hashtag successfully sent.\nHashtag: {hashtag}", hashtag);
                 return Ok(tweetDto);
@@ -72,16 +77,6 @@ namespace TweetService.Controllers
                 _logger.LogError(ex, "Error during GetTrendTweets.\nHashtag: {hashtag}", hashtag);
                 return StatusCode(500, new { message = "Internal server error" });
             }
-        }
-
-        private Guid? GetCurrentUserId()
-        {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (userId != null)
-                return Guid.Parse(userId!);
-
-            return null;
         }
     }
 }

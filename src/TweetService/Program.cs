@@ -1,14 +1,12 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using StackExchange.Redis;
-using System;
 using TweetService.Consumers;
 using TweetService.Data;
 using TweetService.HealthChecks;
+using TweetService.Infrastructure.Middleware;
 using TweetService.Interfaces.Data;
 using TweetService.Interfaces.Infrastructure;
 using TweetService.Interfaces.Services;
-using TweetService.Middleware;
 using TweetService.Services;
 using TweetService.Services.Decorators;
 using TweetService.Services.Infrastructure;

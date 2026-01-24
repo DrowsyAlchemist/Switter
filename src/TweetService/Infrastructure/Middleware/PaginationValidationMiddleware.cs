@@ -1,6 +1,6 @@
-﻿using TweetService.Attributes;
+﻿using TweetService.Infrastructure.Attributes;
 
-namespace TweetService.Middlewares
+namespace TweetService.Infrastructure.Middleware
 {
     public class PaginationValidationMiddleware
     {
