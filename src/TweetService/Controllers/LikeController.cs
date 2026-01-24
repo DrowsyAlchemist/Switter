@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 using TweetService.Exceptions;
 using TweetService.Infrastructure.Attributes;
+using TweetService.Infrastructure.Filters;
 using TweetService.Interfaces.Services;
 
 namespace TweetService.Controllers
@@ -23,6 +23,7 @@ namespace TweetService.Controllers
 
         [HttpGet("liked")]
         [ValidatePagination]
+        [ServiceFilter(typeof(EnrichTweetsWithUserRelationshipActionFilter))]
         public async Task<IActionResult> GetLikedTweetsAsync(
             [CurrentUserId] Guid? currentUserId,
             [FromQuery] int page = 1,

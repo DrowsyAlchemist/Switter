@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using TweetService.Infrastructure.Attributes;
+using TweetService.Infrastructure.Filters;
 using TweetService.Interfaces.Services;
 
 namespace TweetService.Controllers
@@ -37,6 +38,7 @@ namespace TweetService.Controllers
 
         [HttpGet("tweets")]
         [ValidatePagination]
+        [ServiceFilter(typeof(EnrichTweetsWithUserRelationshipActionFilter))]
         public async Task<IActionResult> GetTrendTweetsAsync(
             [CurrentUserId] Guid? currentUserId,
             [FromQuery] int page = 1, 
@@ -57,6 +59,7 @@ namespace TweetService.Controllers
 
         [HttpGet("tweets/{hashtag}")]
         [ValidatePagination]
+        [ServiceFilter(typeof(EnrichTweetsWithUserRelationshipActionFilter))]
         public async Task<IActionResult> GetTrendTweetsAsync(
             string hashtag,
             [CurrentUserId] Guid? currentUserId, 

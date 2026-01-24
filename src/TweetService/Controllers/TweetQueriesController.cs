@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using TweetService.Exceptions;
 using TweetService.Infrastructure.Attributes;
+using TweetService.Infrastructure.Filters;
 using TweetService.Interfaces.Infrastructure;
 using TweetService.Interfaces.Services;
 
@@ -13,31 +14,25 @@ namespace TweetService.Controllers
     {
         private readonly ITweetQueries _tweetQueries;
         private readonly IUserServiceClient _userServiceClient;
-        private readonly IUserTweetRelationship _userTweetRelationship;
         private readonly ILogger<TweetQueriesController> _logger;
 
         public TweetQueriesController(
             ITweetQueries tweetQueries,
             IUserServiceClient userServiceClient,
-            IUserTweetRelationship tweetRelationship,
             ILogger<TweetQueriesController> logger)
         {
             _tweetQueries = tweetQueries;
             _userServiceClient = userServiceClient;
-            _userTweetRelationship = tweetRelationship;
             _logger = logger;
         }
 
         [HttpGet("{tweetId}")]
+        [ServiceFilter(typeof(EnrichTweetsWithUserRelationshipActionFilter))]
         public async Task<IActionResult> GetTweetAsync(Guid tweetId, [CurrentUserId] Guid? currentUserId)
         {
             try
             {
                 var tweetDto = await _tweetQueries.GetTweetAsync(tweetId, currentUserId);
-
-                if (currentUserId.HasValue)
-                    tweetDto = await _userTweetRelationship.GetTweetWithRelationshipsAsync(tweetDto, currentUserId.Value);
-
                 _logger.LogInformation("Tweet successfully sent.\nId:{tweetId}", tweetId);
                 return Ok(tweetDto);
             }
@@ -55,6 +50,7 @@ namespace TweetService.Controllers
 
         [HttpGet("user/{userId}")]
         [ValidatePagination]
+        [ServiceFilter(typeof(EnrichTweetsWithUserRelationshipActionFilter))]
         public async Task<IActionResult> GetUserTweetsAsync(
             Guid userId,
             [CurrentUserId] Guid? currentUserId,
@@ -77,6 +73,7 @@ namespace TweetService.Controllers
         [Authorize]
         [HttpGet("me")]
         [ValidatePagination]
+        [ServiceFilter(typeof(EnrichTweetsWithUserRelationshipActionFilter))]
         public async Task<IActionResult> GetMyTweets(
             [CurrentUserId] Guid? currentUserId,
             [FromQuery] int page = 1,
@@ -101,6 +98,7 @@ namespace TweetService.Controllers
 
         [HttpGet("replies/{tweetId}")]
         [ValidatePagination]
+        [ServiceFilter(typeof(EnrichTweetsWithUserRelationshipActionFilter))]
         public async Task<IActionResult> GetTweetRepliesAsync(
             Guid tweetId,
             [CurrentUserId] Guid? currentUserId,

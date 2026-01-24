@@ -4,12 +4,12 @@ using TweetService.Interfaces.Services;
 
 namespace TweetService.Services
 {
-    public class UserTweetRelationship : IUserTweetRelationship
+    public class UserTweetRelationshipService : IUserTweetRelationshipService
     {
         private readonly ITweetRepository _tweetRepository;
         private readonly ILikesRepository _likesRepository;
 
-        public UserTweetRelationship(ITweetRepository tweetRepository, ILikesRepository likesRepository)
+        public UserTweetRelationshipService(ITweetRepository tweetRepository, ILikesRepository likesRepository)
         {
             _tweetRepository = tweetRepository;
             _likesRepository = likesRepository;

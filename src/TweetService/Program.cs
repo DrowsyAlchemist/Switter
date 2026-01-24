@@ -3,6 +3,7 @@ using StackExchange.Redis;
 using TweetService.Consumers;
 using TweetService.Data;
 using TweetService.HealthChecks;
+using TweetService.Infrastructure.Filters;
 using TweetService.Infrastructure.Middleware;
 using TweetService.Interfaces.Data;
 using TweetService.Interfaces.Infrastructure;
@@ -47,7 +48,8 @@ builder.Services.AddAutoMapper(cfg =>
 
 // Services
 
-builder.Services.AddScoped<IUserTweetRelationship, UserTweetRelationship>();
+builder.Services.AddScoped<IUserTweetRelationshipService, UserTweetRelationshipService>();
+builder.Services.AddScoped<EnrichTweetsWithUserRelationshipActionFilter>();
 builder.Services.AddHttpClient<IUserServiceClient, UserServiceClient>();
 builder.Services.AddScoped<TrendFiller>();
 
@@ -105,16 +107,7 @@ builder.Services.AddScoped<ILikeService>(serviceProvider =>
 
 // TrendService
 builder.Services.AddScoped<TrendCalculator>();
-builder.Services.AddScoped<TrendService>();
-builder.Services.AddScoped<ITrendService>(serviceProvider =>
-{
-    var baseService = serviceProvider.GetRequiredService<TrendService>();
-    var trendServiceWithUserRelationships = new TrendServiceWithUserRelationship(
-        trendService: baseService,
-        userTweetRelationship: serviceProvider.GetRequiredService<IUserTweetRelationship>()
-        );
-    return trendServiceWithUserRelationships;
-});
+builder.Services.AddScoped<ITrendService, TrendService>();
 
 // Health Checks
 builder.Services.AddHealthChecks()
