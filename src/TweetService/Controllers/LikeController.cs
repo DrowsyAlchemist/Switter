@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using TweetService.Attributes;
 using TweetService.Exceptions;
 using TweetService.Interfaces.Services;
 
@@ -21,13 +22,9 @@ namespace TweetService.Controllers
         }
 
         [HttpGet("liked")]
+        [ValidatePagination]
         public async Task<IActionResult> GetLikedTweetsAsync([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
-            if (ValidatePagination(page, pageSize) == false)
-            {
-                _logger.LogWarning("GetLikedTweetsAsync failed.\nPagination is incorrect.\nPage: {page}\nSize: {pageSize}", page, pageSize);
-                return BadRequest("Pagination is incorrect.");
-            }
             try
             {
                 var currentUserId = GetCurrentUserId();
@@ -105,7 +102,5 @@ namespace TweetService.Controllers
 
             throw new Exception("Current user not found.");
         }
-
-        private bool ValidatePagination(int page, int pageSize) => (page > 0 && pageSize > 0);
     }
 }

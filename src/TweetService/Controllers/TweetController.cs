@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using TweetService.Attributes;
 using TweetService.DTOs;
 using TweetService.Exceptions;
 using TweetService.Interfaces.Infrastructure;
@@ -15,17 +16,20 @@ namespace TweetService.Controllers
         private readonly ITweetCommands _tweetCommands;
         private readonly ITweetQueries _tweetQueries;
         private readonly IUserServiceClient _userServiceClient;
+        private readonly IUserTweetRelationship _userTweetRelationship;
         private readonly ILogger<TweetController> _logger;
 
         public TweetController(
             ITweetCommands tweetCommands,
             ITweetQueries tweetQueries,
             IUserServiceClient userServiceClient,
+            IUserTweetRelationship tweetRelationship,
             ILogger<TweetController> logger)
         {
             _tweetCommands = tweetCommands;
             _tweetQueries = tweetQueries;
             _userServiceClient = userServiceClient;
+            _userTweetRelationship = tweetRelationship;
             _logger = logger;
         }
 
@@ -107,6 +111,10 @@ namespace TweetService.Controllers
             {
                 var currentUserId = GetCurrentUserId();
                 var tweetDto = await _tweetQueries.GetTweetAsync(tweetId, currentUserId);
+
+                if (currentUserId.HasValue)
+                    tweetDto = await _userTweetRelationship.GetTweetWithRelationshipsAsync(tweetDto, currentUserId.Value);
+
                 _logger.LogInformation("Tweet successfully sent.\nId:{tweetId}", tweetId);
                 return Ok(tweetDto);
             }
@@ -123,16 +131,12 @@ namespace TweetService.Controllers
         }
 
         [HttpGet("user/{userId}")]
+        [ValidatePagination]
         public async Task<IActionResult> GetUserTweetsAsync(
             Guid userId,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 20)
         {
-            if (ValidatePagination(page, pageSize) == false)
-            {
-                _logger.LogWarning("GetUserTweetsAsync failed.\nPagination is incorrect.\nPage: {page}\nSize: {pageSize}", page, pageSize);
-                return BadRequest("Pagination is incorrect.");
-            }
             try
             {
                 var currentUserId = GetCurrentUserId();
@@ -149,13 +153,9 @@ namespace TweetService.Controllers
 
         [Authorize]
         [HttpGet("me")]
+        [ValidatePagination]
         public async Task<IActionResult> GetMyTweets([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
-            if (ValidatePagination(page, pageSize) == false)
-            {
-                _logger.LogWarning("GetMyTweets failed.\nPagination is incorrect.\nPage: {page}\nSize: {pageSize}", page, pageSize);
-                return BadRequest("Pagination is incorrect.");
-            }
             try
             {
                 var currentUserId = GetCurrentUserId();
@@ -175,15 +175,11 @@ namespace TweetService.Controllers
 
 
         [HttpGet("replies/{tweetId}")]
+        [ValidatePagination]
         public async Task<IActionResult> GetTweetRepliesAsync(Guid tweetId,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 20)
         {
-            if (ValidatePagination(page, pageSize) == false)
-            {
-                _logger.LogWarning("GetTweetRepliesAsync failed.\nPagination is incorrect.\nPage: {page}\nSize: {pageSize}", page, pageSize);
-                return BadRequest("Pagination is incorrect.");
-            }
             try
             {
                 var currentUserId = GetCurrentUserId();
@@ -197,8 +193,6 @@ namespace TweetService.Controllers
                 return StatusCode(500, new { message = "Internal server error" });
             }
         }
-
-        private static bool ValidatePagination(int page, int pageSize) => (page > 0 && pageSize > 0);
 
         private Guid? GetCurrentUserId()
         {

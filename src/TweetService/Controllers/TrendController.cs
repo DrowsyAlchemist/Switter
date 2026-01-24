@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using TweetService.Attributes;
 using TweetService.Interfaces.Services;
 
 namespace TweetService.Controllers
@@ -18,13 +19,9 @@ namespace TweetService.Controllers
         }
 
         [HttpGet("categories")]
+        [ValidatePagination]
         public async Task<IActionResult> GetTrendCategoriesAsync([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
-            if (ValidatePagination(page, pageSize) == false)
-            {
-                _logger.LogWarning("GetTrendCategoriesAsync failed.\nPagination is incorrect.\nPage: {page}\nSize: {pageSize}", page, pageSize);
-                return BadRequest("Pagination is incorrect.");
-            }
             try
             {
                 var trendCategories = await _trendService.GetTrendCategoriesAsync(page, pageSize);
@@ -39,13 +36,9 @@ namespace TweetService.Controllers
         }
 
         [HttpGet("tweets")]
-        public async Task<IActionResult> GetTrendTweetsAsync(int page = 1, int pageSize = 20)
+        [ValidatePagination]
+        public async Task<IActionResult> GetTrendTweetsAsync([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
-            if (ValidatePagination(page, pageSize) == false)
-            {
-                _logger.LogWarning("GetTrendTweetsAsync failed.\nPagination is incorrect.\nPage: {page}\nSize: {pageSize}", page, pageSize);
-                return BadRequest("Pagination is incorrect.");
-            }
             try
             {
                 var currentUserId = GetCurrentUserId();
@@ -61,13 +54,9 @@ namespace TweetService.Controllers
         }
 
         [HttpGet("tweets/{hashtag}")]
-        public async Task<IActionResult> GetTrendTweetsAsync(string hashtag, int page = 1, int pageSize = 20)
+        [ValidatePagination]
+        public async Task<IActionResult> GetTrendTweetsAsync(string hashtag, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
-            if (ValidatePagination(page, pageSize) == false)
-            {
-                _logger.LogWarning("GetTrendTweetsAsync failed.\nPagination is incorrect.\nPage: {page}\nSize: {pageSize}", page, pageSize);
-                return BadRequest("Pagination is incorrect.");
-            }
             try
             {
                 if (string.IsNullOrEmpty(hashtag))
@@ -94,7 +83,5 @@ namespace TweetService.Controllers
 
             return null;
         }
-
-        private bool ValidatePagination(int page, int pageSize) => (page > 0 && pageSize > 0);
     }
 }

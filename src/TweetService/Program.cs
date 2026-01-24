@@ -8,6 +8,7 @@ using TweetService.HealthChecks;
 using TweetService.Interfaces.Data;
 using TweetService.Interfaces.Infrastructure;
 using TweetService.Interfaces.Services;
+using TweetService.Middlewares;
 using TweetService.Services;
 using TweetService.Services.Decorators;
 using TweetService.Services.Infrastructure;
@@ -117,7 +118,6 @@ builder.Services.AddScoped<ITrendService>(serviceProvider =>
     return trendServiceWithUserRelationships;
 });
 
-
 // Health Checks
 builder.Services.AddHealthChecks()
     .AddNpgSql(builder.Configuration.GetConnectionString("PostgreSQL")!)
@@ -145,5 +145,7 @@ app.UseRouting();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHealthChecks("/health");
+
+app.UseMiddleware<PaginationValidationMiddleware>();
 
 app.Run();
