@@ -2,16 +2,22 @@ using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
 using TweetService.Consumers;
 using TweetService.Data;
+using TweetService.Data.Repositories;
 using TweetService.HealthChecks;
 using TweetService.Infrastructure.Filters;
 using TweetService.Infrastructure.Middleware;
 using TweetService.Interfaces.Data;
+using TweetService.Interfaces.Data.Repositories;
 using TweetService.Interfaces.Infrastructure;
 using TweetService.Interfaces.Services;
 using TweetService.Services;
 using TweetService.Services.Decorators;
-using TweetService.Services.Decorators.Transactions;
+using TweetService.Services.Decorators.WithKafka;
+using TweetService.Services.Decorators.WithTransactions;
+using TweetService.Services.Decorators.WithTrendFiller;
 using TweetService.Services.Infrastructure;
+using TweetService.Services.Trends;
+using TweetService.Services.Tweets;
 
 var builder = WebApplication.CreateBuilder(args);
 

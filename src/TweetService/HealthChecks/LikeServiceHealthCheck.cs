@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Diagnostics.HealthChecks;
 using TweetService.DTOs;
-using TweetService.Interfaces.Data;
+using TweetService.Interfaces.Data.Repositories;
 using TweetService.Interfaces.Services;
 using TweetService.Models;
 

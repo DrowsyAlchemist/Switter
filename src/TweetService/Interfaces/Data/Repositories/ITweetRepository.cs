@@ -1,6 +1,6 @@
 ﻿using TweetService.Models;
 
-namespace TweetService.Interfaces.Data
+namespace TweetService.Interfaces.Data.Repositories
 {
     public interface ITweetRepository
     {

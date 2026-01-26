@@ -3,7 +3,7 @@ using TweetService.Events;
 using TweetService.Interfaces.Infrastructure;
 using TweetService.Interfaces.Services;
 
-namespace TweetService.Services.Decorators
+namespace TweetService.Services.Decorators.WithKafka
 {
     public class TweetCommandsWithKafka : ITweetCommands
     {

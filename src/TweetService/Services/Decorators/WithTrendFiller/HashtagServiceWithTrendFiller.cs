@@ -1,6 +1,7 @@
 ﻿using TweetService.Interfaces.Services;
+using TweetService.Services.Trends;
 
-namespace TweetService.Services.Decorators
+namespace TweetService.Services.Decorators.WithTrendFiller
 {
     public class HashtagServiceWithTrendFiller : IHashtagService
     {

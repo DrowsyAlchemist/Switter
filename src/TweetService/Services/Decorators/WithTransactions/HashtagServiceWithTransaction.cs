@@ -1,7 +1,7 @@
 ﻿using TweetService.Interfaces.Data;
 using TweetService.Interfaces.Services;
 
-namespace TweetService.Services.Decorators.Transactions
+namespace TweetService.Services.Decorators.WithTransactions
 {
     public class HashtagServiceWithTransaction : IHashtagService
     {

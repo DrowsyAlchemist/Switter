@@ -1,11 +1,11 @@
 ﻿using AutoMapper;
 using TweetService.DTOs;
 using TweetService.Exceptions;
-using TweetService.Interfaces.Data;
+using TweetService.Interfaces.Data.Repositories;
 using TweetService.Interfaces.Services;
 using TweetService.Models;
 
-namespace TweetService.Services
+namespace TweetService.Services.Tweets
 {
     public class TweetCommands : ITweetCommands
     {

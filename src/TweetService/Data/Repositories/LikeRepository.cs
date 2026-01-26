@@ -1,8 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using TweetService.Interfaces.Data;
+using TweetService.Interfaces.Data.Repositories;
 using TweetService.Models;
 
-namespace TweetService.Data
+namespace TweetService.Data.Repositories
 {
     public class LikeRepository : ILikesRepository
     {

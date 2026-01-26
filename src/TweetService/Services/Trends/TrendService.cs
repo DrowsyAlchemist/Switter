@@ -1,11 +1,11 @@
 ﻿using AutoMapper;
 using System.Text.Json;
 using TweetService.DTOs;
-using TweetService.Interfaces.Data;
+using TweetService.Interfaces.Data.Repositories;
 using TweetService.Interfaces.Infrastructure;
 using TweetService.Interfaces.Services;
 
-namespace TweetService.Services
+namespace TweetService.Services.Trends
 {
     public class TrendService : ITrendService
     {

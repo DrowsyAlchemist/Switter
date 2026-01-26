@@ -2,27 +2,28 @@
 using TweetService.Interfaces.Data;
 using TweetService.Interfaces.Services;
 
-namespace TweetService.Services.Decorators.Transactions
+namespace TweetService.Services.Decorators.WithTransactions
 {
-    public class LikeServiceWithTransaction : ILikeService
+    public class TweetCommandsWithTransaction : ITweetCommands
     {
-        private readonly ILikeService _likeService;
+        private readonly ITweetCommands _tweetCommands;
         private readonly ITransactionManager _transactionManager;
 
-        public LikeServiceWithTransaction(ILikeService likeService, ITransactionManager transactionManager)
+        public TweetCommandsWithTransaction(ITweetCommands tweetCommands, ITransactionManager transactionManager)
         {
-            _likeService = likeService;
+            _tweetCommands = tweetCommands;
             _transactionManager = transactionManager;
         }
 
-        public async Task LikeTweetAsync(Guid tweetId, Guid userId)
+        public async Task<TweetDto> TweetAsync(UserInfo authorInfo, CreateTweetRequest request)
         {
             await using var transaction = await _transactionManager.BeginTransactionAsync();
 
             try
             {
-                await _likeService.LikeTweetAsync(tweetId, userId);
+                var tweetDto = await _tweetCommands.TweetAsync(authorInfo, request);
                 await transaction.CommitAsync();
+                return tweetDto;
             }
             catch
             {
@@ -31,13 +32,13 @@ namespace TweetService.Services.Decorators.Transactions
             }
         }
 
-        public async Task UnlikeTweetAsync(Guid tweetId, Guid userId)
+        public async Task DeleteTweetAsync(Guid tweetId, Guid userId)
         {
             await using var transaction = await _transactionManager.BeginTransactionAsync();
 
             try
             {
-                await _likeService.UnlikeTweetAsync(tweetId, userId);
+                await _tweetCommands.DeleteTweetAsync(tweetId, userId);
                 await transaction.CommitAsync();
             }
             catch
@@ -45,11 +46,6 @@ namespace TweetService.Services.Decorators.Transactions
                 await transaction.RollbackAsync();
                 throw;
             }
-        }
-
-        public Task<List<TweetDto>> GetLikedTweetsAsync(Guid userId, int page, int pageSize)
-        {
-            return _likeService.GetLikedTweetsAsync(userId, page, pageSize);
         }
     }
 }

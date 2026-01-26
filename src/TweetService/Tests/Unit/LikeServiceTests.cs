@@ -3,10 +3,10 @@ using Moq;
 using Xunit;
 using TweetService.DTOs;
 using TweetService.Exceptions;
-using TweetService.Interfaces.Data;
 using TweetService.Models;
 using AutoMapper;
 using TweetService.Services;
+using TweetService.Interfaces.Data.Repositories;
 
 namespace TweetService.Tests.Unit
 {

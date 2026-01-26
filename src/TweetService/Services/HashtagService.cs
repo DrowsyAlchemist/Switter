@@ -1,5 +1,5 @@
 ﻿using TweetService.Exceptions;
-using TweetService.Interfaces.Data;
+using TweetService.Interfaces.Data.Repositories;
 using TweetService.Interfaces.Services;
 using TweetService.Models;
 

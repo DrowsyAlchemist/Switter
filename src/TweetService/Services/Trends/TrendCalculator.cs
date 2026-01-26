@@ -1,6 +1,6 @@
 ﻿using TweetService.Interfaces.Infrastructure;
 
-namespace TweetService.Services
+namespace TweetService.Services.Trends
 {
     public class TrendCalculator
     {

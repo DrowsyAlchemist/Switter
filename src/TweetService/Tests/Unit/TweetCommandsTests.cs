@@ -3,9 +3,9 @@ using FluentAssertions;
 using Moq;
 using TweetService.DTOs;
 using TweetService.Exceptions;
-using TweetService.Interfaces.Data;
+using TweetService.Interfaces.Data.Repositories;
 using TweetService.Models;
-using TweetService.Services;
+using TweetService.Services.Tweets;
 using Xunit;
 
 namespace TweetService.Tests.Unit

@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
 using TweetService.Events;
-using TweetService.Interfaces.Data;
+using TweetService.Interfaces.Data.Repositories;
 
 namespace TweetService.Consumers
 {

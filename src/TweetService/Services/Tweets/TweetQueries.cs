@@ -1,10 +1,10 @@
 ﻿using AutoMapper;
 using TweetService.DTOs;
 using TweetService.Exceptions;
-using TweetService.Interfaces.Data;
+using TweetService.Interfaces.Data.Repositories;
 using TweetService.Interfaces.Services;
 
-namespace TweetService.Services
+namespace TweetService.Services.Tweets
 {
     public class TweetQueries : ITweetQueries
     {
