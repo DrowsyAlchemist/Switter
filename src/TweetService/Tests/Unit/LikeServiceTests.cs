@@ -14,8 +14,6 @@ namespace TweetService.Tests.Unit
     {
         private readonly Mock<ILikesRepository> _likesRepositoryMock;
         private readonly Mock<ITweetRepository> _tweetRepositoryMock;
-        private readonly Mock<ITransactionManager> _transactionManagerMock;
-        private readonly Mock<ITransaction> _transactionMock;
         private readonly Mock<IMapper> _mapperMock;
         private readonly LikeService _likeService;
 
@@ -23,19 +21,12 @@ namespace TweetService.Tests.Unit
         {
             _likesRepositoryMock = new Mock<ILikesRepository>();
             _tweetRepositoryMock = new Mock<ITweetRepository>();
-            _transactionManagerMock = new Mock<ITransactionManager>();
-            _transactionMock = new Mock<ITransaction>();
             _mapperMock = new Mock<IMapper>();
-
-            _transactionManagerMock
-               .Setup(t => t.BeginTransactionAsync(default))
-               .ReturnsAsync(_transactionMock.Object);
 
             _likeService = new LikeService(
                 _likesRepositoryMock.Object,
                 _tweetRepositoryMock.Object,
-                _mapperMock.Object,
-                _transactionManagerMock.Object
+                _mapperMock.Object
             );
         }
 
@@ -106,7 +97,7 @@ namespace TweetService.Tests.Unit
             {
                 // Arrange
                 var userId = Guid.NewGuid();
-                var emptyIdList = new List<Guid>(); 
+                var emptyIdList = new List<Guid>();
                 var emptyTweetList = new List<Tweet>();
                 var emptyDtoList = new List<TweetDto>();
 
@@ -161,8 +152,6 @@ namespace TweetService.Tests.Unit
                 _likesRepositoryMock.Verify(r => r.AddAsync(It.Is<Like>(l =>
                     l.TweetId == tweetId && l.UserId == userId)), Times.Once);
                 _tweetRepositoryMock.Verify(r => r.IncrementLikesCount(tweetId), Times.Once);
-                _transactionMock.Verify(t => t.CommitAsync(default), Times.Once);
-                _transactionMock.Verify(t => t.RollbackAsync(default), Times.Never);
             }
 
             [Fact]
@@ -180,8 +169,6 @@ namespace TweetService.Tests.Unit
 
                 // Assert
                 await act.Should().ThrowAsync<DoubleLikeException>();
-                _transactionMock.Verify(t => t.RollbackAsync(default), Times.Once);
-                _transactionMock.Verify(t => t.CommitAsync(default), Times.Never);
             }
 
             [Fact]
@@ -202,7 +189,6 @@ namespace TweetService.Tests.Unit
 
                 // Assert
                 await act.Should().ThrowAsync<TweetNotFoundException>();
-                _transactionMock.Verify(t => t.RollbackAsync(default), Times.Once);
                 _likesRepositoryMock.Verify(r => r.AddAsync(It.IsAny<Like>()), Times.Never);
             }
 
@@ -228,8 +214,6 @@ namespace TweetService.Tests.Unit
 
                 // Assert
                 await act.Should().ThrowAsync<Exception>();
-                _transactionMock.Verify(t => t.RollbackAsync(default), Times.Once);
-                _transactionMock.Verify(t => t.CommitAsync(default), Times.Never);
             }
         }
 
@@ -265,8 +249,6 @@ namespace TweetService.Tests.Unit
                 _tweetRepositoryMock.Verify(r => r.GetByIdAsync(tweetId), Times.Once);
                 _likesRepositoryMock.Verify(r => r.DeleteAsync(like.Id), Times.Once);
                 _tweetRepositoryMock.Verify(r => r.DecrementLikesCount(tweetId), Times.Once);
-                _transactionMock.Verify(t => t.CommitAsync(default), Times.Once);
-                _transactionMock.Verify(t => t.RollbackAsync(default), Times.Never);
             }
 
             [Fact]
@@ -284,7 +266,6 @@ namespace TweetService.Tests.Unit
 
                 // Assert
                 await act.Should().ThrowAsync<LikeNotFoundException>();
-                _transactionMock.Verify(t => t.RollbackAsync(default), Times.Once);
                 _tweetRepositoryMock.Verify(r => r.GetByIdAsync(tweetId), Times.Never);
             }
 
@@ -307,7 +288,6 @@ namespace TweetService.Tests.Unit
 
                 // Assert
                 await act.Should().ThrowAsync<TweetNotFoundException>();
-                _transactionMock.Verify(t => t.RollbackAsync(default), Times.Once);
                 _likesRepositoryMock.Verify(r => r.DeleteAsync(like.Id), Times.Never);
             }
 
@@ -334,8 +314,6 @@ namespace TweetService.Tests.Unit
 
                 // Assert
                 await act.Should().ThrowAsync<Exception>();
-                _transactionMock.Verify(t => t.RollbackAsync(default), Times.Once);
-                _transactionMock.Verify(t => t.CommitAsync(default), Times.Never);
             }
         }
     }

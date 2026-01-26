@@ -10,6 +10,7 @@ using TweetService.Interfaces.Infrastructure;
 using TweetService.Interfaces.Services;
 using TweetService.Services;
 using TweetService.Services.Decorators;
+using TweetService.Services.Decorators.Transactions;
 using TweetService.Services.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -60,7 +61,10 @@ builder.Services.AddScoped<IHashtagService>(serviceProvider =>
     var baseService = serviceProvider.GetRequiredService<HashtagService>();
     var hashtagServiceWithTrendFiller = new HashtagServiceWithTrendFiller(
         hashtagService: baseService,
-        trendFiller: serviceProvider.GetRequiredService<TrendFiller>(),
+        trendFiller: serviceProvider.GetRequiredService<TrendFiller>()
+        );
+    var hashtagServiceWithTransaction = new HashtagServiceWithTransaction(
+        hashtagService: hashtagServiceWithTrendFiller,
         transactionManager: serviceProvider.GetRequiredService<ITransactionManager>()
         );
     return hashtagServiceWithTrendFiller;
@@ -73,13 +77,16 @@ builder.Services.AddScoped<ITweetCommands>(serviceProvider =>
     var baseService = serviceProvider.GetRequiredService<TweetCommands>();
     var tweetWithHashtags = new TweetCommandsWithHashtags(
         tweetCommands: baseService,
-        hashtagService: serviceProvider.GetRequiredService<IHashtagService>(),
-        transactionManager: serviceProvider.GetRequiredService<ITransactionManager>()
+        hashtagService: serviceProvider.GetRequiredService<IHashtagService>()
         );
     var tweetCommandsWithKafka = new TweetCommandsWithKafka(
         tweetCommands: tweetWithHashtags,
         kafkaProducer: serviceProvider.GetRequiredService<IKafkaProducer>(),
         logger: serviceProvider.GetRequiredService<ILogger<TweetCommandsWithKafka>>()
+        );
+    var tweetCommandsWithTransaction = new TweetCommandsWithTransaction(
+        tweetCommands: tweetCommandsWithKafka,
+        transactionManager: serviceProvider.GetRequiredService<ITransactionManager>()
         );
     return tweetCommandsWithKafka;
 });
@@ -101,6 +108,10 @@ builder.Services.AddScoped<ILikeService>(serviceProvider =>
         likeService: likeServiceWithTrendFiller,
         kafkaProducer: serviceProvider.GetRequiredService<IKafkaProducer>(),
         logger: serviceProvider.GetRequiredService<ILogger<LikeServiceWithKafka>>()
+        );
+    var likeServiceWithTransaction = new LikeServiceWithTransaction(
+        likeService: likeServiceWithKafka,
+        transactionManager: serviceProvider.GetRequiredService<ITransactionManager>()
         );
     return likeServiceWithKafka;
 });
