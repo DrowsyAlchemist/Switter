@@ -21,15 +21,6 @@ namespace TweetService.Data.Repositories
                    .FirstOrDefaultAsync();
         }
 
-        public async Task<List<Like>> GetByUserAsync(Guid userId)
-        {
-            return await _context.Likes
-                   .AsNoTracking()
-                   .Where(l => l.UserId.Equals(userId))
-                   .Include(l => l.Tweet)
-                   .ToListAsync();
-        }
-
         public async Task<Like?> GetAsync(Guid tweetId, Guid userId)
         {
             return await _context.Likes

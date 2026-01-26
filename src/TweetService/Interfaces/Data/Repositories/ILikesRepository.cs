@@ -5,7 +5,6 @@ namespace TweetService.Interfaces.Data.Repositories
     public interface ILikesRepository
     {
         Task<Like?> GetByIdAsync(Guid id);
-        Task<List<Like>> GetByUserAsync(Guid userId);
         Task<List<Guid>> GetLikedTweetIdsAsync(List<Guid> tweetIds, Guid userId);
         Task<List<Guid>> GetLikedTweetIdsAsync(Guid userId, int page, int pageSize);
         Task<Like?> GetAsync(Guid tweetId, Guid userId);

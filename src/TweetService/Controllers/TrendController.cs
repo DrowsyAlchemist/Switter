@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 using TweetService.Infrastructure.Attributes;
 using TweetService.Infrastructure.Filters;
 using TweetService.Interfaces.Services;

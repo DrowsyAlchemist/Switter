@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Azure;
+using Microsoft.EntityFrameworkCore;
 using TweetService.Interfaces.Data.Repositories;
 using TweetService.Models;
 
@@ -11,15 +12,6 @@ namespace TweetService.Data.Repositories
         public HashtagRepository(TweetDbContext tweetDbContext)
         {
             _context = tweetDbContext;
-        }
-
-        public async Task<List<Hashtag>> GetMostPopularAsync(int count)
-        {
-            return await _context.Hashtags
-                   .AsNoTracking()
-                   .OrderByDescending(h => h.UsageCount)
-                   .Take(count)
-                   .ToListAsync();
         }
 
         public async Task<Hashtag?> GetByTagAsync(string tag)
@@ -73,19 +65,21 @@ namespace TweetService.Data.Repositories
                     .ToList();
         }
 
-        public async Task<Hashtag> AddAsync(Hashtag hashtag)
+        public async Task<Hashtag> AddAsync(string hashtag)
         {
-            ArgumentNullException.ThrowIfNull(hashtag);
-            hashtag.Tag = hashtag.Tag.ToLower();
+            if (string.IsNullOrEmpty(hashtag))
+                throw new ArgumentException("Hashtag is null or empty.");
 
-            bool exists = await _context.Hashtags.AnyAsync(h => h.Tag.Equals(hashtag.Tag));
+            hashtag = hashtag.ToLower();
+            bool exists = await _context.Hashtags.AnyAsync(h => h.Tag.Equals(hashtag));
             if (exists)
-                throw new ArgumentException($"Hashtag '{hashtag.Tag}' already exists");
+                throw new ArgumentException($"Hashtag '{hashtag}' already exists");
 
-            await _context.Hashtags.AddAsync(hashtag);
+            var hashtagToAdd = new Hashtag() { Tag = hashtag };
+            await _context.Hashtags.AddAsync(hashtagToAdd);
             await _context.SaveChangesAsync();
-            _context.Entry(hashtag).State = EntityState.Detached;
-            return hashtag;
+            _context.Entry(hashtagToAdd).State = EntityState.Detached;
+            return hashtagToAdd;
         }
 
         public async Task AddRangeAsync(List<string> hashtags)
@@ -122,6 +116,7 @@ namespace TweetService.Data.Repositories
                 throw new KeyNotFoundException($"Hashtag #{tag} not found.");
 
             localTag.UsageCount++;
+            localTag.LastUsed = DateTime.UtcNow;
             await _context.SaveChangesAsync();
             _context.Hashtags.Entry(localTag).State = EntityState.Detached;
             return localTag;
@@ -148,7 +143,10 @@ namespace TweetService.Data.Repositories
                 throw new KeyNotFoundException($"Hashtags #{string.Join(", #", missingTags)} not found.");
 
             foreach (var tag in existingTags)
+            {
                 tag.UsageCount++;
+                tag.LastUsed = DateTime.UtcNow;
+            }
 
             await _context.SaveChangesAsync();
         }

@@ -8,8 +8,7 @@ namespace TweetService.Interfaces.Data.Repositories
         Task<List<Hashtag>> GetByTagsAsync(IEnumerable<string> tags);
         Task<List<Guid>> GetIdByTag(IEnumerable<string> tags);
         Task<List<Hashtag>> SearchAsync(string query, int page, int pageSize);
-        Task<List<Hashtag>> GetMostPopularAsync(int count);
-        Task<Hashtag> AddAsync(Hashtag hashtag);
+        Task<Hashtag> AddAsync(string hashtag);
         Task AddRangeAsync(List<string> hashtags);
         Task<Hashtag> IncrementUsageCounterAsync(string tag);
         Task IncrementUsageCounterAsync(List<string> tags);
