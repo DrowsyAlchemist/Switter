@@ -30,11 +30,13 @@ namespace TweetService.Controllers
         [HttpPost]
         public async Task<IActionResult> TweetAsync(CreateTweetRequest request, [CurrentUserId] Guid? currentUserId)
         {
+            if (currentUserId.HasValue == false)
+            {
+                _logger.LogWarning("Tweet failed. Current user not found.");
+                return Unauthorized();
+            }
             try
             {
-                if (currentUserId.HasValue == false)
-                    throw new Exception("Current user not found.");
-
                 var userInfo = await _userServiceClient.GetUserInfoAsync(currentUserId.Value);
                 if (userInfo == null)
                     throw new UserNotFoundException(currentUserId.Value);
@@ -46,7 +48,12 @@ namespace TweetService.Controllers
             catch (ParentTweetNullException ex)
             {
                 _logger.LogWarning(ex, "Tweet failed.\nParent tweet is null.");
-                return BadRequest("User not found.");
+                return BadRequest("Parent tweet shouldn't be null.");
+            }
+            catch (ParentTweetNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "Tweet failed.\nParent tweet not found.");
+                return NotFound("Parent not found.");
             }
             catch (SelfRetweetException ex)
             {
@@ -69,11 +76,13 @@ namespace TweetService.Controllers
         [HttpDelete("{tweetId}")]
         public async Task<IActionResult> DeleteTweetAsync(Guid tweetId, [CurrentUserId] Guid? currentUserId)
         {
+            if (currentUserId.HasValue == false)
+            {
+                _logger.LogWarning("DeleteTweet failed. Current user not found.");
+                return Unauthorized();
+            }
             try
             {
-                if (currentUserId.HasValue == false)
-                    throw new Exception("Current user not found.");
-
                 await _tweetCommands.DeleteTweetAsync(tweetId, currentUserId.Value);
                 _logger.LogInformation("Tweet successfully deleted.\nTweetId: {tweetId}", tweetId);
                 return Ok(new { message = "Tweet successfully deleted." });

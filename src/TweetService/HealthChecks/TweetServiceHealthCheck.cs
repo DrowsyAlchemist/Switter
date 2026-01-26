@@ -69,10 +69,9 @@ namespace TweetService.HealthChecks
                 var retweet = await _tweetCommands.TweetAsync(anotherTestUserInfo, retweetRequest);
                 var reply = await _tweetCommands.TweetAsync(anotherTestUserInfo, replyRequest);
 
-                tweetInDb = await _tweetQueries.GetTweetAsync(tweet.Id, TestGuid2);
+                tweetInDb = await _tweetQueries.GetTweetAsync(tweet.Id);
 
                 isHealthy = isHealthy
-                    && tweetInDb.IsRetweeted == true
                     && tweetInDb.RepliesCount == 1
                     && tweetInDb.RetweetsCount == 1;
 
@@ -82,19 +81,19 @@ namespace TweetService.HealthChecks
 
                 try
                 {
-                    tweetInDb = await _tweetQueries.GetTweetAsync(tweet.Id, TestGuid1);
+                    tweetInDb = await _tweetQueries.GetTweetAsync(tweet.Id);
                     isHealthy = false;
                 }
                 catch (TweetNotFoundException) { }
                 try
                 {
-                    var replyInDb = await _tweetQueries.GetTweetAsync(reply.Id, TestGuid2);
+                    var replyInDb = await _tweetQueries.GetTweetAsync(reply.Id);
                     isHealthy = false;
                 }
                 catch (TweetNotFoundException) { }
                 try
                 {
-                    var retweetInDb = await _tweetQueries.GetTweetAsync(retweet.Id, TestGuid2);
+                    var retweetInDb = await _tweetQueries.GetTweetAsync(retweet.Id);
                     isHealthy = false;
                 }
                 catch (TweetNotFoundException) { }

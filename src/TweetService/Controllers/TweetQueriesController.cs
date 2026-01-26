@@ -32,7 +32,7 @@ namespace TweetService.Controllers
         {
             try
             {
-                var tweetDto = await _tweetQueries.GetTweetAsync(tweetId, currentUserId);
+                var tweetDto = await _tweetQueries.GetTweetAsync(tweetId);
                 _logger.LogInformation("Tweet successfully sent.\nId:{tweetId}", tweetId);
                 return Ok(tweetDto);
             }
@@ -59,7 +59,7 @@ namespace TweetService.Controllers
         {
             try
             {
-                var tweetDtos = await _tweetQueries.GetUserTweetsAsync(userId, page, pageSize, currentUserId);
+                var tweetDtos = await _tweetQueries.GetUserTweetsAsync(userId, page, pageSize);
                 _logger.LogInformation("User's tweets successfully sent.\nUserId:{userId}", userId);
                 return Ok(tweetDtos);
             }
@@ -79,12 +79,14 @@ namespace TweetService.Controllers
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 20)
         {
+            if (currentUserId.HasValue == false)
+            {
+                _logger.LogWarning("GetMyTweets failed. Current user not found.");
+                return Unauthorized();
+            }
             try
             {
-                if (currentUserId.HasValue == false)
-                    throw new Exception("Current user not found.");
-
-                var tweetDtos = await _tweetQueries.GetUserTweetsAsync(currentUserId.Value, page, pageSize, currentUserId);
+                var tweetDtos = await _tweetQueries.GetUserTweetsAsync(currentUserId.Value, page, pageSize);
                 _logger.LogInformation("User's tweets successfully sent.\nUserId:{userId}", currentUserId.Value);
                 return Ok(tweetDtos);
             }
@@ -107,7 +109,7 @@ namespace TweetService.Controllers
         {
             try
             {
-                var tweetDtos = await _tweetQueries.GetTweetRepliesAsync(tweetId, page, pageSize, currentUserId);
+                var tweetDtos = await _tweetQueries.GetTweetRepliesAsync(tweetId, page, pageSize);
                 _logger.LogInformation("Tweet replies successfully sent.\nTweetId:{tweetId}", tweetId);
                 return Ok(tweetDtos);
             }

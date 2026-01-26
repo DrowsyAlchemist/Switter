@@ -22,7 +22,7 @@ namespace TweetService.Services.Tweets
         {
             Tweet? parentTweet = null;
             if (request.Type == TweetType.Retweet || request.Type == TweetType.Reply)
-                parentTweet = await TryGetParentTweetAsync(authorInfo.Id, request.ParentTweetId);
+                parentTweet = await TryGetParentTweetAsync(request.ParentTweetId);
 
             if (request.Type == TweetType.Retweet)
                 if (parentTweet!.AuthorId == authorInfo.Id)
@@ -58,19 +58,19 @@ namespace TweetService.Services.Tweets
 
             if (tweet.Type == TweetType.Retweet || tweet.Type == TweetType.Reply)
             {
-                var parentTweet = await TryGetParentTweetAsync(userId, tweet.ParentTweetId);
+                var parentTweet = await TryGetParentTweetAsync(tweet.ParentTweetId);
                 await UpdateParentCountersAsync(tweet.Type, parentTweet, -1);
             }
         }
 
-        private async Task<Tweet> TryGetParentTweetAsync(Guid authorId, Guid? parentTweetId)
+        private async Task<Tweet> TryGetParentTweetAsync(Guid? parentTweetId)
         {
             if (parentTweetId == null)
                 throw new ParentTweetNullException();
 
             var parentTweet = await _tweetRepository.GetByIdAsync(parentTweetId.Value);
             if (parentTweet == null)
-                throw new TweetNotFoundException(parentTweetId.Value);
+                throw new ParentTweetNotFoundException(parentTweetId.Value);
 
             return parentTweet;
         }

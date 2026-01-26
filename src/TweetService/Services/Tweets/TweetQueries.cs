@@ -18,7 +18,7 @@ namespace TweetService.Services.Tweets
             _mapper = mapper;
         }
 
-        public async Task<TweetDto> GetTweetAsync(Guid tweetId, Guid? currentUserId = null)
+        public async Task<TweetDto> GetTweetAsync(Guid tweetId)
         {
             var tweet = await _tweetRepository.GetByIdAsync(tweetId);
             if (tweet == null)
@@ -27,14 +27,14 @@ namespace TweetService.Services.Tweets
             return _mapper.Map<TweetDto>(tweet);
         }
 
-        public async Task<IEnumerable<TweetDto>> GetTweetRepliesAsync(Guid tweetId, int page, int pageSize, Guid? currentUserId = null)
+        public async Task<IEnumerable<TweetDto>> GetTweetRepliesAsync(Guid tweetId, int page, int pageSize)
         {
             var replies = await _tweetRepository.GetRepliesAsync(tweetId, page, pageSize);
             var tweetDtos = _mapper.Map<IEnumerable<TweetDto>>(replies);
             return tweetDtos;
         }
 
-        public async Task<IEnumerable<TweetDto>> GetUserTweetsAsync(Guid userId, int page, int pageSize, Guid? currentUserId = null)
+        public async Task<IEnumerable<TweetDto>> GetUserTweetsAsync(Guid userId, int page, int pageSize)
         {
             var tweets = await _tweetRepository.GetByUserAsync(userId, page, pageSize);
             var tweetDtos = _mapper.Map<IEnumerable<TweetDto>>(tweets);

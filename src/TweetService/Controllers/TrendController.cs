@@ -40,12 +40,12 @@ namespace TweetService.Controllers
         [ServiceFilter(typeof(EnrichTweetsWithUserRelationshipActionFilter))]
         public async Task<IActionResult> GetTrendTweetsAsync(
             [CurrentUserId] Guid? currentUserId,
-            [FromQuery] int page = 1, 
+            [FromQuery] int page = 1,
             [FromQuery] int pageSize = 20)
         {
             try
             {
-                var tweetDto = await _trendService.GetTrendTweetsAsync(currentUserId, page, pageSize);
+                var tweetDto = await _trendService.GetTrendTweetsAsync(page, pageSize);
                 _logger.LogInformation("Trend tweets successfully sent.");
                 return Ok(tweetDto);
             }
@@ -61,16 +61,18 @@ namespace TweetService.Controllers
         [ServiceFilter(typeof(EnrichTweetsWithUserRelationshipActionFilter))]
         public async Task<IActionResult> GetTrendTweetsAsync(
             string hashtag,
-            [CurrentUserId] Guid? currentUserId, 
-            [FromQuery] int page = 1, 
+            [CurrentUserId] Guid? currentUserId,
+            [FromQuery] int page = 1,
             [FromQuery] int pageSize = 20)
         {
+            if (string.IsNullOrEmpty(hashtag))
+            {
+                _logger.LogWarning("GetTrendTweets failed.\nHashtag is invalid. ({tag})", hashtag);
+                return BadRequest("Hashtag shouldn't be null or empty.");
+            }
             try
             {
-                if (string.IsNullOrEmpty(hashtag))
-                    return BadRequest("Hashtag shouldn't be null or empty.");
-
-                var tweetDto = await _trendService.GetTrendTweetsAsync(hashtag, currentUserId, page, pageSize);
+                var tweetDto = await _trendService.GetTrendTweetsAsync(hashtag, page, pageSize);
                 _logger.LogInformation("Trend tweets by hashtag successfully sent.\nHashtag: {hashtag}", hashtag);
                 return Ok(tweetDto);
             }

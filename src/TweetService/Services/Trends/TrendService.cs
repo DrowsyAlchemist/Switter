@@ -48,7 +48,7 @@ namespace TweetService.Services.Trends
             return trendHashtags.Skip((page - 1) * pageSize).Take(pageSize).ToList();
         }
 
-        public async Task<IEnumerable<TweetDto>> GetTrendTweetsAsync(Guid? userId, int page, int pageSize)
+        public async Task<IEnumerable<TweetDto>> GetTrendTweetsAsync(int page, int pageSize)
         {
             IEnumerable<Guid>? trendTweetIds = null;
 
@@ -65,7 +65,7 @@ namespace TweetService.Services.Trends
             return _mapper.Map<IEnumerable<TweetDto>>(trendTweets);
         }
 
-        public async Task<IEnumerable<TweetDto>> GetTrendTweetsAsync(string hashtag, Guid? userId, int page, int pageSize)
+        public async Task<IEnumerable<TweetDto>> GetTrendTweetsAsync(string hashtag, int page, int pageSize)
         {
             var trendTweetIds = await _trendCalculator.CalculateTrendTweetByLastLikesIdsAsync(int.MaxValue);
             var trendTweets = await _tweetRepository.GetByHashtagAsync(trendTweetIds, hashtag, page, pageSize);

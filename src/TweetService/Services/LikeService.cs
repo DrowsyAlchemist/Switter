@@ -25,13 +25,6 @@ namespace TweetService.Services
             var likedTweetIds = await _likesRepository.GetLikedTweetIdsAsync(userId, page, pageSize);
             var likedTweets = await _tweetRepository.GetByIdsAsync(likedTweetIds, page, pageSize);
             var likedTweetsDtos = _mapper.Map<List<TweetDto>>(likedTweets);
-
-            var retweetedIds = await _tweetRepository.GetRetweetedIdsAsync(likedTweetIds, userId);
-            foreach (var tweetDto in likedTweetsDtos)
-            {
-                tweetDto.IsLiked = true;
-                tweetDto.IsRetweeted = retweetedIds.Contains(tweetDto.Id);
-            }
             return likedTweetsDtos;
         }
 

@@ -29,11 +29,13 @@ namespace TweetService.Controllers
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 20)
         {
+            if (currentUserId.HasValue == false)
+            {
+                _logger.LogWarning("GetLikedTweets failed. Current user not found.");
+                return Unauthorized();
+            }
             try
             {
-                if (currentUserId.HasValue == false)
-                    throw new Exception("Current user not found.");
-
                 var tweetDtos = await _likeService.GetLikedTweetsAsync(currentUserId.Value, page, pageSize);
                 _logger.LogInformation("Liked tweets successfully sent.");
                 return Ok(tweetDtos);
@@ -48,11 +50,13 @@ namespace TweetService.Controllers
         [HttpPost]
         public async Task<IActionResult> LikeTweetAsync(Guid tweetId, [CurrentUserId] Guid? currentUserId)
         {
+            if (currentUserId.HasValue == false)
+            {
+                _logger.LogWarning("LikeTweet failed. Current user not found.");
+                return Unauthorized();
+            }
             try
             {
-                if (currentUserId.HasValue == false)
-                    throw new Exception("Current user not found.");
-
                 await _likeService.LikeTweetAsync(tweetId, currentUserId.Value);
                 _logger.LogInformation("Successfully liked.\nTweetId: {tweetId}.", tweetId);
                 return Ok(new { message = "Tweet successfully liked." });
@@ -60,7 +64,7 @@ namespace TweetService.Controllers
             catch (DoubleLikeException ex)
             {
                 _logger.LogWarning(ex, "Like tweet failed.\nTweet is already liked.");
-                return BadRequest("Tweet is already liked.");
+                return Ok("Tweet is already liked.");
             }
             catch (TweetNotFoundException ex)
             {
@@ -77,11 +81,13 @@ namespace TweetService.Controllers
         [HttpDelete]
         public async Task<IActionResult> UnlikeTweetAsync(Guid tweetId, [CurrentUserId] Guid? currentUserId)
         {
+            if (currentUserId.HasValue == false)
+            {
+                _logger.LogWarning("UnlikeTweet failed. Current user not found.");
+                return Unauthorized();
+            }
             try
             {
-                if (currentUserId.HasValue == false)
-                    throw new Exception("Current user not found.");
-
                 await _likeService.UnlikeTweetAsync(tweetId, currentUserId.Value);
                 _logger.LogInformation("Successfully unliked.\nTweetId: {tweetId}.", tweetId);
                 return Ok(new { message = "Tweet successfully unliked." });
@@ -89,7 +95,7 @@ namespace TweetService.Controllers
             catch (LikeNotFoundException ex)
             {
                 _logger.LogWarning(ex, "Unlike tweet failed.\nTweet is not liked.");
-                return BadRequest("Tweet is not liked.");
+                return Ok("Tweet is not liked.");
             }
             catch (TweetNotFoundException ex)
             {
