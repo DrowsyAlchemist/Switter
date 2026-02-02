@@ -20,11 +20,11 @@ namespace TweetService.Consumers
             {
                 BootstrapServers = Options.BootstrapServers,
                 GroupId = Options.GroupId,
-                AutoOffsetReset = AutoOffsetReset.Earliest,
+                AutoOffsetReset = AutoOffsetReset.Latest,
                 EnableAutoOffsetStore = false,
                 EnableAutoCommit = false,
                 AllowAutoCreateTopics = true,
-                MaxPollIntervalMs = 300000,
+                MaxPollIntervalMs = 30000,
                 SessionTimeoutMs = 10000,
                 HeartbeatIntervalMs = 3000
             };
@@ -60,6 +60,7 @@ namespace TweetService.Consumers
                         await ProcessMessageAsync(topic, message, stoppingToken);
 
                         _consumer.StoreOffset(consumeResult);
+                        _consumer.Commit(consumeResult);
                         Logger.LogDebug("Offset committed for topic {Topic}, partition {Partition}, offset {Offset}",
                                 topic, consumeResult.Partition.Value, consumeResult.Offset.Value);
                     }
