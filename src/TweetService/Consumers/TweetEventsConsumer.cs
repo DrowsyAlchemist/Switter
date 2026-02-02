@@ -8,20 +8,27 @@ namespace TweetService.Consumers
 {
     public class TweetEventsConsumer : EventsConsumer
     {
-        private const string KeyForLikes = "KeyForTweetLikes";
-        private readonly string _likeSetTopic;
+        private readonly string _likeDeletedTopic;
+        private readonly string _keyForTrendTweets;
+        private readonly string _keyForLastLikedTweets;
         private readonly IServiceProvider _serviceProvider;
 
-        public TweetEventsConsumer(IServiceProvider serviceProvider, IOptions<KafkaOptions> options, ILogger<TweetEventsConsumer> logger)
-           : base(options, logger)
+        public TweetEventsConsumer(
+            IServiceProvider serviceProvider,
+            IOptions<KafkaOptions> kafkaOptions,
+            IOptions<TrendsOptions> trendsOptions,
+            ILogger<TweetEventsConsumer> logger)
+           : base(kafkaOptions, logger)
         {
             _serviceProvider = serviceProvider;
-            _likeSetTopic = options.Value.TweetEvents.LikeSetEventName;
+            _likeDeletedTopic = kafkaOptions.Value.TweetEvents.TweetDeletedEventName;
+            _keyForTrendTweets = trendsOptions.Value.Cache.KeyForTrendTweets;
+            _keyForLastLikedTweets = trendsOptions.Value.KeyForLastLikedTweets;
         }
 
         protected override IEnumerable<string> GetTopics()
         {
-            return [_likeSetTopic];
+            return [_likeDeletedTopic];
         }
 
         protected override async Task ProcessMessageAsync(string topic, string message, CancellationToken cancellationToken)
@@ -30,8 +37,8 @@ namespace TweetService.Consumers
 
             try
             {
-                if (topic == _likeSetTopic)
-                    await HandleLikeSetAsync(message, scope.ServiceProvider);
+                if (topic == _likeDeletedTopic)
+                    await HandleLikeDeletedAsync(message, scope.ServiceProvider);
                 else
                     Logger.LogWarning("Unknown topic: {Topic}", topic);
 
@@ -48,18 +55,18 @@ namespace TweetService.Consumers
             }
         }
 
-        private async Task HandleLikeSetAsync(string message, IServiceProvider services)
+        private async Task HandleLikeDeletedAsync(string message, IServiceProvider services)
         {
             var likeEvent = JsonSerializer.Deserialize<LikeSetEvent>(message);
 
             if (likeEvent == null)
-                throw new JsonException($"Failed to deserialize {_likeSetTopic} event");
+                throw new JsonException($"Failed to deserialize {_likeDeletedTopic} event");
 
-            Logger.LogInformation("Processing {topic} for user {UserId}", _likeSetTopic, likeEvent.UserId);
+            Logger.LogInformation("Processing {topic} for user {UserId}", _likeDeletedTopic, likeEvent.UserId);
 
             var redis = services.GetRequiredService<IRedisService>();
-            var likedTweetId = likeEvent.TweetId.ToString();
-            await redis.AddToListAsync(KeyForLikes, [likedTweetId]);
+            await redis.RemoveKeyAsync(_keyForLastLikedTweets);
+            await redis.RemoveKeyAsync(_keyForTrendTweets);
         }
     }
 }
