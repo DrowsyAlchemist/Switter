@@ -8,6 +8,6 @@
 
         Task SetAsync(string key, string value, TimeSpan? expiry = null);
         Task AddToListAsync(string key, IEnumerable<string> value);
-        Task RemoveAsync(string key);
+        Task RemoveKeyAsync(string key);
     }
 }

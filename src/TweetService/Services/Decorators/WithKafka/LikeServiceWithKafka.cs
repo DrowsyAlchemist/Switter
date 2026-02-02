@@ -38,6 +38,7 @@ namespace TweetService.Services.Decorators.WithKafka
             {
                 var likeSetEvent = new LikeSetEvent(userId, tweetId, DateTime.UtcNow);
                 await _kafkaProducer.ProduceAsync(_options.TweetEvents.LikeSetEventName, likeSetEvent);
+                _logger.LogInformation("Like-event message sent to kafka. \nUser: {}\nTweet: {}", userId, tweetId);
             }
             catch (Exception ex)
             {

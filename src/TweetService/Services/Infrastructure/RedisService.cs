@@ -92,7 +92,7 @@ namespace TweetService.Services.Infrastructure
             }
         }
 
-        public async Task RemoveAsync(string key)
+        public async Task RemoveKeyAsync(string key)
         {
             if (string.IsNullOrWhiteSpace(key))
                 throw new ArgumentException("Key cannot be null or empty", nameof(key));

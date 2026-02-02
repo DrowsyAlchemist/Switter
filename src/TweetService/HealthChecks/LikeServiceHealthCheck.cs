@@ -35,7 +35,7 @@ namespace TweetService.HealthChecks
                 var testUserInfo = new UserInfo
                 {
                     Id = TestGuid,
-                    DisplayName = "SwitterUser"
+                    DisplayName = "SwitterLikesUser"
                 };
                 var testTweet = new Tweet
                 {
