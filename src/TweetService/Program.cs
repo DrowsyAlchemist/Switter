@@ -149,7 +149,8 @@ builder.Services.AddHealthChecks()
     .AddRedis(builder.Configuration["Redis:ConnectionString"]!)
     .AddCheck<DatabaseHealthCheck>("Database")
     .AddCheck<TweetServiceHealthCheck>("TweetService")
-    .AddCheck<LikeServiceHealthCheck>("LikeService");
+    .AddCheck<LikeServiceHealthCheck>("LikeService")
+    .AddCheck<TrendServiceHealthCheck>("TrendService");
 
 var app = builder.Build();
 
