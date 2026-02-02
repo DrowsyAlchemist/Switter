@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Diagnostics.HealthChecks;
 using TweetService.DTOs;
 using TweetService.Exceptions;
+using TweetService.Interfaces.Data;
 using TweetService.Interfaces.Services;
 using TweetService.Models;
 
@@ -12,26 +13,30 @@ namespace TweetService.HealthChecks
         private readonly static Guid TestGuid2 = Guid.Parse("22345200-abe8-4f60-90c8-0d43c5f6c0f6");
         private readonly ITweetCommands _tweetCommands;
         private readonly ITweetQueries _tweetQueries;
+        private readonly ITransactionManager _transactionManager;
         private readonly ILogger<TweetServiceHealthCheck> _logger;
 
         public TweetServiceHealthCheck(
-            ITweetCommands tweetCommands, 
-            ITweetQueries tweetQueries, 
+            ITweetCommands tweetCommands,
+            ITweetQueries tweetQueries,
+            ITransactionManager transactionManager,
             ILogger<TweetServiceHealthCheck> logger)
         {
             _tweetCommands = tweetCommands;
             _tweetQueries = tweetQueries;
+            _transactionManager = transactionManager;
             _logger = logger;
         }
 
         public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
         {
+            await using var transaction = await _transactionManager.BeginTransactionAsync(cancellationToken);
             try
             {
                 var testUserInfo = new UserInfo
                 {
                     Id = TestGuid1,
-                    DisplayName = "SwitterUser"
+                    DisplayName = "SwitterTweetsUser"
                 };
                 var tweetRequest = new CreateTweetRequest
                 {
@@ -52,7 +57,7 @@ namespace TweetService.HealthChecks
                 var anotherTestUserInfo = new UserInfo
                 {
                     Id = TestGuid2,
-                    DisplayName = "AnotherSwitterUser"
+                    DisplayName = "AnotherSwitterTweetsUser"
                 };
                 var retweetRequest = new CreateTweetRequest
                 {
@@ -74,7 +79,6 @@ namespace TweetService.HealthChecks
                 isHealthy = isHealthy
                     && tweetInDb.RepliesCount == 1
                     && tweetInDb.RetweetsCount == 1;
-
                 await _tweetCommands.DeleteTweetAsync(retweet.Id, anotherTestUserInfo.Id);
                 await _tweetCommands.DeleteTweetAsync(reply.Id, anotherTestUserInfo.Id);
                 await _tweetCommands.DeleteTweetAsync(tweet.Id, testUserInfo.Id);
@@ -98,12 +102,15 @@ namespace TweetService.HealthChecks
                 }
                 catch (TweetNotFoundException) { }
 
+                await transaction.CommitAsync(cancellationToken);
+
                 return isHealthy
                    ? HealthCheckResult.Healthy("Tweet service is working")
                    : HealthCheckResult.Unhealthy("Tweet service has problems"); ;
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync(cancellationToken);
                 _logger.LogError(ex, "Tweet service health check failed");
                 return HealthCheckResult.Unhealthy("Tweet service exception");
             }
