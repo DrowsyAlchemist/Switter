@@ -10,7 +10,7 @@ namespace TweetService.Models
         [Length(3, 50)]
         public required string Tag { get; set; }
 
-        public int UsageCount { get; set; }
+        public int UsageCount { get; set; } = 1;
         public DateTime FirstUsed { get; set; } = DateTime.UtcNow;
         public DateTime LastUsed { get; set; } = DateTime.UtcNow;
 
