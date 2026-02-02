@@ -1,41 +1,43 @@
-﻿using System.Text.Json;
+﻿using Microsoft.Extensions.Options;
+using System.Text.Json;
 using TweetService.Events;
 using TweetService.Interfaces.Data.Repositories;
+using TweetService.Models.Options;
 
 namespace TweetService.Consumers
 {
     public class UserEventsConsumer : EventsConsumer
     {
-        public UserEventsConsumer(IConfiguration configuration, IServiceProvider serviceProvider,  ILogger<UserEventsConsumer> logger)
-            : base(configuration, serviceProvider, logger)
+        private readonly IServiceProvider _serviceProvider;
+        private readonly string _profileChangedTopicName;
+        private readonly string _profileDeletedTopicName;
+
+        public UserEventsConsumer(IServiceProvider serviceProvider, IOptions<KafkaOptions> options, ILogger<UserEventsConsumer> logger)
+            : base(options, logger)
         {
+            _serviceProvider = serviceProvider;
+            _profileChangedTopicName = options.Value.ProfileEvents.ProfileChangedEventName;
+            _profileDeletedTopicName = options.Value.ProfileEvents.ProfileDeletedEventName;
         }
 
         protected override IEnumerable<string> GetTopics()
         {
-            return ["user-profile-changed", "user-profile-deleted"];
+            return [_profileChangedTopicName, _profileDeletedTopicName];
         }
 
         protected override async Task ProcessMessageAsync(string topic, string message, CancellationToken cancellationToken)
         {
-            using var scope = ServiceProvider.CreateScope();
+            using var scope = _serviceProvider.CreateScope();
 
             try
             {
-                switch (topic)
-                {
-                    case "user-profile-changed":
-                        await HandleUserProfileChanged(message, scope.ServiceProvider, cancellationToken);
-                        break;
+                if (topic == _profileChangedTopicName)
+                    await HandleUserProfileChanged(message, scope.ServiceProvider, cancellationToken);
+                else if (topic == _profileDeletedTopicName)
+                    await HandleUserProfileDeleted(message, scope.ServiceProvider, cancellationToken);
+                else
+                    Logger.LogWarning("Unknown topic: {Topic}", topic);
 
-                    case "user-profile-deleted":
-                        await HandleUserProfileDeleted(message, scope.ServiceProvider, cancellationToken);
-                        break;
-
-                    default:
-                        Logger.LogWarning("Unknown topic: {Topic}", topic);
-                        break;
-                }
                 Logger.LogInformation("Successfully processed message from topic {Topic}", topic);
             }
             catch (JsonException ex)
@@ -54,9 +56,9 @@ namespace TweetService.Consumers
             var userEvent = JsonSerializer.Deserialize<UserProfileChangedEvent>(message);
 
             if (userEvent == null)
-                throw new InvalidOperationException("Failed to deserialize user profile changed event");
+                throw new InvalidOperationException($"Failed to deserialize {_profileChangedTopicName} event");
 
-            Logger.LogInformation("Processing user profile update for user {UserId}", userEvent.UserId);
+            Logger.LogInformation("Processing {topic} for user {UserId}", _profileChangedTopicName, userEvent.UserId);
 
             if (userEvent.DisplayName == null && userEvent.AvatarUrl == null)
             {
@@ -83,9 +85,9 @@ namespace TweetService.Consumers
             var userEvent = JsonSerializer.Deserialize<UserProfileDeletedEvent>(message);
 
             if (userEvent == null)
-                throw new InvalidOperationException("Failed to deserialize user profile changed event");
+                throw new InvalidOperationException($"Failed to deserialize {_profileDeletedTopicName} event");
 
-            Logger.LogInformation("Processing user profile update for user {UserId}", userEvent.UserId);
+            Logger.LogInformation("Processing {topic} for user {UserId}", _profileDeletedTopicName, userEvent.UserId);
 
             var tweetRepository = services.GetRequiredService<ITweetRepository>();
             var userTweetIds = await tweetRepository.GetIdsByUserAsync(userEvent.UserId, 1, int.MaxValue);

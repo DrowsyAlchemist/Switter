@@ -7,17 +7,15 @@ namespace TweetService.Services
 {
     public class HashtagService : IHashtagService
     {
+        private const int MaxHashtagLength = 50;
         private readonly IHashtagRepository _hashtagRepository;
-        private readonly ITweetRepository _tweetRepository;
         private readonly ITweetHashtagRepository _tweetHashtagRepository;
 
         public HashtagService(
             IHashtagRepository hashtagRepository,
-            ITweetRepository tweetRepository,
             ITweetHashtagRepository tweetHashtagRepository)
         {
             _hashtagRepository = hashtagRepository;
-            _tweetRepository = tweetRepository;
             _tweetHashtagRepository = tweetHashtagRepository;
         }
 
@@ -31,7 +29,7 @@ namespace TweetService.Services
             var hashtagSet = new HashSet<string>(hashtags);
             foreach (var hashtag in hashtagSet)
             {
-                if (hashtag.Length == 0 || hashtag.Length > 50)
+                if (hashtag.Length == 0 || hashtag.Length > MaxHashtagLength)
                     throw new InvalidHashtagException($"Invalid hashtag length ({hashtag.Length}).");
             }
 
@@ -49,7 +47,7 @@ namespace TweetService.Services
             return hashtags;
         }
 
-        private IEnumerable<string> ExtractHashtags(string content)
+        private static IEnumerable<string> ExtractHashtags(string content)
         {
             return content
                 .Split(' ')

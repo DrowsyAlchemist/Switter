@@ -11,19 +11,16 @@ namespace TweetService.Tests.Unit
     public class HashtagServiceTests
     {
         private readonly Mock<IHashtagRepository> _hashtagRepositoryMock;
-        private readonly Mock<ITweetRepository> _tweetRepositoryMock;
         private readonly Mock<ITweetHashtagRepository> _tweetHashtagRepositoryMock;
         private readonly HashtagService _hashtagService;
 
         public HashtagServiceTests()
         {
             _hashtagRepositoryMock = new Mock<IHashtagRepository>();
-            _tweetRepositoryMock = new Mock<ITweetRepository>();
             _tweetHashtagRepositoryMock = new Mock<ITweetHashtagRepository>();
 
             _hashtagService = new HashtagService(
                 _hashtagRepositoryMock.Object,
-                _tweetRepositoryMock.Object,
                 _tweetHashtagRepositoryMock.Object
             );
         }
@@ -287,7 +284,7 @@ namespace TweetService.Tests.Unit
         {
             _hashtagRepositoryMock.Verify(r => r.GetExists(allHashtags), Times.Once);
 
-            if (newHashtags.Any())
+            if (newHashtags.Count > 0)
                 _hashtagRepositoryMock.Verify(r => r.AddRangeAsync(newHashtags), Times.Once);
 
             _hashtagRepositoryMock.Verify(r => r.IncrementUsageCounterAsync(existingHashtags), Times.Once);

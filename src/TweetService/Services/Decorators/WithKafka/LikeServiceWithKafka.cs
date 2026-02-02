@@ -1,7 +1,9 @@
-﻿using TweetService.DTOs;
+﻿using Microsoft.Extensions.Options;
+using TweetService.DTOs;
 using TweetService.Events;
 using TweetService.Interfaces.Infrastructure;
 using TweetService.Interfaces.Services;
+using TweetService.Models.Options;
 
 namespace TweetService.Services.Decorators.WithKafka
 {
@@ -9,12 +11,18 @@ namespace TweetService.Services.Decorators.WithKafka
     {
         private readonly ILikeService _likeService;
         private readonly IKafkaProducer _kafkaProducer;
+        private readonly KafkaOptions _options;
         private readonly ILogger<LikeServiceWithKafka> _logger;
 
-        public LikeServiceWithKafka(ILikeService likeService, IKafkaProducer kafkaProducer, ILogger<LikeServiceWithKafka> logger)
+        public LikeServiceWithKafka(
+            ILikeService likeService,
+            IKafkaProducer kafkaProducer,
+            IOptions<KafkaOptions> options,
+            ILogger<LikeServiceWithKafka> logger)
         {
             _likeService = likeService;
             _kafkaProducer = kafkaProducer;
+            _options = options.Value;
             _logger = logger;
         }
 
@@ -29,7 +37,7 @@ namespace TweetService.Services.Decorators.WithKafka
             try
             {
                 var likeSetEvent = new LikeSetEvent(userId, tweetId, DateTime.UtcNow);
-                await _kafkaProducer.ProduceAsync("like-set", likeSetEvent);
+                await _kafkaProducer.ProduceAsync(_options.TweetEvents.LikeSetEventName, likeSetEvent);
             }
             catch (Exception ex)
             {
@@ -43,7 +51,7 @@ namespace TweetService.Services.Decorators.WithKafka
             try
             {
                 var likeCanceledEvent = new LikeCanceledEvent(userId, tweetId, DateTime.UtcNow);
-                await _kafkaProducer.ProduceAsync("like-canceled", likeCanceledEvent);
+                await _kafkaProducer.ProduceAsync(_options.TweetEvents.LikeCanceledEventName, likeCanceledEvent);
             }
             catch (Exception ex)
             {

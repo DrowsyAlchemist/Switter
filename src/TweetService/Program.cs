@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using StackExchange.Redis;
 using TweetService.Consumers;
 using TweetService.Data;
@@ -10,6 +11,7 @@ using TweetService.Interfaces.Data;
 using TweetService.Interfaces.Data.Repositories;
 using TweetService.Interfaces.Infrastructure;
 using TweetService.Interfaces.Services;
+using TweetService.Models.Options;
 using TweetService.Services;
 using TweetService.Services.Decorators;
 using TweetService.Services.Decorators.WithKafka;
@@ -24,6 +26,19 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// Options
+builder.Configuration.AddJsonFile("Configuration/KafkaConfig.json");
+builder.Services.Configure<KafkaOptions>(builder.Configuration);
+
+builder.Configuration.AddJsonFile("Configuration/PaginationConfig.json");
+builder.Services.Configure<PaginationOptions>(builder.Configuration);
+
+builder.Configuration.AddJsonFile("Configuration/AppUrls.json");
+builder.Services.Configure<AppUrls>(builder.Configuration);
+
+builder.Configuration.AddJsonFile("Configuration/TrendsConfig.json");
+builder.Services.Configure<TrendsOptions>(builder.Configuration);
 
 // Redis
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
@@ -87,6 +102,7 @@ builder.Services.AddScoped<ITweetCommands>(serviceProvider =>
         );
     var tweetCommandsWithKafka = new TweetCommandsWithKafka(
         tweetCommands: tweetWithHashtags,
+        options: serviceProvider.GetRequiredService<IOptions<KafkaOptions>>(),
         kafkaProducer: serviceProvider.GetRequiredService<IKafkaProducer>(),
         logger: serviceProvider.GetRequiredService<ILogger<TweetCommandsWithKafka>>()
         );
@@ -113,6 +129,7 @@ builder.Services.AddScoped<ILikeService>(serviceProvider =>
     var likeServiceWithKafka = new LikeServiceWithKafka(
         likeService: likeServiceWithTrendFiller,
         kafkaProducer: serviceProvider.GetRequiredService<IKafkaProducer>(),
+        options: serviceProvider.GetRequiredService<IOptions<KafkaOptions>>(),
         logger: serviceProvider.GetRequiredService<ILogger<LikeServiceWithKafka>>()
         );
     var likeServiceWithTransaction = new LikeServiceWithTransaction(

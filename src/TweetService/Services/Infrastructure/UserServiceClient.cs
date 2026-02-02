@@ -1,17 +1,21 @@
-﻿using System.Text.Json;
+﻿using Microsoft.Extensions.Options;
+using System.Text.Json;
 using TweetService.DTOs;
 using TweetService.Interfaces.Infrastructure;
+using TweetService.Models.Options;
 
 namespace TweetService.Services.Infrastructure
 {
     public class UserServiceClient : IUserServiceClient
     {
         private readonly HttpClient _httpClient;
+        private readonly string _getUserProfileUrl;
         private readonly ILogger<UserServiceClient> _logger;
 
-        public UserServiceClient(HttpClient httpClient, ILogger<UserServiceClient> logger)
+        public UserServiceClient(HttpClient httpClient, IOptions<AppUrls> appUrls, ILogger<UserServiceClient> logger)
         {
             _httpClient = httpClient;
+            _getUserProfileUrl = appUrls.Value.GetUserProfileUrl;
             _logger = logger;
         }
 
@@ -19,7 +23,7 @@ namespace TweetService.Services.Infrastructure
         {
             try
             {
-                var response = await _httpClient.GetAsync($"/api/users/{userId}");
+                var response = await _httpClient.GetAsync($"{_getUserProfileUrl}{userId}");
 
                 if (response.IsSuccessStatusCode)
                 {

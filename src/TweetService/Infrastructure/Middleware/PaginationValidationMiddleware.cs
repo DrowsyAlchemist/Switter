@@ -1,4 +1,6 @@
-﻿using TweetService.Infrastructure.Attributes;
+﻿using Microsoft.Extensions.Options;
+using TweetService.Infrastructure.Attributes;
+using TweetService.Models.Options;
 
 namespace TweetService.Infrastructure.Middleware
 {
@@ -7,16 +9,17 @@ namespace TweetService.Infrastructure.Middleware
         private const string PageParameter = "page";
         private const string PageSizeParameter = "pageSize";
 
-        private const int DefaultPage = 1;
-
         private readonly RequestDelegate _next;
+        private readonly PaginationOptions _options;
         private readonly ILogger<PaginationValidationMiddleware> _logger;
 
         public PaginationValidationMiddleware(
             RequestDelegate next,
+            IOptions<PaginationOptions> options,
             ILogger<PaginationValidationMiddleware> logger)
         {
             _next = next;
+            _options = options.Value;
             _logger = logger;
         }
 
@@ -31,14 +34,14 @@ namespace TweetService.Infrastructure.Middleware
                 bool hasPageSize = context.Request.Query.TryGetValue(PageSizeParameter, out var pageSizeValue);
 
                 if (hasPage == false)
-                    pageValue = DefaultPage.ToString();
+                    pageValue = _options.DefaultPage.ToString();
                 if (hasPageSize == false)
-                    pageSizeValue = attribute!.DefaultPageSize.ToString();
+                    pageSizeValue = _options.DefaultPageSize.ToString();
 
                 if (int.TryParse(pageValue, out int page) == false)
-                    page = DefaultPage;
+                    page = _options.DefaultPage;
                 if (int.TryParse(pageSizeValue, out int pageSize) == false)
-                    pageSize = attribute!.DefaultPageSize;
+                    pageSize = _options.DefaultPageSize;
 
                 if (page <= 0 || pageSize <= 0)
                 {

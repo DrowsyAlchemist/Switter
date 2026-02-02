@@ -1,0 +1,16 @@
+{
+  "bootstrapServers": "localhost:9092",
+  "groupId": "tweet-service-group",
+
+  "tweetEvents": {
+    "tweetCreatedEventName": "tweet-created",
+    "tweetDeletedEventName": "tweet-deleted",
+    "likeSetEventName": "like-set",
+    "likeCanceledEventName": "like-canceled"
+  },
+
+  "profileEvents": {
+    "profileChangedEventName": "profile-changed",
+    "profileDeletedEventName": "profile-deleted"
+  }
+}

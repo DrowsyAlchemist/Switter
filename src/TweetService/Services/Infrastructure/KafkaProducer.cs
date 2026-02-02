@@ -1,6 +1,8 @@
 ﻿using Confluent.Kafka;
+using Microsoft.Extensions.Options;
 using System.Text.Json;
 using TweetService.Interfaces.Infrastructure;
+using TweetService.Models.Options;
 
 namespace TweetService.Services.Infrastructure
 {
@@ -9,11 +11,11 @@ namespace TweetService.Services.Infrastructure
         private readonly IProducer<Null, string> _producer;
         private readonly ILogger<KafkaProducer> _logger;
 
-        public KafkaProducer(IConfiguration configuration, ILogger<KafkaProducer> logger)
+        public KafkaProducer(IOptions<KafkaOptions> options, ILogger<KafkaProducer> logger)
         {
             var config = new ProducerConfig
             {
-                BootstrapServers = configuration["Kafka:BootstrapServers"],
+                BootstrapServers = options.Value.BootstrapServers,
             };
             _producer = new ProducerBuilder<Null, string>(config).Build();
             _logger = logger;

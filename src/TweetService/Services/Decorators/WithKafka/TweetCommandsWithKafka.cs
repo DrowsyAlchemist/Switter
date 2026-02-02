@@ -1,7 +1,9 @@
-﻿using TweetService.DTOs;
+﻿using Microsoft.Extensions.Options;
+using TweetService.DTOs;
 using TweetService.Events;
 using TweetService.Interfaces.Infrastructure;
 using TweetService.Interfaces.Services;
+using TweetService.Models.Options;
 
 namespace TweetService.Services.Decorators.WithKafka
 {
@@ -9,11 +11,17 @@ namespace TweetService.Services.Decorators.WithKafka
     {
         private readonly ITweetCommands _tweetCommands;
         private readonly IKafkaProducer _kafkaProducer;
+        private readonly KafkaOptions _options;
         private readonly ILogger<TweetCommandsWithKafka> _logger;
 
-        public TweetCommandsWithKafka(ITweetCommands tweetCommands, IKafkaProducer kafkaProducer, ILogger<TweetCommandsWithKafka> logger)
+        public TweetCommandsWithKafka(
+            ITweetCommands tweetCommands,
+            IOptions<KafkaOptions> options,
+            IKafkaProducer kafkaProducer,
+            ILogger<TweetCommandsWithKafka> logger)
         {
             _tweetCommands = tweetCommands;
+            _options = options.Value;
             _kafkaProducer = kafkaProducer;
             _logger = logger;
         }
@@ -24,7 +32,7 @@ namespace TweetService.Services.Decorators.WithKafka
             try
             {
                 var tweetEvent = new TweetCreatedEvent(tweet.Id, tweet.AuthorId, tweet.Type, tweet.CreatedAt);
-                await _kafkaProducer.ProduceAsync("tweet-created", tweetEvent);
+                await _kafkaProducer.ProduceAsync(_options.TweetEvents.TweetCreatedEventName, tweetEvent);
             }
             catch (Exception ex)
             {
@@ -39,7 +47,7 @@ namespace TweetService.Services.Decorators.WithKafka
             try
             {
                 var tweetEvent = new TweetDeletedEvent(tweetId, DateTime.UtcNow);
-                await _kafkaProducer.ProduceAsync("tweet-deleted", tweetEvent);
+                await _kafkaProducer.ProduceAsync(_options.TweetEvents.TweetDeletedEventName, tweetEvent);
             }
             catch (Exception ex)
             {

@@ -1,18 +1,18 @@
-﻿using TweetService.Interfaces.Infrastructure;
+﻿using Microsoft.Extensions.Options;
+using TweetService.Interfaces.Infrastructure;
+using TweetService.Models.Options;
 
 namespace TweetService.Services.Trends
 {
     public class TrendCalculator
     {
-        private const string KeyForLastUsedHashtags = "KeyForLastUsedHashtags";
-        private const string KeyForLastLikedTweets = "KeyForLastLikedTweets";
-        private const int TrendsPeriodInHours = 24;
-
         private readonly IRedisService _redisService;
+        private readonly TrendsOptions _options;
 
-        public TrendCalculator(IRedisService redisService)
+        public TrendCalculator(IRedisService redisService, IOptions<TrendsOptions> options)
         {
             _redisService = redisService;
+            _options = options.Value;
         }
 
         public async Task<IEnumerable<string>> CalculateTrendHashtagsByUsageAsync(int count)
@@ -22,8 +22,8 @@ namespace TweetService.Services.Trends
             if (count == 0)
                 return [];
 
-            var period = TimeSpan.FromHours(TrendsPeriodInHours);
-            var lastHashtags = await _redisService.GetListFromDateAsync(KeyForLastUsedHashtags, period);
+            var period = TimeSpan.FromHours(_options.TrendsPeriodInHours);
+            var lastHashtags = await _redisService.GetListFromDateAsync(_options.KeyForLastUsedHashtags, period);
             if (lastHashtags.Count == 0)
                 return lastHashtags;
 
@@ -38,6 +38,7 @@ namespace TweetService.Services.Trends
             return hashtagsUsage
                 .OrderByDescending(h => h.Value)
                 .Take(count)
+                .OrderByDescending(h => h.Value)
                 .Select(h => h.Key)
                 .ToList();
         }
@@ -49,8 +50,8 @@ namespace TweetService.Services.Trends
             if (count == 0)
                 return [];
 
-            var period = TimeSpan.FromHours(TrendsPeriodInHours);
-            var lastLikedIds = await _redisService.GetListFromDateAsync(KeyForLastLikedTweets, period);
+            var period = TimeSpan.FromHours(_options.TrendsPeriodInHours);
+            var lastLikedIds = await _redisService.GetListFromDateAsync(_options.KeyForLastLikedTweets, period);
 
             if (lastLikedIds.Count == 0)
                 return [];
@@ -66,6 +67,7 @@ namespace TweetService.Services.Trends
             return likesCount
                 .OrderByDescending(t => t.Value)
                 .Take(count)
+                .OrderByDescending(h => h.Value)
                 .Select(t => Guid.Parse(t.Key))
                 .ToList();
         }

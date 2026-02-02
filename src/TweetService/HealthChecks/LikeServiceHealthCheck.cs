@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Diagnostics.HealthChecks;
 using TweetService.DTOs;
+using TweetService.Interfaces.Data;
 using TweetService.Interfaces.Data.Repositories;
 using TweetService.Interfaces.Services;
 using TweetService.Models;
@@ -10,24 +11,25 @@ namespace TweetService.HealthChecks
     {
         private readonly static Guid TestGuid = Guid.Empty;
         private readonly ILikeService _likeService;
-        private readonly ILikesRepository _likesRepository;
+        private readonly ITransactionManager _transactionManager;
         private readonly ITweetRepository _tweetRepository;
         private readonly ILogger<LikeServiceHealthCheck> _logger;
 
         public LikeServiceHealthCheck(
             ILikeService likeService,
-            ILikesRepository likesRepository,
+            ITransactionManager transactionManager,
             ITweetRepository tweetRepository,
             ILogger<LikeServiceHealthCheck> logger)
         {
             _likeService = likeService;
-            _likesRepository = likesRepository;
+            _transactionManager = transactionManager;
             _tweetRepository = tweetRepository;
             _logger = logger;
         }
 
         public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
         {
+            await using var transaction = await _transactionManager.BeginTransactionAsync(cancellationToken);
             try
             {
                 var testUserInfo = new UserInfo
@@ -65,12 +67,15 @@ namespace TweetService.HealthChecks
 
                 await _tweetRepository.SoftDeleteAsync(tweet!.Id);
 
+                await transaction.CommitAsync(cancellationToken);
+
                 return isHealthy
                    ? HealthCheckResult.Healthy("Like service is working")
-                   : HealthCheckResult.Unhealthy("Like service has problems"); ;
+                   : HealthCheckResult.Unhealthy("Like service has problems");
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync(cancellationToken);
                 _logger.LogError(ex, "Like service health check failed");
                 return HealthCheckResult.Unhealthy("Like service exception");
             }

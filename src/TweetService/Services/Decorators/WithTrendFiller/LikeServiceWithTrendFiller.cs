@@ -28,7 +28,7 @@ namespace TweetService.Services.Decorators.WithTrendFiller
 
         public async Task UnlikeTweetAsync(Guid tweetId, Guid userId)
         {
-            await _likeService.LikeTweetAsync(tweetId, userId);
+            await _likeService.UnlikeTweetAsync(tweetId, userId);
         }
     }
 }

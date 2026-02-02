@@ -1,26 +1,29 @@
 ﻿using Confluent.Kafka;
+using Microsoft.Extensions.Options;
+using TweetService.Models.Options;
 
 namespace TweetService.Consumers
 {
     public abstract class EventsConsumer : BackgroundService
     {
-        protected readonly IServiceProvider ServiceProvider;
+        protected readonly KafkaOptions Options;
         protected readonly ILogger<EventsConsumer> Logger;
         private readonly IConsumer<Ignore, string> _consumer;
         private readonly TimeSpan _pollTimeout = TimeSpan.FromMicroseconds(100);
 
-        public EventsConsumer(IConfiguration configuration, IServiceProvider serviceProvider, ILogger<EventsConsumer> logger)
+        public EventsConsumer(IOptions<KafkaOptions> options, ILogger<EventsConsumer> logger)
         {
-            ServiceProvider = serviceProvider;
+            Options = options.Value;
             Logger = logger;
 
             var config = new ConsumerConfig
             {
-                BootstrapServers = configuration["Kafka:BootstrapServers"],
-                GroupId = "tweet-service-group",
+                BootstrapServers = Options.BootstrapServers,
+                GroupId = Options.GroupId,
                 AutoOffsetReset = AutoOffsetReset.Earliest,
                 EnableAutoOffsetStore = false,
                 EnableAutoCommit = false,
+                AllowAutoCreateTopics = true,
                 MaxPollIntervalMs = 300000,
                 SessionTimeoutMs = 10000,
                 HeartbeatIntervalMs = 3000

@@ -1,34 +1,33 @@
 ﻿using AutoMapper;
+using Microsoft.Extensions.Options;
 using System.Text.Json;
 using TweetService.DTOs;
 using TweetService.Interfaces.Data.Repositories;
 using TweetService.Interfaces.Infrastructure;
 using TweetService.Interfaces.Services;
+using TweetService.Models.Options;
 
 namespace TweetService.Services.Trends
 {
     public class TrendService : ITrendService
     {
-        private const string KeyForCachedTrendHashtags = "KeyForTrendHashtags";
-        private const string KeyForCachedTrendTweets = "KeyForTrendTweets";
-        private const int TrendHashtagsCacheSize = 100;
-        private const int TrendTweetsCountCacheSize = 500;
-        private const int CacheExpiryInMinutes = 30;
-
         private readonly TrendCalculator _trendCalculator;
         private readonly ITweetRepository _tweetRepository;
         private readonly IRedisService _redisService;
+        private readonly TrendsOptions _options;
         private readonly IMapper _mapper;
 
         public TrendService(
             TrendCalculator trendCalculator,
             ITweetRepository tweetRepository,
             IRedisService redisService,
+            IOptions<TrendsOptions> options,
             IMapper mapper)
         {
             _tweetRepository = tweetRepository;
             _trendCalculator = trendCalculator;
             _redisService = redisService;
+            _options = options.Value;
             _mapper = mapper;
         }
 
@@ -37,7 +36,7 @@ namespace TweetService.Services.Trends
             IEnumerable<string>? trendHashtags = null;
 
             int maxIndex = page * pageSize;
-            if (maxIndex <= TrendHashtagsCacheSize)
+            if (maxIndex <= _options.Cache.TrendHashtagsCacheSize)
                 trendHashtags = await GetTrendCategoriesFromCacheAsync();
 
             if (trendHashtags == null || trendHashtags.Count() < maxIndex)
@@ -53,7 +52,7 @@ namespace TweetService.Services.Trends
             IEnumerable<Guid>? trendTweetIds = null;
 
             int maxIndex = page * pageSize;
-            if (maxIndex <= TrendTweetsCountCacheSize)
+            if (maxIndex <= _options.Cache.TrendTweetsCountCacheSize)
                 trendTweetIds = await GetTrendsTweetIdsFromCacheAsync();
 
             if (trendTweetIds == null || trendTweetIds.Count() < maxIndex)
@@ -74,7 +73,7 @@ namespace TweetService.Services.Trends
 
         private async Task<IEnumerable<string>> GetTrendCategoriesFromCacheAsync()
         {
-            var trendsJson = await _redisService.GetAsync(KeyForCachedTrendHashtags);
+            var trendsJson = await _redisService.GetAsync(_options.Cache.KeyForTrendHashtags);
             if (trendsJson != null)
             {
                 var trendHashtags = JsonSerializer.Deserialize<List<string>>(trendsJson);
@@ -87,14 +86,14 @@ namespace TweetService.Services.Trends
 
         private async Task SaveTrendCategoriesToCacheAsync(IEnumerable<string> trendCategories)
         {
-            var trendCategoriesToSave = trendCategories.Take(TrendHashtagsCacheSize).ToList();
+            var trendCategoriesToSave = trendCategories.Take(_options.Cache.TrendHashtagsCacheSize).ToList();
             var trendsJson = JsonSerializer.Serialize(trendCategoriesToSave);
-            await _redisService.SetAsync(KeyForCachedTrendHashtags, trendsJson, TimeSpan.FromMinutes(CacheExpiryInMinutes));
+            await _redisService.SetAsync(_options.Cache.KeyForTrendHashtags, trendsJson, TimeSpan.FromMinutes(_options.Cache.ExpiryInMinutes));
         }
 
         private async Task<List<Guid>> GetTrendsTweetIdsFromCacheAsync()
         {
-            var trendsJson = await _redisService.GetAsync(KeyForCachedTrendTweets);
+            var trendsJson = await _redisService.GetAsync(_options.Cache.KeyForTrendTweets);
             if (trendsJson != null)
             {
                 var trendTweetIdsFromJson = JsonSerializer.Deserialize<List<string>>(trendsJson);
@@ -109,9 +108,9 @@ namespace TweetService.Services.Trends
 
         private async Task SaveTrendTweetsToCacheAsync(IEnumerable<Guid> trendTweets)
         {
-            var trendTweetsToSave = trendTweets.Take(TrendHashtagsCacheSize).ToList();
+            var trendTweetsToSave = trendTweets.Take(_options.Cache.TrendHashtagsCacheSize).ToList();
             var trendsJson = JsonSerializer.Serialize(trendTweetsToSave);
-            await _redisService.SetAsync(KeyForCachedTrendTweets, trendsJson, TimeSpan.FromMinutes(CacheExpiryInMinutes));
+            await _redisService.SetAsync(_options.Cache.KeyForTrendTweets, trendsJson, TimeSpan.FromMinutes(_options.Cache.ExpiryInMinutes));
         }
     }
 }
