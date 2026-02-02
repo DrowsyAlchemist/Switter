@@ -1,0 +1,20 @@
+﻿using FeedService.Models;
+
+namespace FeedService.Interfaces
+{
+    public interface IRedisFeedRepository
+    {
+        Task AddToFeedAsync(Guid userId, FeedItem item);
+        Task RemoveFromFeedAsync(Guid userId, Guid tweetId);
+        Task<List<FeedItem>> GetFeedPageAsync(Guid userId, int start, int count);
+        Task<long> GetFeedLengthAsync(Guid userId);
+
+        Task TrimFeedAsync(Guid userId, long maxLength);
+        Task ClearFeedAsync(Guid userId);
+        Task<bool> FeedExistsAsync(Guid userId);
+
+
+        Task IncrementFeedCounterAsync(Guid userId);
+        Task<long> GetFeedCounterAsync(Guid userId);
+    }
+}
