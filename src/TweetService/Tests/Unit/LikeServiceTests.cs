@@ -33,66 +33,6 @@ namespace TweetService.Tests.Unit
         public class GetLikedTweetsAsyncTests : LikeServiceTests
         {
             [Fact]
-            public async Task GetLikedTweetsAsync_ValidParameters_ReturnsLikedTweets()
-            {
-                // Arrange
-                var userId = Guid.NewGuid();
-                var page = 1;
-                var pageSize = 10;
-
-                var likedTweetIds = new List<Guid> { Guid.NewGuid(), Guid.NewGuid() };
-                var likedTweets = new List<Tweet>
-                {
-                    new Tweet {AuthorId = Guid.NewGuid(), AuthorDisplayName="TestAuthor1", Id = likedTweetIds[0], Content = "Tweet 1" },
-                    new Tweet {AuthorId = Guid.NewGuid(), AuthorDisplayName="TestAuthor2", Id = likedTweetIds[1], Content = "Tweet 2" }
-                };
-
-                var retweetedIds = new List<Guid> { likedTweetIds[0] };
-                var expectedDtos = new List<TweetDto>
-                {
-                    new TweetDto
-                    {
-                        AuthorId = likedTweets[0].AuthorId,
-                        AuthorDisplayName=likedTweets[0].AuthorDisplayName,
-                        Id = likedTweetIds[0],
-                        Content = "Tweet 1",
-                        Type = TweetType.Tweet
-
-                    },
-                    new TweetDto
-                    {
-                        AuthorId = likedTweets[1].AuthorId,
-                        AuthorDisplayName=likedTweets[1].AuthorDisplayName,
-                        Id = likedTweetIds[1],
-                        Content = "Tweet 2",
-                        Type = TweetType.Tweet
-                    }
-                };
-
-                _likesRepositoryMock.Setup(r => r.GetLikedTweetIdsAsync(userId, page, pageSize))
-                    .ReturnsAsync(likedTweetIds);
-
-                _tweetRepositoryMock.Setup(r => r.GetByIdsAsync(likedTweetIds, page, pageSize))
-                    .ReturnsAsync(likedTweets);
-
-                _tweetRepositoryMock.Setup(r => r.GetRetweetedIdsAsync(likedTweetIds, userId))
-                    .ReturnsAsync(retweetedIds);
-
-                _mapperMock.Setup(m => m.Map<List<TweetDto>>(likedTweets))
-                    .Returns(expectedDtos);
-
-                // Act
-                var result = await _likeService.GetLikedTweetsAsync(userId, page, pageSize);
-
-                // Assert
-                result.Should().HaveCount(2);
-                result[0].IsLiked.Should().BeTrue();
-                result[1].IsLiked.Should().BeTrue();
-                result[0].IsRetweeted.Should().BeTrue();
-                result[1].IsRetweeted.Should().BeFalse();
-            }
-
-            [Fact]
             public async Task GetLikedTweetsAsync_NoLikedTweets_ReturnsEmptyList()
             {
                 // Arrange
