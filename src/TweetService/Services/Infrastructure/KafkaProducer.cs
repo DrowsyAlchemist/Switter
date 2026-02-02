@@ -1,19 +1,21 @@
 ﻿using Confluent.Kafka;
+using Microsoft.Extensions.Options;
 using System.Text.Json;
-using UserService.Interfaces.Infrastructure;
+using TweetService.Interfaces.Infrastructure;
+using TweetService.Models.Options;
 
-namespace UserService.Services.Infrastructure
+namespace TweetService.Services.Infrastructure
 {
     public class KafkaProducer : IKafkaProducer
     {
         private readonly IProducer<Null, string> _producer;
         private readonly ILogger<KafkaProducer> _logger;
 
-        public KafkaProducer(IConfiguration configuration, ILogger<KafkaProducer> logger)
+        public KafkaProducer(IOptions<KafkaOptions> options, ILogger<KafkaProducer> logger)
         {
             var config = new ProducerConfig
             {
-                BootstrapServers = configuration["Kafka:BootstrapServers"]
+                BootstrapServers = options.Value.BootstrapServers,
             };
             _producer = new ProducerBuilder<Null, string>(config).Build();
             _logger = logger;

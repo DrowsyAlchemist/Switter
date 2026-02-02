@@ -1,0 +1,13 @@
+{
+  "keyForLastUsedHashtags": "keyForLastUsedHashtags",
+  "keyForLastLikedTweets": "keyForLastLikedTweets",
+  "trendsPeriodInHours": 24,
+
+  "cache": {
+    "keyForTrendHashtags": "keyForTrendHashtags",
+    "keyForTrendTweets": "keyForTrendTweets",
+    "trendHashtagsCacheSize": 100,
+    "trendTweetsCountCacheSize": 500,
+    "expiryInMinutes": 30
+  }
+}
