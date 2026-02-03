@@ -1,10 +1,11 @@
 ﻿using FeedService.Models;
 
-namespace FeedService.Interfaces
+namespace FeedService.Interfaces.Data
 {
     public interface IRedisFeedRepository
     {
         Task AddToFeedAsync(Guid userId, FeedItem item);
+        Task AddToFeedAsync(Guid userId, IEnumerable<FeedItem> items);
         Task RemoveFromFeedAsync(Guid userId, Guid tweetId);
         Task<List<FeedItem>> GetFeedPageAsync(Guid userId, int start, int count);
         Task<long> GetFeedLengthAsync(Guid userId);

@@ -2,5 +2,6 @@
 {
     public interface IProfileServiceClient
     {
+        Task<List<Guid>> GetFollowersAsync(Guid followingId);
     }
 }
