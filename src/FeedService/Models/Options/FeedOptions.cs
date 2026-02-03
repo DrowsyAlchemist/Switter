@@ -1,4 +1,4 @@
-﻿namespace FeedService.Models
+﻿namespace FeedService.Models.Options
 {
     public class FeedOptions
     {

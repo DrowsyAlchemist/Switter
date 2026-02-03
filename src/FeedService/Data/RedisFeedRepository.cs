@@ -1,5 +1,6 @@
 ﻿using FeedService.Interfaces.Data;
 using FeedService.Models;
+using FeedService.Models.Options;
 using FluentAssertions.Common;
 using Microsoft.Extensions.Options;
 using StackExchange.Redis;
