@@ -6,10 +6,10 @@ namespace FeedService.Services
 {
     public class FeedFiller : IFeedFiller
     {
-        private readonly IRedisFeedRepository _feedRepository;
+        private readonly IFeedRepository _feedRepository;
         private readonly IScoreCalculator _scoreCalculator;
 
-        public FeedFiller(IRedisFeedRepository feedRepository, IScoreCalculator scoreCalculator)
+        public FeedFiller(IFeedRepository feedRepository, IScoreCalculator scoreCalculator)
         {
             _feedRepository = feedRepository;
             _scoreCalculator = scoreCalculator;
@@ -46,6 +46,11 @@ namespace FeedService.Services
 
             foreach (var userId in userIds)
                 await _feedRepository.AddToFeedAsync(userId, feedItem);
+        }
+
+        public async Task RemoveUserTweetsFromFeed(Guid feedOwnerId, Guid userToRemoveId)
+        {
+            await _feedRepository.RemoveUserTweetsFromFeedAsync(feedOwnerId, userToRemoveId);
         }
 
         private async Task<FeedItem> CreateFeedItemAsync(Guid tweetId)

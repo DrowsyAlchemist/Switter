@@ -8,5 +8,8 @@ namespace FeedService.Interfaces
         Task ProcessRetweetAsync(RetweetCreatedEvent retweetEvent);
         Task ProcessTweetLikedAsync(LikeSetEvent likeEvent);
         Task ProcessUserFollowedAsync(UserFollowedEvent followEvent);
+
+        Task ProcessUserUnfollowedAsync(UserUnfollowedEvent userUnfollowedEvent);
+        Task ProcessUserBlockedAsync(UserBlockedEvent userBlockedEvent);
     }
 }

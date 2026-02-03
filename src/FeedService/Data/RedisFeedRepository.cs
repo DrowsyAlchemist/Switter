@@ -7,7 +7,7 @@ using System.Text.Json;
 
 namespace FeedService.Data
 {
-    public class RedisFeedRepository : IRedisFeedRepository
+    public class RedisFeedRepository : IFeedRepository
     {
         private readonly IDatabase _redis;
         private readonly FeedOptions _options;

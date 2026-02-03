@@ -58,6 +58,32 @@ namespace FeedService.Services
             await AddToFollowersFeed(likeEvent.UserId, likeEvent.TweetId);
         }
 
+        public async Task ProcessUserUnfollowedAsync(UserUnfollowedEvent userUnfollowedEvent)
+        {
+            ArgumentNullException.ThrowIfNull(userUnfollowedEvent);
+
+            var follower = userUnfollowedEvent.FollowerId;
+            var following = userUnfollowedEvent.FolloweeId;
+
+            _followersCache[following].Remove(follower);
+
+            await _feedFiller.RemoveUserTweetsFromFeed(feedOwnerId: follower, userToRemoveId: following);
+        }
+
+        public async Task ProcessUserBlockedAsync(UserBlockedEvent userBlockedEvent)
+        {
+            ArgumentNullException.ThrowIfNull(userBlockedEvent);
+
+            var blocker = userBlockedEvent.BlockerId;
+            var blocked = userBlockedEvent.BlockedId;
+
+            _followersCache[blocked].Remove(blocker);
+
+            await _feedFiller.RemoveUserTweetsFromFeed(
+                feedOwnerId: blocker,
+                userToRemoveId: blocked);
+        }
+
         private async Task AddToFollowersFeed(Guid following, Guid tweetId)
         {
             var followers = await GetFollowersAsync(following);
