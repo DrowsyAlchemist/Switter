@@ -96,6 +96,11 @@ namespace FeedService.Data
             }
         }
 
+        public Task RemoveUserTweetsFromFeedAsync(Guid feedOwnerId, Guid userToRemoveId)
+        {
+            throw new NotImplementedException();
+        }
+
         public async Task TrimFeedAsync(Guid userId, long maxLength)
         {
             var feedKey = GetFeedKey(userId);

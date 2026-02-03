@@ -1,5 +1,6 @@
 ﻿using FeedService.Events;
 using FeedService.Interfaces;
+using FeedService.Interfaces.Data;
 using FeedService.Interfaces.Infrastructure;
 
 namespace FeedService.Services
@@ -10,6 +11,7 @@ namespace FeedService.Services
         private const int FollowersCacheTtlInMinutes = 10;
 
         private readonly IFeedFiller _feedFiller;
+        private readonly IFeedRepository _feedRepository;
         private readonly IProfileServiceClient _profileServiceClient;
         private readonly ITweetServiceClient _tweetServiceClient;
         private readonly ILogger<FeedEventProcessor> _logger;
@@ -19,11 +21,13 @@ namespace FeedService.Services
 
         public FeedEventProcessor(
             IFeedFiller feedFiller,
+            IFeedRepository feedRepository,
             IProfileServiceClient userServiceClient,
             ITweetServiceClient tweetServiceClient,
             ILogger<FeedEventProcessor> logger)
         {
             _feedFiller = feedFiller;
+            _feedRepository = feedRepository;
             _profileServiceClient = userServiceClient;
             _tweetServiceClient = tweetServiceClient;
             _logger = logger;
@@ -67,7 +71,7 @@ namespace FeedService.Services
 
             _followersCache[following].Remove(follower);
 
-            await _feedFiller.RemoveUserTweetsFromFeed(feedOwnerId: follower, userToRemoveId: following);
+            await _feedRepository.RemoveUserTweetsFromFeedAsync(feedOwnerId: follower, userToRemoveId: following);
         }
 
         public async Task ProcessUserBlockedAsync(UserBlockedEvent userBlockedEvent)
@@ -79,7 +83,7 @@ namespace FeedService.Services
 
             _followersCache[blocked].Remove(blocker);
 
-            await _feedFiller.RemoveUserTweetsFromFeed(
+            await _feedRepository.RemoveUserTweetsFromFeedAsync(
                 feedOwnerId: blocker,
                 userToRemoveId: blocked);
         }

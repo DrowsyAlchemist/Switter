@@ -53,6 +53,11 @@ namespace FeedService.Services
             await _feedRepository.RemoveUserTweetsFromFeedAsync(feedOwnerId, userToRemoveId);
         }
 
+        public async Task ClearFeedAsync(Guid userId)
+        {
+            await _feedRepository.ClearFeedAsync(userId);
+        }
+
         private async Task<FeedItem> CreateFeedItemAsync(Guid tweetId)
         {
             var feedScore = await _scoreCalculator.CalculateAsync(tweetId);
