@@ -1,7 +1,6 @@
 ﻿using FeedService.Interfaces.Data;
 using FeedService.Models;
 using FeedService.Models.Options;
-using FluentAssertions.Common;
 using Microsoft.Extensions.Options;
 using StackExchange.Redis;
 using System.Text.Json;
@@ -21,95 +20,65 @@ namespace FeedService.Data
             _logger = logger;
         }
 
-        private static string GetFeedKey(Guid userId) => $"feed:{userId}";
-        private static string GetFeedCounterKey(Guid userId) => $"feed:{userId}:counter";
-
         public async Task AddToFeedAsync(Guid userId, FeedItem item)
         {
+            ArgumentNullException.ThrowIfNull(item);
             var feedKey = GetFeedKey(userId);
+            var feedJson = SerializeFeedItem(item);
 
-            // Используем Sorted Set для автоматической сортировки по времени
-            var score = GetScore(item.CreatedAt);
-            var value = SerializeFeedItem(item);
-
-            await _redis.SortedSetAddAsync(feedKey, value, score);
-
-            // Обрезаем ленту если нужно
+            await _redis.SortedSetAddAsync(feedKey, feedJson, item.Score);
             await TrimFeedAsync(userId, _options.MaxFeedSize);
-
-            // Инкрементируем счетчик
-            await IncrementFeedCounterAsync(userId);
 
             _logger.LogDebug("Added tweet {TweetId} to feed of user {UserId}",
                 item.TweetId, userId);
         }
 
-        public Task AddToFeedAsync(Guid userId, IEnumerable<FeedItem> items)
+        public async Task AddToFeedAsync(Guid userId, List<FeedItem> items)
         {
-            throw new NotImplementedException();
+            ArgumentNullException.ThrowIfNull(items);
+            if (items.Count == 0)
+                return;
+
+            var feedKey = GetFeedKey(userId);
+
+            var batch = _redis.CreateBatch();
+
+            var sortedSetEntries = items
+                .Select(item => new SortedSetEntry(SerializeFeedItem(item), item.Score))
+                .ToArray();
+
+            var addTask = batch.SortedSetAddAsync(feedKey, sortedSetEntries);
+            batch.Execute();
+            await addTask;
+
+            await TrimFeedAsync(userId, _options.MaxFeedSize);
+
+            _logger.LogDebug("Added {Count} tweets to feed of user {UserId}",
+                items.Count, userId);
         }
 
         public async Task<List<FeedItem>> GetFeedPageAsync(Guid userId, int start, int count)
         {
             var feedKey = GetFeedKey(userId);
 
-            // Получаем страницу из Sorted Set (сортировка по убыванию score)
             var values = await _redis.SortedSetRangeByRankAsync(
                 feedKey,
                 start,
                 start + count - 1,
                 Order.Descending);
 
-            var items = new List<FeedItem>();
+            var feedItems = new List<FeedItem>();
 
             foreach (var value in values)
             {
-                if (!value.IsNullOrEmpty)
+                if (value.IsNullOrEmpty == false)
                 {
-                    var item = DeserializeFeedItem(value!);
-                    if (item != null)
-                    {
-                        items.Add(item);
-                    }
+                    var feedItem = DeserializeFeedItem(value!);
+                    if (feedItem != null)
+                        feedItems.Add(feedItem);
                 }
             }
-
-            return items;
-        }
-
-        public async Task RemoveFromFeedAsync(Guid userId, Guid tweetId)
-        {
-            var feedKey = GetFeedKey(userId);
-
-            // Чтобы удалить элемент, нам нужно его значение
-            // Для этого можно хранить дополнительный индекс
-            var itemKey = $"feed:{userId}:index:{tweetId}";
-            var itemValue = await _redis.StringGetAsync(itemKey);
-
-            if (!itemValue.IsNullOrEmpty)
-            {
-                await _redis.SortedSetRemoveAsync(feedKey, itemValue);
-                await _redis.KeyDeleteAsync(itemKey);
-
-                _logger.LogDebug("Removed tweet {TweetId} from feed of user {UserId}",
-                    tweetId, userId);
-            }
-        }
-
-        public Task RemoveUserTweetsFromFeedAsync(Guid feedOwnerId, Guid userToRemoveId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task TrimFeedAsync(Guid userId, long maxLength)
-        {
-            var feedKey = GetFeedKey(userId);
-
-            // Удаляем старые элементы, оставляя только maxLength самых новых
-            await _redis.SortedSetRemoveRangeByRankAsync(feedKey, 0, -maxLength - 1);
-
-            _logger.LogDebug("Trimmed feed for user {UserId} to {MaxLength} items",
-                userId, maxLength);
+            return feedItems;
         }
 
         public async Task<long> GetFeedLengthAsync(Guid userId)
@@ -122,74 +91,59 @@ namespace FeedService.Data
         {
             var feedKey = GetFeedKey(userId);
             await _redis.KeyDeleteAsync(feedKey);
-            await _redis.KeyDeleteAsync(GetFeedCounterKey(userId));
-
             _logger.LogInformation("Cleared feed for user {UserId}", userId);
         }
 
-        public async Task<bool> FeedExistsAsync(Guid userId)
+        public async Task RemoveFromFeedAsync(Guid userId, Guid tweetId)
         {
-            var feedKey = GetFeedKey(userId);
-            return await _redis.KeyExistsAsync(feedKey);
+            var feed = await GetFeedPageAsync(userId, 0, _options.MaxFeedSize);
+
+            feed.RemoveAll(i => i.TweetId == tweetId);
+            await ClearFeedAsync(userId);
+            await AddToFeedAsync(userId, feed);
+
+            _logger.LogInformation("Tweet {tweet} removed from feed. User: {UserId}", tweetId, userId);
         }
 
-        public async Task IncrementFeedCounterAsync(Guid userId)
+        public async Task RemoveUserTweetsFromFeedAsync(Guid feedOwnerId, Guid userToRemoveId)
         {
-            var counterKey = GetFeedCounterKey(userId);
-            await _redis.StringIncrementAsync(counterKey);
+            //var feed = await GetFeedPageAsync(feedOwnerId, 0, _options.MaxFeedSize);
+
+            //var removedCount = feed.RemoveAll(i => i.AuthorId == userToRemoveId);
+            //await ClearFeedAsync(feedOwnerId);
+            //await AddToFeedAsync(feedOwnerId, feed);
+
+            //_logger.LogInformation("{Count} tweets from user {userToRemove} removed from feed. User: {owner}",
+            //    removedCount, userToRemoveId, feedOwnerId);
+            throw new NotImplementedException();
         }
 
-        public async Task<long> GetFeedCounterAsync(Guid userId)
-        {
-            var counterKey = GetFeedCounterKey(userId);
-            var value = await _redis.StringGetAsync(counterKey);
-            return value.HasValue ? (long)value : 0;
-        }
+        private static string GetFeedKey(Guid userId) => $"feed:{userId}";
 
-        // Вспомогательные методы
-        private static double GetScore(DateTime createdAt)
-        {
-            // Используем Unix timestamp как score для сортировки по времени
-            // Умножаем на -1 для сортировки от новых к старым
-            return -createdAt.ToDateTimeOffset().ToUnixTimeSeconds();
-        }
+        private static string SerializeFeedItem(FeedItem item) => JsonSerializer.Serialize(item);
 
-        private static string SerializeFeedItem(FeedItem item)
-        {
-            return JsonSerializer.Serialize(new
-            {
-                item.TweetId,
-                item.CreatedAt,
-                item.Score
-            });
-        }
-
-        private static FeedItem? DeserializeFeedItem(string json)
+        private FeedItem? DeserializeFeedItem(string json)
         {
             try
             {
-                var data = JsonSerializer.Deserialize<FeedItemData>(json);
-                if (data == null) return null;
+                var feedItem = JsonSerializer.Deserialize<FeedItem>(json);
+                if (feedItem == null)
+                    return null;
 
-                return new FeedItem
-                {
-                    TweetId = data.TweetId,
-                    CreatedAt = data.CreatedAt,
-                    Score = data.Score
-                };
+                return feedItem;
             }
             catch
             {
+                _logger.LogError("Json Deserialize Error. json: {json}", json);
                 return null;
             }
         }
 
-        private class FeedItemData
+        private async Task TrimFeedAsync(Guid userId, long maxLength)
         {
-            public Guid TweetId { get; set; }
-            public Guid AuthorId { get; set; }
-            public DateTime CreatedAt { get; set; }
-            public double Score { get; set; }
+            var feedKey = GetFeedKey(userId);
+            await _redis.SortedSetRemoveRangeByRankAsync(feedKey, 0, -maxLength - 1);
+            _logger.LogDebug("Trimmed feed for user {UserId} to {MaxLength} items", userId, maxLength);
         }
     }
 }

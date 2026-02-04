@@ -4,6 +4,5 @@
     {
         public required Guid TweetId { get; set; }
         public required double Score { get; set; }
-        public DateTime CreatedAt { get; set; }
     }
 }

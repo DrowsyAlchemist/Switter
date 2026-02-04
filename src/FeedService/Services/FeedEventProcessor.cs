@@ -51,7 +51,7 @@ namespace FeedService.Services
             var follower = followEvent.FollowerId;
             var following = followEvent.FolloweeId;
 
-            var recentTweets = await GetRecentTweetsAsync(following, _options.FeedItemsCountForFollowers);
+            var recentTweets = await GetRecentTweetsAsync(following, _options.TweetsByEachFollowingMaxCount);
             await _feedFiller.AddTweetsToFeedAsync(recentTweets, follower);
 
             await _followsRepository.AddFollowerAsync(follower, following);
