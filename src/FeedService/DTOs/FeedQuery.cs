@@ -3,6 +3,6 @@
     public class FeedQuery
     {
         public required int PageSize { get; set; }
-        public string? Cursor { get; set; } // For pagination
+        public int Cursor { get; set; } = 0;
     }
 }

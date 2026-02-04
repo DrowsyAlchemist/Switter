@@ -28,7 +28,7 @@ namespace FeedService.Services
         {
             ArgumentNullException.ThrowIfNull(query);
 
-            var startPosition = GetStartPosition(query.Cursor);
+            var startPosition = query.Cursor;
             var feedItems = await _feedRepository.GetFeedPageAsync(userId, startPosition, query.PageSize);
 
             if (feedItems.Count == 0)
@@ -74,15 +74,6 @@ namespace FeedService.Services
         {
             var length = await _feedRepository.GetFeedLengthAsync(userId);
             return (int)length;
-        }
-
-        private static int GetStartPosition(string? cursor)
-        {
-            if (string.IsNullOrEmpty(cursor)
-                || int.TryParse(cursor, out var position) == false)
-                return 0;
-
-            return Math.Max(0, position);
         }
 
         private async Task<List<TweetDto>> GetTweetsByIdInSameOrderAsync(List<Guid> orderedIds)
