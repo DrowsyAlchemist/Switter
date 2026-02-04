@@ -2,7 +2,6 @@
 using FeedService.Interfaces;
 using FeedService.Interfaces.Data;
 using FeedService.Interfaces.Infrastructure;
-using FeedService.Models;
 
 namespace FeedService.Services
 {
@@ -10,57 +9,48 @@ namespace FeedService.Services
     {
         private readonly IFeedRepository _feedRepository;
         private readonly IFeedBuilder _feedBuilder;
-
         private readonly ITweetServiceClient _tweetServiceClient;
-        private readonly IProfileServiceClient _profileServiceClient;
+
         private readonly ILogger<FeedService> _logger;
 
         public FeedService(IFeedRepository feedRepository,
+                          IFeedBuilder feedBuilder,
                           ITweetServiceClient tweetServiceClient,
-                          IProfileServiceClient profileServiceClient,
                           ILogger<FeedService> logger)
         {
             _feedRepository = feedRepository;
+            _feedBuilder = feedBuilder;
             _tweetServiceClient = tweetServiceClient;
-            _profileServiceClient = profileServiceClient;
             _logger = logger;
         }
 
         public async Task<FeedResponse> GetFeedAsync(Guid userId, FeedQuery query)
         {
-            // 1. Получаем FeedItems из Redis
-            var start = GetStartPosition(query.Cursor);
-            var feedItems = await _feedRepository.GetFeedPageAsync(userId, start, query.PageSize);
+            ArgumentNullException.ThrowIfNull(query);
 
-            // Если лента пуста, возможно нужно ее построить
-            if (feedItems.Any() == false)
+            var startPosition = GetStartPosition(query.Cursor);
+            var feedItems = await _feedRepository.GetFeedPageAsync(userId, startPosition, query.PageSize);
+
+            if (feedItems.Count == 0)
             {
                 await RebuildFeedAsync(userId);
                 feedItems = await _feedRepository.GetFeedPageAsync(userId, 0, query.PageSize);
             }
 
-            // 2. Получаем информацию о твитах в порядке как в FeedItems
             var orderedTweetIds = feedItems.Select(f => f.TweetId).ToList();
-            var tweetDtos = await _tweetServiceClient.GetTweetsByIds(orderedTweetIds);
+            var orderedTweetDtos = await GetTweetsByIdInSameOrderAsync(orderedTweetIds);
 
-            List<TweetDto> orderedDtos = orderedTweetIds
-                .Join(tweetDtos,
-                    id => id,
-                    dto => dto.Id,
-                    (id, dto) => dto)
-                .ToList();
-
-            // 4. Формируем ответ с пагинацией
             var totalCount = await _feedRepository.GetFeedLengthAsync(userId);
-            var nextCursor = feedItems.Count > 0
-                ? (start + feedItems.Count).ToString()
+            var hasMore = (startPosition + feedItems.Count) < totalCount;
+            var nextCursor = hasMore
+                ? (startPosition + feedItems.Count).ToString()
                 : null;
 
             return new FeedResponse
             {
-                Items = orderedDtos,
+                Items = orderedTweetDtos,
                 TotalCount = (int)totalCount,
-                HasMore = start + feedItems.Count < totalCount,
+                HasMore = hasMore,
                 NextCursor = nextCursor
             };
         }
@@ -77,7 +67,7 @@ namespace FeedService.Services
 
         public async Task RebuildFeedAsync(Guid userId)
         {
-           await _feedBuilder.BuildFeedAsync(userId);
+            await _feedBuilder.BuildFeedAsync(userId);
         }
 
         public async Task<int> GetFeedSizeAsync(Guid userId)
@@ -86,12 +76,25 @@ namespace FeedService.Services
             return (int)length;
         }
 
-        private int GetStartPosition(string? cursor)
+        private static int GetStartPosition(string? cursor)
         {
-            if (string.IsNullOrEmpty(cursor) || !int.TryParse(cursor, out var position))
+            if (string.IsNullOrEmpty(cursor)
+                || int.TryParse(cursor, out var position) == false)
                 return 0;
 
             return Math.Max(0, position);
+        }
+
+        private async Task<List<TweetDto>> GetTweetsByIdInSameOrderAsync(List<Guid> orderedIds)
+        {
+            var tweetDtos = await _tweetServiceClient.GetTweetsByIdAsync(orderedIds);
+
+            return orderedIds
+                .Join(tweetDtos,
+                    id => id,
+                    dto => dto.Id,
+                    (id, dto) => dto)
+                .ToList();
         }
     }
 }

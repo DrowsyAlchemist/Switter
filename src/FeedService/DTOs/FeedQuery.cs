@@ -2,8 +2,7 @@
 {
     public class FeedQuery
     {
-        public int PageSize { get; set; } = 20;
+        public required int PageSize { get; set; }
         public string? Cursor { get; set; } // For pagination
-        public FeedType Type { get; set; } = FeedType.Home;
     }
 }

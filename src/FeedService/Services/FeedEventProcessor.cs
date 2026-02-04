@@ -2,34 +2,32 @@
 using FeedService.Interfaces;
 using FeedService.Interfaces.Data;
 using FeedService.Interfaces.Infrastructure;
+using FeedService.Models.Options;
+using Microsoft.Extensions.Options;
 
 namespace FeedService.Services
 {
     public class FeedEventProcessor : IFeedEventProcessor
     {
-        private const int FeedItemsCountForFollowers = 30;
-        private const int FollowersCacheTtlInMinutes = 10;
-
         private readonly IFeedFiller _feedFiller;
-        private readonly IFeedRepository _feedRepository;
-        private readonly IProfileServiceClient _profileServiceClient;
+        private readonly IFollowsRepository _followsRepository;
         private readonly ITweetServiceClient _tweetServiceClient;
+        private readonly FeedOptions _options;
         private readonly ILogger<FeedEventProcessor> _logger;
-
-        private readonly Dictionary<Guid, List<Guid>> _followersCache = new();
-        private readonly TimeSpan _cacheTtl = TimeSpan.FromMinutes(FollowersCacheTtlInMinutes);
 
         public FeedEventProcessor(
             IFeedFiller feedFiller,
-            IFeedRepository feedRepository,
-            IProfileServiceClient userServiceClient,
+            IFollowsRepository followsRepository,
             ITweetServiceClient tweetServiceClient,
+
+            IOptions<FeedOptions> options,
             ILogger<FeedEventProcessor> logger)
         {
             _feedFiller = feedFiller;
-            _feedRepository = feedRepository;
-            _profileServiceClient = userServiceClient;
+            _followsRepository = followsRepository;
             _tweetServiceClient = tweetServiceClient;
+
+            _options = options.Value;
             _logger = logger;
         }
 
@@ -50,10 +48,13 @@ namespace FeedService.Services
         {
             ArgumentNullException.ThrowIfNull(followEvent);
 
-            var recentTweets = await GetRecentTweetsAsync(followEvent.FolloweeId, FeedItemsCountForFollowers);
-            await _feedFiller.AddTweetToFeedsAsync(followEvent.FollowerId, recentTweets);
+            var follower = followEvent.FollowerId;
+            var following = followEvent.FolloweeId;
 
-            _followersCache[followEvent.FolloweeId].Add(followEvent.FollowerId);
+            var recentTweets = await GetRecentTweetsAsync(following, _options.FeedItemsCountForFollowers);
+            await _feedFiller.AddTweetsToFeedAsync(recentTweets, follower);
+
+            await _followsRepository.AddFollowerAsync(follower, following);
         }
 
         public async Task ProcessTweetLikedAsync(LikeSetEvent likeEvent)
@@ -69,9 +70,9 @@ namespace FeedService.Services
             var follower = userUnfollowedEvent.FollowerId;
             var following = userUnfollowedEvent.FolloweeId;
 
-            _followersCache[following].Remove(follower);
+            await _feedFiller.RemoveUserTweetsFromFeedAsync(feedOwnerId: follower, userToRemoveId: following);
 
-            await _feedRepository.RemoveUserTweetsFromFeedAsync(feedOwnerId: follower, userToRemoveId: following);
+            await _followsRepository.RemoveFollowerAsync(follower, following);
         }
 
         public async Task ProcessUserBlockedAsync(UserBlockedEvent userBlockedEvent)
@@ -81,47 +82,22 @@ namespace FeedService.Services
             var blocker = userBlockedEvent.BlockerId;
             var blocked = userBlockedEvent.BlockedId;
 
-            _followersCache[blocked].Remove(blocker);
+            await _feedFiller.RemoveUserTweetsFromFeedAsync(feedOwnerId: blocker, userToRemoveId: blocked);
 
-            await _feedRepository.RemoveUserTweetsFromFeedAsync(
-                feedOwnerId: blocker,
-                userToRemoveId: blocked);
+            await _followsRepository.RemoveFollowerAsync(blocker, blocked);
         }
 
         private async Task AddToFollowersFeed(Guid following, Guid tweetId)
         {
-            var followers = await GetFollowersAsync(following);
+            var followers = await _followsRepository.GetFollowersAsync(following);
             await _feedFiller.AddTweetToFeedsAsync(tweetId: tweetId, userIds: followers);
-        }
-
-        private async Task<List<Guid>> GetFollowersAsync(Guid userId)
-        {
-            if (_followersCache.TryGetValue(userId, out var cachedFollowers))
-                return cachedFollowers;
-
-            try
-            {
-                var followers = await _profileServiceClient.GetFollowersAsync(userId);
-
-                _followersCache[userId] = followers;
-
-                _ = Task.Delay(_cacheTtl).ContinueWith(_ =>
-                    _followersCache.Remove(userId));
-
-                return followers;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to get followers for user {UserId}", userId);
-                return new List<Guid>();
-            }
         }
 
         private async Task<List<Guid>> GetRecentTweetsAsync(Guid userId, int count)
         {
             try
             {
-                return await _tweetServiceClient.GetRecentTweetsAsync(userId, count);
+                return await _tweetServiceClient.GetRecentUserTweetIdsAsync(userId, count);
             }
             catch (Exception ex)
             {

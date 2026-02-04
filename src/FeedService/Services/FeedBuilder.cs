@@ -1,41 +1,70 @@
 ﻿using FeedService.Interfaces;
 using FeedService.Interfaces.Data;
 using FeedService.Interfaces.Infrastructure;
+using FeedService.Models.Options;
 
 namespace FeedService.Services
 {
     public class FeedBuilder : IFeedBuilder
     {
         private readonly IFeedFiller _filler;
-        private readonly IFeedRepository _feedRepository;
-        private readonly IScoreCalculator _scoreCalculator;
-
         private readonly ITweetServiceClient _tweetServiceClient;
-        private readonly IProfileServiceClient _profileServiceClient;
+        private readonly IFollowsRepository _followsRepository;
+        private readonly FeedOptions _options;
 
-        private readonly ILogger<FeedBuilder> _logger;
+        public FeedBuilder(
+            IFeedFiller filler,
+            ITweetServiceClient tweetServiceClient,
+            IFollowsRepository followsRepository,
+            FeedOptions options)
+        {
+            _filler = filler;
+            _tweetServiceClient = tweetServiceClient;
+            _followsRepository = followsRepository;
+            _options = options;
+        }
 
         public async Task BuildFeedAsync(Guid userId)
         {
-            try
+            await _filler.ClearFeedAsync(userId);
+
+            var feedTweets = (await GetFollowingsTweetsAsync(userId))
+                .Take(_options.AllFollowingsTweetsMaxCount)
+                .ToList();
+
+            var trendTweets = (await GetTrendTweetsAsync(userId))
+                .Take(_options.MaxFeedSize - feedTweets.Count)
+                .ToList();
+
+            feedTweets.AddRange(trendTweets);
+            await _filler.AddTweetsToFeedAsync(feedTweets, userId);
+        }
+
+        private async Task<List<Guid>> GetFollowingsTweetsAsync(Guid userId)
+        {
+            var followingIds = await _followsRepository.GetFollowingsAsync(userId, _options.FollowingsMaxCount);
+            var tweetIds = new List<Guid>();
+
+            foreach (var followingId in followingIds)
             {
-                await _feedRepository.ClearFeedAsync(userId);
-
-                var followingIds = await _profileServiceClient.GetFollowingAsync(userId);
-
-                foreach (var followingId in followingIds)
-                {
-                    var recentTweets = await _tweetServiceClient.GetRecentTweetsAsync(followingId, 30);
-                    await _filler.AddTweetsToFeedAsync(recentTweets, userId);
-                }
-
-                // Добавить тренды!
+                var recentTweets = await _tweetServiceClient.GetRecentUserTweetIdsAsync(followingId, _options.TweetsByEachFollowingMaxCount);
+                tweetIds.AddRange(recentTweets);
             }
-            catch (Exception ex)
+            return tweetIds;
+        }
+
+        private async Task<List<Guid>> GetTrendTweetsAsync(Guid userId)
+        {
+            var trendTweetIds = await _tweetServiceClient.GetTrendTweetsIdsAsync(_options.TrendTweetsMaxCount);
+
+            var trendCategories = await _tweetServiceClient.GetTrendCategoriesAsync(_options.TrendCategoriesMaxCount);
+
+            foreach (var category in trendCategories)
             {
-                _logger.LogError(ex, "Error rebuilding feed for user {UserId}", userId);
-                throw;
+                var tweetsInCategory = await _tweetServiceClient.GetTrendTweetsIdsAsync(category, _options.TrendTweetsInCategoryMaxCount);
+                trendTweetIds.AddRange(tweetsInCategory);
             }
+            return trendTweetIds;
         }
     }
 }

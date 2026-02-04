@@ -21,7 +21,7 @@ namespace FeedService.Services
             await _feedRepository.AddToFeedAsync(userId, feedItem);
         }
 
-        public async Task AddTweetsToFeedAsync(IEnumerable<Guid> tweetIds, Guid userId)
+        public async Task AddTweetsToFeedAsync(List<Guid> tweetIds, Guid userId)
         {
             ArgumentNullException.ThrowIfNull(tweetIds);
             if (tweetIds.Any() == false)
@@ -48,7 +48,7 @@ namespace FeedService.Services
                 await _feedRepository.AddToFeedAsync(userId, feedItem);
         }
 
-        public async Task RemoveUserTweetsFromFeed(Guid feedOwnerId, Guid userToRemoveId)
+        public async Task RemoveUserTweetsFromFeedAsync(Guid feedOwnerId, Guid userToRemoveId)
         {
             await _feedRepository.RemoveUserTweetsFromFeedAsync(feedOwnerId, userToRemoveId);
         }
