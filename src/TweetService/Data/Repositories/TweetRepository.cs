@@ -23,7 +23,7 @@ namespace TweetService.Data.Repositories
                    .FirstOrDefaultAsync();
         }
 
-        public async Task<List<Tweet>> GetByIdsAsync(IEnumerable<Guid> ids, int page, int pageSize)
+        public async Task<List<Tweet>> GetByIdsAsync(List<Guid> ids, int page, int pageSize)
         {
             if (ids == null)
                 throw new ArgumentNullException(nameof(ids));
@@ -40,7 +40,7 @@ namespace TweetService.Data.Repositories
                    .ToListAsync();
         }
 
-        public async Task<List<Tweet>> GetByHashtagAsync(IEnumerable<Guid> ids, string hashtag, int page, int pageSize)
+        public async Task<List<Tweet>> GetByHashtagAsync(List<Guid> ids, string hashtag, int page, int pageSize)
         {
             if (string.IsNullOrEmpty(hashtag))
                 throw new ArgumentException(nameof(hashtag));
@@ -58,6 +58,27 @@ namespace TweetService.Data.Repositories
                         && t.TweetHashtags.Any(th => th.Hashtag.Tag.Equals(hashtag)))
                    .Skip((page - 1) * pageSize)
                    .Take(pageSize)
+                   .ToListAsync();
+        }
+
+        public async Task<List<Guid>> GetIdsByHashtagAsync(List<Guid> ids, string hashtag, int page, int pageSize)
+        {
+            if (string.IsNullOrEmpty(hashtag))
+                throw new ArgumentException(nameof(hashtag));
+            if (ids == null)
+                throw new ArgumentNullException(nameof(ids));
+            if (ids.Any() == false)
+                return new List<Guid>();
+
+            return await _context.Tweets
+                   .Include(t => t.TweetHashtags)
+                   .Where(t =>
+                        ids.Contains(t.Id)
+                        && t.IsDeleted == false
+                        && t.TweetHashtags.Any(th => th.Hashtag.Tag.Equals(hashtag)))
+                   .Skip((page - 1) * pageSize)
+                   .Take(pageSize)
+                   .Select(t => t.Id)
                    .ToListAsync();
         }
 

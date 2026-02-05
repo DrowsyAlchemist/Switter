@@ -4,8 +4,10 @@ namespace TweetService.Interfaces.Services
 {
     public interface ITrendService
     {
-        Task<IEnumerable<string>> GetTrendCategoriesAsync(int page, int pageSize);
-        Task<IEnumerable<TweetDto>> GetTrendTweetsAsync(int page, int pageSize);
-        Task<IEnumerable<TweetDto>> GetTrendTweetsAsync(string hashtag, int page, int pageSize);
+        Task<List<string>> GetTrendCategoriesAsync(int page, int pageSize);
+        Task<List<TweetDto>> GetTrendTweetsAsync(int page, int pageSize);
+        Task<List<TweetDto>> GetTrendTweetsAsync(string hashtag, int page, int pageSize);
+        Task<List<Guid>> GetTrendTweetIdsAsync(int page, int pageSize);
+        Task<List<Guid>> GetTrendTweetIdsAsync(string hashtag, int page, int pageSize);
     }
 }
