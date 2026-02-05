@@ -79,8 +79,13 @@ namespace UserService.Controllers
         }
 
         [HttpGet("blocked/{userId}")]
-        public async Task<IActionResult> GetBlocked(Guid userId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        public async Task<IActionResult> GetBlocked(Guid userId, [FromQuery] int page = 1, [FromQuery] int pageSize = int.MaxValue)
         {
+            if (IsPaginationCorrect(page, pageSize) == false)
+            {
+                _logger.LogWarning("GetBlocked failed.\nPagination is incorrect. Page: {page}, Size: {size}", page, pageSize);
+                return BadRequest("Pagination is incorrect.");
+            }
             try
             {
                 var currentUserId = GetCurrentUserId();
@@ -89,7 +94,35 @@ namespace UserService.Controllers
 
                 var blocked = await _blockQueries.GetBlockedAsync(userId, page, pageSize);
 
-                if (blocked.Count == 0)
+                if (blocked.Any() == false)
+                    return StatusCode(204, "No blocked users.");
+
+                return Ok(blocked);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during GetBlocked.\nUser:{UserId}", userId);
+                return StatusCode(500, new { message = "Internal server error" });
+            }
+        }
+
+        [HttpGet("blockedIds/{userId}")]
+        public async Task<IActionResult> GetBlockedIds(Guid userId, [FromQuery] int page = 1, [FromQuery] int pageSize = int.MaxValue)
+        {
+            if (IsPaginationCorrect(page, pageSize) == false)
+            {
+                _logger.LogWarning("GetBlockedIds failed.\nPagination is incorrect. Page: {page}, Size: {size}", page, pageSize);
+                return BadRequest("Pagination is incorrect.");
+            }
+            try
+            {
+                var currentUserId = GetCurrentUserId();
+                if (userId != currentUserId)
+                    return Forbid();
+
+                var blocked = await _blockQueries.GetBlockedIdsAsync(userId, page, pageSize);
+
+                if (blocked.Any() == false)
                     return StatusCode(204, "No blocked users.");
 
                 return Ok(blocked);
@@ -109,6 +142,11 @@ namespace UserService.Controllers
                 return Guid.Parse(userId!);
 
             throw new Exception("Current user not found.");
+        }
+
+        private bool IsPaginationCorrect(int page, int pageSize)
+        {
+            return page > 0 && pageSize > 0;
         }
     }
 }

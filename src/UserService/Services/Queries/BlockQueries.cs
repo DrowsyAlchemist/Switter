@@ -16,11 +16,15 @@ namespace UserService.Services.Queries
             _mapper = mapper;
         }
 
-        public async Task<List<UserProfileDto>> GetBlockedAsync(Guid blockerId, int page = 1, int pageSize = 20)
+        public async Task<IEnumerable<UserProfileDto>> GetBlockedAsync(Guid blockerId, int page, int pageSize)
         {
-            var blockedUsers = await _blockRepository.GetBlockedAsync(blockerId);
-            blockedUsers = blockedUsers.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+            var blockedUsers = await _blockRepository.GetBlockedAsync(blockerId, page, pageSize);
             return _mapper.Map<List<UserProfileDto>>(blockedUsers);
+        }
+
+        public async Task<IEnumerable<Guid>> GetBlockedIdsAsync(Guid blockerId, int page, int pageSize)
+        {
+            return await _blockRepository.GetBlockedIdsAsync(blockerId, page, pageSize);
         }
 
         public async Task<bool> IsBlockedAsync(Guid blockerId, Guid blockedId)
