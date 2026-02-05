@@ -48,6 +48,23 @@ namespace TweetService.Controllers
             }
         }
 
+        [HttpGet("tweets")]
+        [ServiceFilter(typeof(EnrichTweetsWithUserRelationshipActionFilter))]
+        public async Task<IActionResult> GetTweetsAsync(List<Guid> tweetIds, [CurrentUserId] Guid? currentUserId)
+        {
+            try
+            {
+                var tweetDto = await _tweetQueries.GetTweetsAsync(tweetIds);
+                _logger.LogInformation("Tweets successfully sent.");
+                return Ok(tweetDto);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during GetTweets.");
+                return StatusCode(500, new { message = "Internal server error" });
+            }
+        }
+
         [HttpGet("user/{userId}")]
         [ValidatePagination]
         [ServiceFilter(typeof(EnrichTweetsWithUserRelationshipActionFilter))]
@@ -66,6 +83,27 @@ namespace TweetService.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error during GetUserTweets.");
+                return StatusCode(500, new { message = "Internal server error" });
+            }
+        }
+
+        [HttpGet("user/tweets")]
+        [ValidatePagination]
+        public async Task<IActionResult> GetUserTweetIdsAsync(
+            Guid userId,
+            [CurrentUserId] Guid? currentUserId,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20)
+        {
+            try
+            {
+                var tweetIds = await _tweetQueries.GetUserTweetIdsAsync(userId, page, pageSize);
+                _logger.LogInformation("User's tweets successfully sent.\nUserId:{userId}", userId);
+                return Ok(tweetIds);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during GetUserTweetIds.");
                 return StatusCode(500, new { message = "Internal server error" });
             }
         }

@@ -43,7 +43,7 @@ namespace TweetService.Tests.Unit
 
                 _likesRepositoryMock.Setup(r => r.GetLikedTweetIdsAsync(userId, 1, 10))
                     .ReturnsAsync(emptyIdList);
-                _tweetRepositoryMock.Setup(r => r.GetByIdsAsync(emptyIdList, 1, 10))
+                _tweetRepositoryMock.Setup(r => r.GetByIdsAsync(emptyIdList))
                     .ReturnsAsync(emptyTweetList);
                 _mapperMock.Setup(m => m.Map<List<TweetDto>>(emptyTweetList))
                     .Returns(emptyDtoList);

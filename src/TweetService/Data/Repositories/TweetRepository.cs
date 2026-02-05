@@ -23,7 +23,7 @@ namespace TweetService.Data.Repositories
                    .FirstOrDefaultAsync();
         }
 
-        public async Task<List<Tweet>> GetByIdsAsync(List<Guid> ids, int page, int pageSize)
+        public async Task<List<Tweet>> GetByIdsAsync(List<Guid> ids)
         {
             if (ids == null)
                 throw new ArgumentNullException(nameof(ids));
@@ -35,8 +35,6 @@ namespace TweetService.Data.Repositories
                    .Where(t =>
                         t.IsDeleted == false
                         && ids.Contains(t.Id))
-                   .Skip((page - 1) * pageSize)
-                   .Take(pageSize)
                    .ToListAsync();
         }
 
@@ -89,6 +87,7 @@ namespace TweetService.Data.Repositories
                    .Where(t =>
                         t.AuthorId.Equals(userId)
                         && t.IsDeleted == false)
+                   .OrderByDescending(t => t.CreatedAt)
                    .Skip((page - 1) * pageSize)
                    .Take(pageSize)
                    .ToListAsync();
@@ -97,10 +96,10 @@ namespace TweetService.Data.Repositories
         public async Task<List<Guid>> GetIdsByUserAsync(Guid userId, int page, int pageSize)
         {
             return await _context.Tweets
-                   .AsNoTracking()
                    .Where(t =>
                         t.AuthorId.Equals(userId)
                         && t.IsDeleted == false)
+                   .OrderByDescending(t => t.CreatedAt)
                    .Select(t => t.Id)
                    .Skip((page - 1) * pageSize)
                    .Take(pageSize)

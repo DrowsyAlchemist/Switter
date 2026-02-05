@@ -60,7 +60,8 @@ namespace TweetService.Services.Trends
                 trendTweetIds = await _trendCalculator.CalculateTrendTweetByLastLikesIdsAsync(maxIndex);
                 await SaveTrendTweetsToCacheAsync(trendTweetIds);
             }
-            var trendTweets = await _tweetRepository.GetByIdsAsync(trendTweetIds, page, pageSize);
+            trendTweetIds = trendTweetIds.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+            var trendTweets = await _tweetRepository.GetByIdsAsync(trendTweetIds);
             return _mapper.Map<List<TweetDto>>(trendTweets);
         }
 
@@ -80,11 +81,16 @@ namespace TweetService.Services.Trends
             return trendTweetIds.Skip((page - 1) * pageSize).Take(pageSize).ToList();
         }
 
-        public async Task<List<Guid>> GetTrendTweetIdsAsync(string hashtag, int page, int pageSize)
+        public async Task<List<TweetDto>> GetTrendTweetsAsync(string hashtag, int page, int pageSize)
         {
             var trendTweetIds = await _trendCalculator.CalculateTrendTweetByLastLikesIdsAsync(int.MaxValue);
             var trendTweets = await _tweetRepository.GetByHashtagAsync(trendTweetIds, hashtag, page, pageSize);
             return _mapper.Map<List<TweetDto>>(trendTweets);
+        }
+
+        public async Task<List<Guid>> GetTrendTweetIdsAsync(string hashtag, int page, int pageSize)
+        {
+            return await _trendCalculator.CalculateTrendTweetByLastLikesIdsAsync(int.MaxValue);
         }
 
         private async Task<List<string>> GetTrendCategoriesFromCacheAsync()

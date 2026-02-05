@@ -27,18 +27,29 @@ namespace TweetService.Services.Tweets
             return _mapper.Map<TweetDto>(tweet);
         }
 
-        public async Task<IEnumerable<TweetDto>> GetTweetRepliesAsync(Guid tweetId, int page, int pageSize)
+        public async Task<List<TweetDto>> GetTweetsAsync(List<Guid> tweetIds)
+        {
+            var tweets = await _tweetRepository.GetByIdsAsync(tweetIds);
+            return _mapper.Map<List<TweetDto>>(tweets);
+        }
+
+        public async Task<List<TweetDto>> GetTweetRepliesAsync(Guid tweetId, int page, int pageSize)
         {
             var replies = await _tweetRepository.GetRepliesAsync(tweetId, page, pageSize);
-            var tweetDtos = _mapper.Map<IEnumerable<TweetDto>>(replies);
+            var tweetDtos = _mapper.Map<List<TweetDto>>(replies);
             return tweetDtos;
         }
 
-        public async Task<IEnumerable<TweetDto>> GetUserTweetsAsync(Guid userId, int page, int pageSize)
+        public async Task<List<TweetDto>> GetUserTweetsAsync(Guid userId, int page, int pageSize)
         {
             var tweets = await _tweetRepository.GetByUserAsync(userId, page, pageSize);
-            var tweetDtos = _mapper.Map<IEnumerable<TweetDto>>(tweets);
+            var tweetDtos = _mapper.Map<List<TweetDto>>(tweets);
             return tweetDtos;
+        }
+
+        public async Task<List<Guid>> GetUserTweetIdsAsync(Guid userId, int page, int pageSize)
+        {
+            return await _tweetRepository.GetIdsByUserAsync(userId, page, pageSize);
         }
     }
 }

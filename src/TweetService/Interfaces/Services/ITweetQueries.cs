@@ -5,7 +5,9 @@ namespace TweetService.Interfaces.Services
     public interface ITweetQueries
     {
         Task<TweetDto> GetTweetAsync(Guid tweetId);
-        Task<IEnumerable<TweetDto>> GetTweetRepliesAsync(Guid tweetId, int page = 1, int pageSize = 20);
-        Task<IEnumerable<TweetDto>> GetUserTweetsAsync(Guid userId, int page = 1, int pageSize = 20);
+        Task<List<TweetDto>> GetTweetsAsync(List<Guid> tweetIds);
+        Task<List<TweetDto>> GetTweetRepliesAsync(Guid tweetId, int page, int pageSize);
+        Task<List<TweetDto>> GetUserTweetsAsync(Guid userId, int page, int pageSize);
+        Task<List<Guid>> GetUserTweetIdsAsync(Guid userId, int page, int pageSize);
     }
 }
