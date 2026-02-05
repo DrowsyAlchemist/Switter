@@ -107,15 +107,14 @@ namespace FeedService.Data
 
         public async Task RemoveUserTweetsFromFeedAsync(Guid feedOwnerId, Guid userToRemoveId)
         {
-            //var feed = await GetFeedPageAsync(feedOwnerId, 0, _options.MaxFeedSize);
+            var feed = await GetFeedPageAsync(feedOwnerId, 0, _options.MaxFeedSize);
 
-            //var removedCount = feed.RemoveAll(i => i.AuthorId == userToRemoveId);
-            //await ClearFeedAsync(feedOwnerId);
-            //await AddToFeedAsync(feedOwnerId, feed);
+            var removedCount = feed.RemoveAll(i => i.AuthorId == userToRemoveId);
+            await ClearFeedAsync(feedOwnerId);
+            await AddToFeedAsync(feedOwnerId, feed);
 
-            //_logger.LogInformation("{Count} tweets from user {userToRemove} removed from feed. User: {owner}",
-            //    removedCount, userToRemoveId, feedOwnerId);
-            throw new NotImplementedException();
+            _logger.LogInformation("{Count} tweets from user {userToRemove} removed from feed. User: {owner}",
+                removedCount, userToRemoveId, feedOwnerId);
         }
 
         private static string GetFeedKey(Guid userId) => $"feed:{userId}";

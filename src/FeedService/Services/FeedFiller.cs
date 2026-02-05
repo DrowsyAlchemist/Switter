@@ -1,5 +1,6 @@
 ﻿using FeedService.Interfaces;
 using FeedService.Interfaces.Data;
+using FeedService.Interfaces.Infrastructure;
 using FeedService.Models;
 
 namespace FeedService.Services
@@ -7,32 +8,29 @@ namespace FeedService.Services
     public class FeedFiller : IFeedFiller
     {
         private readonly IFeedRepository _feedRepository;
-        private readonly IScoreCalculator _scoreCalculator;
+        private readonly ITweetServiceClient _tweetServiceClient;
+        private readonly IFeedScoreCalculator _scoreCalculator;
 
-        public FeedFiller(IFeedRepository feedRepository, IScoreCalculator scoreCalculator)
+        public FeedFiller(IFeedRepository feedRepository, ITweetServiceClient tweetServiceClient, IFeedScoreCalculator scoreCalculator)
         {
             _feedRepository = feedRepository;
+            _tweetServiceClient = tweetServiceClient;
             _scoreCalculator = scoreCalculator;
         }
 
         public async Task AddTweetToFeedAsync(Guid tweetId, Guid userId)
         {
-            var feedItem = await CreateFeedItemAsync(tweetId);
+            var feedItem = await CreateFeedItemsAsync([tweetId]);
             await _feedRepository.AddToFeedAsync(userId, feedItem);
         }
 
         public async Task AddTweetsToFeedAsync(List<Guid> tweetIds, Guid userId)
         {
             ArgumentNullException.ThrowIfNull(tweetIds);
-            if (tweetIds.Any() == false)
+            if (tweetIds.Count == 0)
                 return;
 
-            var feedItems = new List<FeedItem>();
-            foreach (var tweetId in tweetIds)
-            {
-                var feedItem = await CreateFeedItemAsync(tweetId);
-                feedItems.Add(feedItem);
-            }
+            var feedItems = await CreateFeedItemsAsync(tweetIds);
             await _feedRepository.AddToFeedAsync(userId, feedItems);
         }
 
@@ -42,7 +40,7 @@ namespace FeedService.Services
             if (userIds.Any() == false)
                 return;
 
-            var feedItem = await CreateFeedItemAsync(tweetId);
+            var feedItem = await CreateFeedItemsAsync([tweetId]);
 
             foreach (var userId in userIds)
                 await _feedRepository.AddToFeedAsync(userId, feedItem);
@@ -58,15 +56,27 @@ namespace FeedService.Services
             await _feedRepository.ClearFeedAsync(userId);
         }
 
-        private async Task<FeedItem> CreateFeedItemAsync(Guid tweetId)
+        private async Task<List<FeedItem>> CreateFeedItemsAsync(List<Guid> tweetIds, Guid userId)
         {
-            var feedScore = await _scoreCalculator.CalculateAsync(tweetId);
-            var feedItem = new FeedItem
+            var tweetDtos = await _tweetServiceClient.GetTweetsByIdAsync(tweetIds);
+
+            HashSet<Guid> blockedUsers = (await _profileServiceClient.GetBlocked(userId)).ToHashSet();
+            tweetDtos = tweetDtos.Where(dto => blockedUsers.Contains(dto.AuthorId) == false).ToList();
+
+            var feedItems = new List<FeedItem>();
+
+            foreach (var tweetDto in tweetDtos)
             {
-                TweetId = tweetId,
-                Score = feedScore
-            };
-            return feedItem;
+                var feedItemScore = _scoreCalculator.Calculate(tweetDto!.CreatedAt, tweetDto.LikesCount, tweetDto.RetweetsCount);
+                var feedItem = new FeedItem
+                {
+                    TweetId = tweetDto.Id,
+                    AuthorId = tweetDto.AuthorId,
+                    Score = feedItemScore
+                };
+                feedItems.Add(feedItem);
+            }
+            return feedItems;
         }
     }
 }
