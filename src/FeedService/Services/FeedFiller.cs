@@ -9,18 +9,24 @@ namespace FeedService.Services
     {
         private readonly IFeedRepository _feedRepository;
         private readonly ITweetServiceClient _tweetServiceClient;
+        private readonly IProfileServiceClient _profileServiceClient;
         private readonly IFeedScoreCalculator _scoreCalculator;
 
-        public FeedFiller(IFeedRepository feedRepository, ITweetServiceClient tweetServiceClient, IFeedScoreCalculator scoreCalculator)
+        public FeedFiller(
+            IFeedRepository feedRepository,
+            ITweetServiceClient tweetServiceClient,
+            IProfileServiceClient profileServiceClient,
+            IFeedScoreCalculator scoreCalculator)
         {
             _feedRepository = feedRepository;
             _tweetServiceClient = tweetServiceClient;
+            _profileServiceClient = profileServiceClient;
             _scoreCalculator = scoreCalculator;
         }
 
         public async Task AddTweetToFeedAsync(Guid tweetId, Guid userId)
         {
-            var feedItem = await CreateFeedItemsAsync([tweetId]);
+            var feedItem = await CreateFeedItemsAsync([tweetId], userId);
             await _feedRepository.AddToFeedAsync(userId, feedItem);
         }
 
@@ -30,7 +36,7 @@ namespace FeedService.Services
             if (tweetIds.Count == 0)
                 return;
 
-            var feedItems = await CreateFeedItemsAsync(tweetIds);
+            var feedItems = await CreateFeedItemsAsync(tweetIds, userId);
             await _feedRepository.AddToFeedAsync(userId, feedItems);
         }
 
@@ -40,10 +46,11 @@ namespace FeedService.Services
             if (userIds.Any() == false)
                 return;
 
-            var feedItem = await CreateFeedItemsAsync([tweetId]);
-
             foreach (var userId in userIds)
+            {
+                var feedItem = await CreateFeedItemsAsync([tweetId], userId);
                 await _feedRepository.AddToFeedAsync(userId, feedItem);
+            }
         }
 
         public async Task RemoveUserTweetsFromFeedAsync(Guid feedOwnerId, Guid userToRemoveId)

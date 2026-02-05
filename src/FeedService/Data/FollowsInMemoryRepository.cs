@@ -48,7 +48,7 @@ namespace FeedService.Data
         {
             try
             {
-                return await _profileServiceClient.GetFollowingAsync(followerId, count);
+                return await _profileServiceClient.GetFollowingsAsync(followerId, count);
             }
             catch (Exception ex)
             {
