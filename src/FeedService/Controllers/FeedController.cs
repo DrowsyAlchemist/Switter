@@ -21,7 +21,7 @@ namespace FeedService.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetFeedAsync(FeedQuery query)
+        public async Task<IActionResult> GetFeedAsync([FromQuery] FeedQuery query)
         {
             if (query.PageSize <= 0)
             {
@@ -114,8 +114,8 @@ namespace FeedService.Controllers
         }
 
         [Authorize]
-        [HttpPut]
-        public async Task<IActionResult> RebuildFeedAsync()
+        [HttpPut("rebuild")]
+        public IActionResult RebuildFeed()
         {
             try
             {
@@ -126,9 +126,13 @@ namespace FeedService.Controllers
                     _logger.LogWarning("RebuildFeed failed. CurrentUser not found.");
                     return Unauthorized();
                 }
-                await _feedService.RebuildFeedAsync(currentUserId);
+                _logger.LogInformation("Rebuilding feed for user {UserId}", currentUserId);
+
+                _ = Task.Run(async () =>
+                    await _feedService.RebuildFeedAsync(currentUserId));
+
                 _logger.LogInformation("Feed successfully rebuilt. User: {currentUser}", currentUserId);
-                return Ok();
+                return Accepted(new { message = "Feed rebuild started" });
             }
             catch (Exception ex)
             {

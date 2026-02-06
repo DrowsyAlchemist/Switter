@@ -2,6 +2,7 @@
 using FeedService.Interfaces.Data;
 using FeedService.Interfaces.Infrastructure;
 using FeedService.Models.Options;
+using Microsoft.Extensions.Options;
 
 namespace FeedService.Services
 {
@@ -16,12 +17,12 @@ namespace FeedService.Services
             IFeedFiller filler,
             ITweetServiceClient tweetServiceClient,
             IFollowsRepository followsRepository,
-            FeedOptions options)
+            IOptions<FeedOptions> options)
         {
             _filler = filler;
             _tweetServiceClient = tweetServiceClient;
             _followsRepository = followsRepository;
-            _options = options;
+            _options = options.Value;
         }
 
         public async Task BuildFeedAsync(Guid userId)

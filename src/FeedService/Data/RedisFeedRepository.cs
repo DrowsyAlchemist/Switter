@@ -28,6 +28,7 @@ namespace FeedService.Data
 
             await _redis.SortedSetAddAsync(feedKey, feedJson, item.Score);
             await TrimFeedAsync(userId, _options.MaxFeedSize);
+            await _redis.KeyExpireAsync(feedKey, TimeSpan.FromHours(_options.FeedTtlInHours));
 
             _logger.LogDebug("Added tweet {TweetId} to feed of user {UserId}",
                 item.TweetId, userId);
@@ -52,6 +53,7 @@ namespace FeedService.Data
             await addTask;
 
             await TrimFeedAsync(userId, _options.MaxFeedSize);
+            await _redis.KeyExpireAsync(feedKey, TimeSpan.FromHours(_options.FeedTtlInHours));
 
             _logger.LogDebug("Added {Count} tweets to feed of user {UserId}",
                 items.Count, userId);

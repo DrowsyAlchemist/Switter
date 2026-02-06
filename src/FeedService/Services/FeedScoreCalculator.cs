@@ -1,30 +1,42 @@
 ﻿using FeedService.Interfaces;
+using FeedService.Models.Options;
+using Microsoft.Extensions.Options;
 
 namespace FeedService.Services
 {
     public class FeedScoreCalculator : IFeedScoreCalculator
     {
-        private const double LikeWeight = 1;
-        private const double RetweetWeight = 2;
+        private readonly double _likeWeight;
+        private readonly double _retweetWeight;
 
-        private const int MaxNoveltyFactor = 1000;
-        private const int NoveltyFactorExpiryInHours = 48;
+        private readonly int _maxNoveltyFactor;
+        private readonly int _noveltyFactorExpiryInHours;
 
-        private const double TimeDecayFactor = 0.85f;
+        private readonly double _timeDecayFactor;
+
+        public FeedScoreCalculator(IOptions<FeedOptions> options)
+        {
+            var scoreOptions = options.Value.Score;
+            _likeWeight = scoreOptions.LikeWeight;
+            _retweetWeight = scoreOptions.RetweetWeight;
+            _maxNoveltyFactor = scoreOptions.MaxNoveltyFactor;
+            _noveltyFactorExpiryInHours = scoreOptions.NoveltyFactorExpiryInHours;
+            _timeDecayFactor = scoreOptions.TimeDecayFactor;
+        }
 
         private const int HoursInDay = 24;
 
         public double Calculate(DateTime createdAt, int likes, int retweets)
         {
             var hoursSinceCreation = (DateTime.UtcNow - createdAt).TotalHours;
-            var novelty = MaxNoveltyFactor * Math.Max(0, (1 - hoursSinceCreation / NoveltyFactorExpiryInHours));
+            var novelty = _maxNoveltyFactor * Math.Max(0, (1 - hoursSinceCreation / _noveltyFactorExpiryInHours));
 
-            var engagement = likes * LikeWeight + retweets * RetweetWeight;
+            var engagement = likes * _likeWeight + retweets * _retweetWeight;
 
             var total = novelty + engagement;
 
-            var timeCoefficient = hoursSinceCreation > NoveltyFactorExpiryInHours
-                ? Math.Pow(TimeDecayFactor, (hoursSinceCreation - NoveltyFactorExpiryInHours) / HoursInDay)
+            var timeCoefficient = hoursSinceCreation > _noveltyFactorExpiryInHours
+                ? Math.Pow(_timeDecayFactor, (hoursSinceCreation - _noveltyFactorExpiryInHours) / HoursInDay)
                 : 1.0;
 
             return total * timeCoefficient;
