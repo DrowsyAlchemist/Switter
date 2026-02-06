@@ -127,13 +127,13 @@ namespace FeedService.Services.Infrastructure
 
         private List<T> Deserialize<T>(string content)
         {
-            var deserializedResponce = JsonSerializer.Deserialize<List<T>>(content, _jsonOptions);
-            if (deserializedResponce == null)
+            var deserializedResponse = JsonSerializer.Deserialize<List<T>>(content, _jsonOptions);
+            if (deserializedResponse == null)
             {
                 _logger.LogError("Failed to deserialize content. Content: {content}", content);
                 return [];
             }
-            return deserializedResponce;
+            return deserializedResponse;
         }
     }
 }
