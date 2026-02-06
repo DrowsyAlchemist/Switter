@@ -16,7 +16,7 @@ namespace FeedService.Services
 
         public FeedScoreCalculator(IOptions<FeedOptions> options)
         {
-            var scoreOptions = options.Value.Score;
+            var scoreOptions = options.Value.Score ?? throw new ArgumentException("ScoreOptions is null.");
             _likeWeight = scoreOptions.LikeWeight;
             _retweetWeight = scoreOptions.RetweetWeight;
             _maxNoveltyFactor = scoreOptions.MaxNoveltyFactor;

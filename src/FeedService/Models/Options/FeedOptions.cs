@@ -2,28 +2,28 @@
 {
     public class FeedOptions
     {
-        public required int MaxFeedSize { get; set; }
+        public int MaxFeedSize { get; set; }
 
-        public required int FollowingsMaxCount { get; set; }
-        public required int TweetsByEachFollowingMaxCount { get; set; }
-        public required int AllFollowingsTweetsMaxCount { get; set; }
+        public int FollowingsMaxCount { get; set; }
+        public int TweetsByEachFollowingMaxCount { get; set; }
+        public int AllFollowingsTweetsMaxCount { get; set; }
 
-        public required int TrendTweetsMaxCount { get; set; }
+        public int TrendTweetsMaxCount { get; set; }
 
-        public required int TrendCategoriesMaxCount { get; set; }
-        public required int TrendTweetsInCategoryMaxCount { get; set; }
+        public int TrendCategoriesMaxCount { get; set; }
+        public int TrendTweetsInCategoryMaxCount { get; set; }
 
-        public required int FeedTtlInHours { get; set; }
+        public int FeedTtlInHours { get; set; }
 
-        public required ScoreOptions Score { get; set; }
+        public ScoreOptions? Score { get; set; }
     }
 
     public class ScoreOptions
     {
-        public required double LikeWeight { get; set; }
-        public required double RetweetWeight { get; set; }
-        public required int MaxNoveltyFactor { get; set; }
-        public required int NoveltyFactorExpiryInHours { get; set; }
-        public required double TimeDecayFactor { get; set; }
+        public double LikeWeight { get; set; }
+        public double RetweetWeight { get; set; }
+        public int MaxNoveltyFactor { get; set; }
+        public int NoveltyFactorExpiryInHours { get; set; }
+        public double TimeDecayFactor { get; set; }
     }
 }
