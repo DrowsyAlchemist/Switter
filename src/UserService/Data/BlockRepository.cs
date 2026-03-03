@@ -19,29 +19,20 @@ namespace UserService.Data
         {
             try
             {
-                var block = new Block
-                {
-                    BlockerId = blockerId,
-                    BlockedId = blockedId
-                };
-                await _context.Blocks.AddAsync(block);
-                await _context.SaveChangesAsync();
-                return block;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Db is unavailable");
-                throw new Exception("Db is unavailable", ex);
-            }
+                BlockerId = blockerId,
+                BlockedId = blockedId
+            };
+            await _context.Blocks.AddAsync(block);
+            await _context.SaveChangesAsync();
+            _context.Blocks.Entry(block).State = EntityState.Detached;
+            return block;
         }
 
         public async Task<Block?> GetAsync(Guid blockerId, Guid blockedId)
         {
-            try
-            {
-                var block = await _context.Blocks
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(f => f.BlockerId == blockerId && f.BlockedId == blockedId);
+            var block = await _context.Blocks
+                .AsNoTracking()
+                .FirstOrDefaultAsync(f => f.BlockerId == blockerId && f.BlockedId == blockedId);
 
                 return block;
             }
@@ -72,21 +63,25 @@ namespace UserService.Data
             }
         }
 
-        public async Task<List<UserProfile>> GetBlockedAsync(Guid blockerId)
+        public async Task<IEnumerable<UserProfile>> GetBlockedAsync(Guid blockerId, int page, int pageSize)
         {
-            try
-            {
-                return await _context.Blocks
-                    .AsNoTracking()
-                    .Where(b => b.BlockerId == blockerId)
-                    .Select(b => b.Blocked)
-                    .ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Db is unavailable");
-                throw new Exception("Db is unavailable", ex);
-            }
+            return await _context.Blocks
+                .AsNoTracking()
+                .Where(b => b.BlockerId == blockerId)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(b => b.Blocked)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Guid>> GetBlockedIdsAsync(Guid blockerId, int page, int pageSize)
+        {
+            return await _context.Blocks
+                .Where(b => b.BlockerId == blockerId)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(b => b.Blocked.Id)
+                .ToListAsync();
         }
 
         public async Task<bool> IsBlockedAsync(Guid blockerId, Guid blockedId)

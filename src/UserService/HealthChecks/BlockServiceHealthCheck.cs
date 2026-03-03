@@ -65,7 +65,7 @@ namespace UserService.HealthChecks
 
             bool result = await _queries.IsBlockedAsync(blocker, blocked);
 
-            var blockedUsers = await _queries.GetBlockedAsync(blocker);
+            var blockedUsers = await _queries.GetBlockedAsync(blocker, 1, int.MaxValue);
             result = result && blockedUsers.Any(u => u.Id == blocked);
 
             return result;
@@ -77,8 +77,8 @@ namespace UserService.HealthChecks
 
             bool result = await _queries.IsBlockedAsync(blocker, blocked) == false;
 
-            var blockedUsers = await _queries.GetBlockedAsync(blocker);
-            result = result && blockedUsers.Count == 0;
+            var blockedUsers = await _queries.GetBlockedAsync(blocker, 1, int.MaxValue);
+            result = result && blockedUsers.Any();
             return result;
         }
     }

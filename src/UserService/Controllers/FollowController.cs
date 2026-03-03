@@ -81,11 +81,16 @@ namespace UserService.Controllers
         [HttpGet("followers/{userId}")]
         public async Task<IActionResult> GetFollowers(Guid userId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
+            if (IsPaginationCorrect(page, pageSize) == false)
+            {
+                _logger.LogWarning("GetFollowers failed.\nPagination is incorrect. Page: {page}, Size: {size}", page, pageSize);
+                return BadRequest("Pagination is incorrect.");
+            }
             try
             {
                 var followers = await _followQueries.GetFollowersAsync(userId, page, pageSize);
 
-                if (followers.Count == 0)
+                if (followers.Any() == false)
                     return StatusCode(204, "No followers");
 
                 return Ok(followers);
@@ -97,14 +102,67 @@ namespace UserService.Controllers
             }
         }
 
-        [HttpGet("following/{userId}")]
-        public async Task<IActionResult> GetFollowing(Guid userId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        [HttpGet("followings/{userId}")]
+        public async Task<IActionResult> GetFollowings(Guid userId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
             try
             {
-                var following = await _followQueries.GetFollowingAsync(userId, page, pageSize);
+                if (IsPaginationCorrect(page, pageSize) == false)
+                {
+                    _logger.LogWarning("GetFollowings failed.\nPagination is incorrect. Page: {page}, Size: {size}", page, pageSize);
+                    return BadRequest("Pagination is incorrect.");
+                }
+                var following = await _followQueries.GetFollowingsAsync(userId, page, pageSize);
 
-                if (following.Count == 0)
+                if (following.Any() == false)
+                    return StatusCode(204, "No followings");
+
+                return Ok(following);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during GetFollowing.\nUser:{UserId}", userId);
+                return StatusCode(500, new { message = "Internal server error" });
+            }
+        }
+
+        [HttpGet("followerIds/{userId}")]
+        public async Task<IActionResult> GetFollowerIds(Guid userId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        {
+            try
+            {
+                if (IsPaginationCorrect(page, pageSize) == false)
+                {
+                    _logger.LogWarning("GetFollowerIds failed.\nPagination is incorrect. Page: {page}, Size: {size}", page, pageSize);
+                    return BadRequest("Pagination is incorrect.");
+                }
+                var followers = await _followQueries.GetFollowerIdsAsync(userId, page, pageSize);
+
+                if (followers.Any() == false)
+                    return StatusCode(204, "No followers");
+
+                return Ok(followers);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during GetFollowers.\nUser:{UserId}", userId);
+                return StatusCode(500, new { message = "Internal server error" });
+            }
+        }
+
+        [HttpGet("followingIds/{userId}")]
+        public async Task<IActionResult> GetFollowingIds(Guid userId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        {
+            if (IsPaginationCorrect(page, pageSize) == false)
+            {
+                _logger.LogWarning("GetFollowers failed.\nPagination is incorrect. Page: {page}, Size: {size}", page, pageSize);
+                return BadRequest("GetFollowingIds is incorrect.");
+            }
+            try
+            {
+                var following = await _followQueries.GetFollowingIdsAsync(userId, page, pageSize);
+
+                if (following.Any() == false)
                     return StatusCode(204, "No followings");
 
                 return Ok(following);
@@ -124,6 +182,11 @@ namespace UserService.Controllers
                 return Guid.Parse(userId!);
 
             throw new Exception("Current user not found.");
+        }
+
+        private bool IsPaginationCorrect(int page, int pageSize)
+        {
+            return page > 0 && pageSize > 0;
         }
     }
 }

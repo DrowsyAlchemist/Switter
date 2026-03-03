@@ -68,7 +68,7 @@ namespace UserService.HealthChecks
             var followers = await _queries.GetFollowersAsync(followee);
             result = result && followers.Any(u => u.Id == follower);
 
-            var followings = await _queries.GetFollowingAsync(follower);
+            var followings = await _queries.GetFollowingsAsync(follower);
             result = result && followings.Any(u => u.Id == followee);
             return result;
         }
@@ -80,10 +80,10 @@ namespace UserService.HealthChecks
             bool result = await _queries.IsFollowingAsync(follower, followee) == false;
 
             var followers = await _queries.GetFollowersAsync(followee);
-            result = result && followers.Count == 0;
+            result = result && followers.Any() == false;
 
-            var followings = await _queries.GetFollowingAsync(follower);
-            result = result && followings.Count == 0;
+            var followings = await _queries.GetFollowingsAsync(follower);
+            result = result && followings.Any() == false;
             return result;
         }
     }

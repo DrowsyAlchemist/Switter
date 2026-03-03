@@ -38,18 +38,10 @@ namespace UserService.Data
 
         public async Task<Follow?> GetAsync(Guid followerId, Guid followeeId)
         {
-            try
-            {
-                var follow = await _context.Follows
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(f => f.FollowerId == followerId && f.FolloweeId == followeeId);
-                return follow;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Db is unavailable");
-                throw new Exception("Db is unavailable", ex);
-            }
+            var follow = await _context.Follows
+                .AsNoTracking()
+                .FirstOrDefaultAsync(f => f.FollowerId == followerId && f.FolloweeId == followeeId);
+            return follow;
         }
 
         public async Task DeleteAsync(Guid followerId, Guid followeeId)
@@ -72,38 +64,46 @@ namespace UserService.Data
             }
         }
 
-        public async Task<List<UserProfile>> GetFollowersAsync(Guid followeeId)
+        public async Task<IEnumerable<UserProfile>> GetFollowersAsync(Guid followeeId, int page, int pageSize)
         {
-            try
-            {
-                return await _context.Follows
-                    .AsNoTracking()
-                    .Where(f => f.FolloweeId == followeeId)
-                    .Select(f => f.Follower)
-                    .ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Db is unavailable");
-                throw new Exception("Db is unavailable", ex);
-            }
+            return await _context.Follows
+                .AsNoTracking()
+                .Where(f => f.FolloweeId == followeeId)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(f => f.Follower)
+                .ToListAsync();
         }
 
-        public async Task<List<UserProfile>> GetFollowingsAsync(Guid followerId)
+        public async Task<IEnumerable<UserProfile>> GetFollowingsAsync(Guid followerId, int page, int pageSize)
         {
-            try
-            {
-                return await _context.Follows
-                    .AsNoTracking()
-                    .Where(f => f.FollowerId == followerId)
-                    .Select(f => f.Followee)
-                    .ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Db is unavailable");
-                throw new Exception("Db is unavailable", ex);
-            }
+            return await _context.Follows
+                .AsNoTracking()
+                .Where(f => f.FollowerId == followerId)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(f => f.Followee)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Guid>> GetFollowerIdsAsync(Guid followeeId, int page, int pageSize)
+        {
+            return await _context.Follows
+                .Where(f => f.FolloweeId == followeeId)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(f => f.Follower.Id)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Guid>> GetFollowingIdsAsync(Guid followerId, int page, int pageSize)
+        {
+            return await _context.Follows
+                .Where(f => f.FollowerId == followerId)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(f => f.Followee.Id)
+                .ToListAsync();
         }
 
         public async Task<bool> IsFollowingAsync(Guid followerId, Guid followeeId)
