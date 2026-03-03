@@ -7,8 +7,12 @@ namespace NotificationService.DTOs.Mapping
     {
         public UserNotificationMapping()
         {
+            CreateMap<Notification, NotificationDto>();
+
             CreateMap<UserNotificationSettingsDto, UserNotificationSettings>()
                 .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore());
+
+            CreateMap<UserNotificationSettings, UserNotificationSettingsDto>();
         }
     }
 }

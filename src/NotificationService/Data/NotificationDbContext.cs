@@ -10,6 +10,11 @@ namespace NotificationService.Data
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<UserNotificationSettings> UserNotificationSettings { get; set; }
 
+        public async Task<bool> CanConnectAsync()
+        {
+            return await Database.CanConnectAsync();
+        }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.HasDefaultSchema("notification_service");

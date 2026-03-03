@@ -2,6 +2,7 @@ using FluentAssertions.Common;
 using Microsoft.EntityFrameworkCore;
 using NotificationService.Consumers;
 using NotificationService.Data;
+using NotificationService.HealthChecks;
 using NotificationService.Hubs;
 using NotificationService.Interfaces;
 using NotificationService.Interfaces.Data;
@@ -69,7 +70,9 @@ builder.Services.AddSingleton<FollowEventHandler>();
 
 // Health Checks
 builder.Services.AddHealthChecks()
-    .AddNpgSql(builder.Configuration.GetConnectionString("PostgreSQL")!);
+    .AddNpgSql(builder.Configuration.GetConnectionString("PostgreSQL")!)
+    .AddCheck<DatabaseHealthCheck>("Database")
+    .AddCheck<DeliveryServiceHealthCheck>("NotificationDeliveryService");
 
 builder.Services.AddAuthentication();
 
