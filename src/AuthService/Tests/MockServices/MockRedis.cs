@@ -1,4 +1,5 @@
-﻿using AuthService.Interfaces.Infrastructure;
+﻿#if DEBUG
+using AuthService.Interfaces.Infrastructure;
 
 namespace AuthService.Tests.MockServices
 {
@@ -29,3 +30,4 @@ namespace AuthService.Tests.MockServices
         }
     }
 }
+#endif

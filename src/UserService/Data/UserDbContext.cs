@@ -34,13 +34,11 @@ namespace UserService.Data
 
                 entity.HasMany(u => u.Followers)
                              .WithOne(f => f.Followee)
-                             .HasForeignKey(f => f.FolloweeId)
-                             .OnDelete(DeleteBehavior.Restrict);
+                             .HasForeignKey(f => f.FolloweeId);
 
                 entity.HasMany(u => u.Following)
                       .WithOne(f => f.Follower)
-                      .HasForeignKey(f => f.FollowerId)
-                      .OnDelete(DeleteBehavior.Restrict);
+                      .HasForeignKey(f => f.FollowerId);
             });
 
             // Follows
@@ -52,14 +50,14 @@ namespace UserService.Data
                 entity.HasIndex(f => new { f.FollowerId, f.FolloweeId }).IsUnique();
 
                 entity.HasOne(f => f.Follower)
-                      .WithMany()
+                      .WithMany(u => u.Following)
                       .HasForeignKey(f => f.FollowerId)
-                      .OnDelete(DeleteBehavior.Restrict);
+                      .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasOne(f => f.Followee)
-                      .WithMany()
+                      .WithMany(u => u.Followers)
                       .HasForeignKey(f => f.FolloweeId)
-                      .OnDelete(DeleteBehavior.Restrict);
+                      .OnDelete(DeleteBehavior.Cascade);
 
                 entity.Property(u => u.CreatedAt).HasColumnType("timestamp with time zone");
             });
@@ -70,7 +68,18 @@ namespace UserService.Data
                 entity.HasKey(b => b.Id);
                 entity.HasIndex(b => new { b.BlockerId, b.BlockedId }).IsUnique();
                 entity.Property(u => u.CreatedAt).HasColumnType("timestamp with time zone");
+
+                entity.HasOne(b => b.Blocker)
+                    .WithMany()
+                    .HasForeignKey(и => и.BlockerId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(b => b.Blocked)
+                      .WithMany()
+                      .HasForeignKey(b => b.BlockedId)
+                      .OnDelete(DeleteBehavior.Cascade);
             });
+
+            base.OnModelCreating(modelBuilder);
         }
     }
 }

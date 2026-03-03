@@ -37,8 +37,8 @@ namespace UserService.Services.Decorators
             await _redis.RemoveAsync(GetRedisKey(followerId));
             await _redis.RemoveAsync(GetRedisKey(followeeId));
 
-            var followerProfile = await _profilesRepository.GetProfileAsync(followerId);
-            var followeeProfile = await _profilesRepository.GetProfileAsync(followeeId);
+            var followerProfile = await _profilesRepository.GetProfileByIdAsync(followerId);
+            var followeeProfile = await _profilesRepository.GetProfileByIdAsync(followeeId);
 
             if (followerProfile == null)
                 throw new UserNotFoundException(followerId);

@@ -1,0 +1,21 @@
+{
+  "bootstrapServers": "localhost:9092",
+  "groupId": "feed-service-group",
+
+  "tweetEvents": {
+    "tweetCreatedEventName": "tweet-created",
+    "retweetCreatedEventName": "retweet-created",
+    "replyCreatedEventName": "reply-created",
+    "tweetDeletedEventName": "tweet-deleted",
+    "likeSetEventName": "like-set",
+    "likeCanceledEventName": "like-canceled"
+  },
+
+  "profileEvents": {
+    "profileChangedEventName": "profile-changed",
+    "profileDeletedEventName": "profile-deleted",
+    "userFollowedEventName": "user-followed",
+    "userUnfollowedEventName": "user-unfollowed",
+    "userBlockedEventName": "user-blocked"
+  }
+}

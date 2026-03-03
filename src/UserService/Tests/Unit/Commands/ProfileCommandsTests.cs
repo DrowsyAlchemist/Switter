@@ -54,7 +54,7 @@ namespace UserService.Tests.Unit.Commands
             };
 
             _mockProfilesRepository
-                .Setup(repo => repo.GetProfileAsync(userId))
+                .Setup(repo => repo.GetProfileByIdAsync(userId))
                 .ReturnsAsync(existingProfile);
 
             _mockMapper
@@ -104,7 +104,7 @@ namespace UserService.Tests.Unit.Commands
             };
 
             _mockProfilesRepository
-                .Setup(repo => repo.GetProfileAsync(userId))
+                .Setup(repo => repo.GetProfileByIdAsync(userId))
                 .ReturnsAsync(existingProfile);
 
             _mockMapper
@@ -151,7 +151,7 @@ namespace UserService.Tests.Unit.Commands
             };
 
             _mockProfilesRepository
-                .Setup(repo => repo.GetProfileAsync(userId))
+                .Setup(repo => repo.GetProfileByIdAsync(userId))
                 .ReturnsAsync(existingProfile);
 
             _mockMapper
@@ -195,7 +195,7 @@ namespace UserService.Tests.Unit.Commands
             };
 
             _mockProfilesRepository
-                .Setup(repo => repo.GetProfileAsync(userId))
+                .Setup(repo => repo.GetProfileByIdAsync(userId))
                 .ReturnsAsync(existingProfile);
 
             _mockMapper
@@ -221,7 +221,7 @@ namespace UserService.Tests.Unit.Commands
             };
 
             _mockProfilesRepository
-                .Setup(repo => repo.GetProfileAsync(userId))
+                .Setup(repo => repo.GetProfileByIdAsync(userId))
                 .ReturnsAsync((UserProfile)null);
 
             // Act
@@ -250,7 +250,7 @@ namespace UserService.Tests.Unit.Commands
             };
 
             _mockProfilesRepository
-                .Setup(repo => repo.GetProfileAsync(userId))
+                .Setup(repo => repo.GetProfileByIdAsync(userId))
                 .ReturnsAsync(deactivatedProfile);
 
             // Act
@@ -290,7 +290,7 @@ namespace UserService.Tests.Unit.Commands
             };
 
             _mockProfilesRepository
-                .Setup(repo => repo.GetProfileAsync(userId))
+                .Setup(repo => repo.GetProfileByIdAsync(userId))
                 .ReturnsAsync(existingProfile);
 
             _mockMapper

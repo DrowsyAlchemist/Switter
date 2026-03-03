@@ -1,4 +1,5 @@
-﻿using AuthService.DTOs.Jwt;
+﻿#if DEBUG
+using AuthService.DTOs.Jwt;
 using AuthService.Interfaces.Infrastructure;
 using AuthService.Models;
 using AuthService.Services.Jwt;
@@ -82,3 +83,4 @@ namespace AuthService.Tests.Unit.Jwt
         }
     }
 }
+#endif

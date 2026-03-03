@@ -4,8 +4,10 @@ namespace UserService.Interfaces.Data
 {
     public interface IProfilesRepository
     {
-        Task<List<UserProfile>> GetUsersAsync();
-        Task<UserProfile?> GetProfileAsync(Guid userId);
+        Task<UserProfile> AddAsync(UserProfile profile);
+        Task<List<UserProfile>> GetProfilesAsync();
+        Task<UserProfile?> GetProfileByIdAsync(Guid userId);
         Task<UserProfile> UpdateProfileAsync(UserProfile profile);
+        Task RemoveAsync(Guid id);
     }
 }

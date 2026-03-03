@@ -20,7 +20,7 @@ namespace UserService.Services.Queries
 
         public async Task<UserProfileDto> GetProfileAsync(Guid userId, Guid? currentUserId = null)
         {
-            var profile = await _profilesRepository.GetProfileAsync(userId);
+            var profile = await _profilesRepository.GetProfileByIdAsync(userId);
 
             if (profile == null)
                 throw new UserNotFoundException(userId);
@@ -38,7 +38,7 @@ namespace UserService.Services.Queries
 
             query = query.ToLower();
 
-            var users = await _profilesRepository.GetUsersAsync();
+            var users = await _profilesRepository.GetProfilesAsync();
             users = users
                 .Where(p => p.IsActive
                 && (p.DisplayName.ToLower().Contains(query) || p.Bio.ToLower().Contains(query)))
