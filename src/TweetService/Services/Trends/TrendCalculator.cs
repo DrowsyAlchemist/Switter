@@ -15,7 +15,7 @@ namespace TweetService.Services.Trends
             _options = options.Value;
         }
 
-        public async Task<IEnumerable<string>> CalculateTrendHashtagsByUsageAsync(int count)
+        public async Task<List<string>> CalculateTrendHashtagsByUsageAsync(int count)
         {
             if (count < 0)
                 throw new ArgumentException("Count should be positive.");
@@ -43,7 +43,7 @@ namespace TweetService.Services.Trends
                 .ToList();
         }
 
-        public async Task<IEnumerable<Guid>> CalculateTrendTweetByLastLikesIdsAsync(int count)
+        public async Task<List<Guid>> CalculateTrendTweetByLastLikesIdsAsync(int count)
         {
             if (count < 0)
                 throw new ArgumentException("Count should be positive.");

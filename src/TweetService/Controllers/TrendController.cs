@@ -82,5 +82,51 @@ namespace TweetService.Controllers
                 return StatusCode(500, new { message = "Internal server error" });
             }
         }
+
+        [HttpGet("tweetIds")]
+        [ValidatePagination]
+        public async Task<IActionResult> GetTrendTweetIdsAsync(
+           [CurrentUserId] Guid? currentUserId,
+           [FromQuery] int page = 1,
+           [FromQuery] int pageSize = 20)
+        {
+            try
+            {
+                var tweetDto = await _trendService.GetTrendTweetIdsAsync(page, pageSize);
+                _logger.LogInformation("Trend tweets successfully sent.");
+                return Ok(tweetDto);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during GetTrendTweetIds.");
+                return StatusCode(500, new { message = "Internal server error" });
+            }
+        }
+
+        [HttpGet("tweetIds/{hashtag}")]
+        [ValidatePagination]
+        public async Task<IActionResult> GetTrendTweetIdsAsync(
+            string hashtag,
+            [CurrentUserId] Guid? currentUserId,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20)
+        {
+            if (string.IsNullOrEmpty(hashtag))
+            {
+                _logger.LogWarning("GetTrendTweetIds failed.\nHashtag is invalid. ({tag})", hashtag);
+                return BadRequest("Hashtag shouldn't be null or empty.");
+            }
+            try
+            {
+                var tweetDto = await _trendService.GetTrendTweetIdsAsync(hashtag, page, pageSize);
+                _logger.LogInformation("Trend tweets by hashtag successfully sent.\nHashtag: {hashtag}", hashtag);
+                return Ok(tweetDto);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during GetTrendTweetIds.\nHashtag: {hashtag}", hashtag);
+                return StatusCode(500, new { message = "Internal server error" });
+            }
+        }
     }
 }

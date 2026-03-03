@@ -259,7 +259,7 @@ namespace TweetService.Tests.Unit
             Func<Task> act = async () => await _tweetCommands.TweetAsync(_testUserInfo, request);
 
             // Assert
-            await act.Should().ThrowAsync<TweetNotFoundException>();
+            await act.Should().ThrowAsync<ParentTweetNotFoundException>();
         }
 
         [Fact]

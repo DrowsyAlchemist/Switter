@@ -23,7 +23,7 @@ namespace TweetService.Services
         public async Task<List<TweetDto>> GetLikedTweetsAsync(Guid userId, int page, int pageSize)
         {
             var likedTweetIds = await _likesRepository.GetLikedTweetIdsAsync(userId, page, pageSize);
-            var likedTweets = await _tweetRepository.GetByIdsAsync(likedTweetIds, page, pageSize);
+            var likedTweets = await _tweetRepository.GetByIdsAsync(likedTweetIds);
             var likedTweetsDtos = _mapper.Map<List<TweetDto>>(likedTweets);
             return likedTweetsDtos;
         }
