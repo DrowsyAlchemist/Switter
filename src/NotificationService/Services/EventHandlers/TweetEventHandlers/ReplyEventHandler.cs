@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Options;
 using NotificationService.Events.Tweet;
 using NotificationService.Interfaces;
-using NotificationService.Interfaces.Data;
 using NotificationService.Interfaces.Infrastructure;
 using NotificationService.Models;
 using NotificationService.Models.Options;
@@ -13,13 +12,13 @@ namespace NotificationService.Services.EventHandlers.TweetEventHandlers
         private readonly string _eventName;
 
         public ReplyEventHandler(
-            INotificationDeliveryService deliveryService,
+            IServiceProvider serviceProvider,
             IOptions<KafkaOptions> options,
             IProfileServiceClient profileService,
             INotificationEventsProcessor eventsProcessor)
-            : base(eventsProcessor, deliveryService, profileService, options)
+            : base(eventsProcessor, serviceProvider, profileService, options)
         {
-            _eventName = options.Value.TweetEvents.ReplyCreatedEventName;
+            _eventName = options.Value.TweetEvents.ReplyEventName;
         }
 
         public override async Task HandleAsync(string eventName, string eventJson)

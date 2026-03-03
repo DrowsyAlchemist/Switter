@@ -7,14 +7,14 @@
 
   "tweetEvents": {
     "tweetCreatedEventName": "tweet-created",
-    "retweetCreatedEventName": "retweet-created",
-    "replyCreatedEventName": "reply-created",
+    "retweetEventName": "retweet-created",
+    "replyEventName": "reply-created",
     "tweetDeletedEventName": "tweet-deleted",
     "likeSetEventName": "like-set",
     "likeCanceledEventName": "like-canceled"
   },
 
-  "profileEvents": {
+  "userEvents": {
     "profileChangedEventName": "profile-changed",
     "profileDeletedEventName": "profile-deleted",
     "userFollowedEventName": "user-followed",

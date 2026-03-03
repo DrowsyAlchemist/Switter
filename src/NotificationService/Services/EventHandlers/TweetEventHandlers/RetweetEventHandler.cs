@@ -12,11 +12,11 @@ namespace NotificationService.Services.EventHandlers.TweetEventHandlers
         private readonly string _eventName;
 
         public RetweetEventHandler(
-            INotificationDeliveryService deliveryService,
+            IServiceProvider serviceProvider,
             IOptions<KafkaOptions> options,
             IProfileServiceClient profileService,
             INotificationEventsProcessor eventsProcessor)
-            : base(eventsProcessor, deliveryService, profileService, options)
+            : base(eventsProcessor, serviceProvider, profileService, options)
         {
             _eventName = options.Value.TweetEvents.RetweetEventName;
         }

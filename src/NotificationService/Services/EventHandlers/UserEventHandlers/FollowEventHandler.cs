@@ -12,11 +12,11 @@ namespace NotificationService.Services.EventHandlers.UserEventHandlers
         private readonly string _eventName;
 
         public FollowEventHandler(
-            INotificationDeliveryService deliveryService,
+            IServiceProvider serviceProvider,
             IOptions<KafkaOptions> options,
             IProfileServiceClient profileService,
             INotificationEventsProcessor eventsProcessor)
-            : base(eventsProcessor, deliveryService, profileService, options)
+            : base(eventsProcessor, serviceProvider, profileService, options)
         {
             _eventName = options.Value.UserEvents.UserFollowedEventName;
         }

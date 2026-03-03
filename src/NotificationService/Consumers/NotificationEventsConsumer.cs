@@ -27,7 +27,7 @@ namespace NotificationService.Consumers
                 _options.UserEvents.UserFollowedEventName,
                 _options.TweetEvents.TweetCreatedEventName,
                 _options.TweetEvents.RetweetEventName,
-                _options.TweetEvents.ReplyCreatedEventName,
+                _options.TweetEvents.ReplyEventName,
                 _options.TweetEvents.LikeSetEventName,
             ];
         }

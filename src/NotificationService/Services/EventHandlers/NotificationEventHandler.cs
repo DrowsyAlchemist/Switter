@@ -8,20 +8,22 @@ namespace NotificationService.Services.EventHandlers
 {
     public abstract class NotificationEventHandler : INotificationEventHandler
     {
-        protected readonly INotificationDeliveryService DeliveryService;
         protected readonly IProfileServiceClient ProfileService;
         protected readonly KafkaOptions Options;
 
+        protected readonly IServiceProvider _serviceProvider;
+
+        protected INotificationDeliveryService DeliveryService => _serviceProvider.GetRequiredService<INotificationDeliveryService>();
+
         public NotificationEventHandler(
             INotificationEventsProcessor eventProcessor,
-            INotificationDeliveryService deliveryService,
+            IServiceProvider serviceProvider,
             IProfileServiceClient profileService,
             IOptions<KafkaOptions> options)
         {
-            DeliveryService = deliveryService;
+            _serviceProvider = serviceProvider;
             ProfileService = profileService;
             Options = options.Value;
-
             eventProcessor.Subscribe(HandleAsync);
         }
 

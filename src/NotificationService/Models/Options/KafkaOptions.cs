@@ -12,7 +12,7 @@
     {
         public required string TweetCreatedEventName { get; set; }
         public required string RetweetEventName { get; set; }
-        public required string ReplyCreatedEventName { get; set; }
+        public required string ReplyEventName { get; set; }
         public required string TweetDeletedEventName { get; set; }
         public required string LikeSetEventName { get; set; }
         public required string LikeCanceledEventName { get; set; }
