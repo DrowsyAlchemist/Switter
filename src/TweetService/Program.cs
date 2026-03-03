@@ -1,44 +1,176 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using StackExchange.Redis;
+using TweetService.Consumers;
+using TweetService.Data;
+using TweetService.Data.Repositories;
+using TweetService.HealthChecks;
+using TweetService.Infrastructure.Filters;
+using TweetService.Infrastructure.Middleware;
+using TweetService.Interfaces.Data;
+using TweetService.Interfaces.Data.Repositories;
+using TweetService.Interfaces.Infrastructure;
+using TweetService.Interfaces.Services;
+using TweetService.Models.Options;
+using TweetService.Services;
+using TweetService.Services.Decorators;
+using TweetService.Services.Decorators.WithKafka;
+using TweetService.Services.Decorators.WithTransactions;
+using TweetService.Services.Decorators.WithTrendFiller;
+using TweetService.Services.Infrastructure;
+using TweetService.Services.Trends;
+using TweetService.Services.Tweets;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Options
+builder.Configuration.AddJsonFile("Configuration/KafkaConfig.json");
+builder.Services.Configure<KafkaOptions>(builder.Configuration);
+
+builder.Configuration.AddJsonFile("Configuration/PaginationConfig.json");
+builder.Services.Configure<PaginationOptions>(builder.Configuration);
+
+builder.Configuration.AddJsonFile("Configuration/AppUrls.json");
+builder.Services.Configure<AppUrls>(builder.Configuration);
+
+builder.Configuration.AddJsonFile("Configuration/TrendsConfig.json");
+builder.Services.Configure<TrendsOptions>(builder.Configuration);
+
+// Redis
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+    ConnectionMultiplexer.Connect(builder.Configuration["Redis:ConnectionString"]!));
+builder.Services.AddScoped<IRedisService, RedisService>();
+
+// Kafka 
+builder.Services.AddHostedService<UserEventsConsumer>();
+builder.Services.AddHostedService<TweetEventsConsumer>();
+builder.Services.AddSingleton<IKafkaProducer, KafkaProducer>();
+
+// Database
+builder.Services.AddDbContext<TweetDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("PostgreSQL")), ServiceLifetime.Scoped);
+builder.Services.AddScoped<ITransactionManager, EfTransactionManager>();
+
+// Repositories
+builder.Services.AddScoped<ITweetRepository, TweetRepository>();
+builder.Services.AddScoped<ILikesRepository, LikeRepository>();
+builder.Services.AddScoped<IHashtagRepository, HashtagRepository>();
+builder.Services.AddScoped<ITweetHashtagRepository, TweetHashtagRepository>();
+
+// AutoMapper
+builder.Services.AddAutoMapper(cfg =>
+{
+    cfg.AllowNullCollections = true;
+    cfg.AllowNullDestinationValues = false;
+}, typeof(Program).Assembly);
+
+// Services
+
+builder.Services.AddScoped<IUserTweetRelationshipService, UserTweetRelationshipService>();
+builder.Services.AddScoped<EnrichTweetsWithUserRelationshipActionFilter>();
+builder.Services.AddHttpClient<IUserServiceClient, UserServiceClient>();
+builder.Services.AddScoped<TrendFiller>();
+
+// HashtagService
+builder.Services.AddScoped<HashtagService>();
+builder.Services.AddScoped<IHashtagService>(serviceProvider =>
+{
+    var baseService = serviceProvider.GetRequiredService<HashtagService>();
+    var hashtagServiceWithTrendFiller = new HashtagServiceWithTrendFiller(
+        hashtagService: baseService,
+        trendFiller: serviceProvider.GetRequiredService<TrendFiller>()
+        );
+    var hashtagServiceWithTransaction = new HashtagServiceWithTransaction(
+        hashtagService: hashtagServiceWithTrendFiller,
+        transactionManager: serviceProvider.GetRequiredService<ITransactionManager>()
+        );
+    return hashtagServiceWithTrendFiller;
+});
+
+// TweetService
+builder.Services.AddScoped<TweetCommands>();
+builder.Services.AddScoped<ITweetCommands>(serviceProvider =>
+{
+    var baseService = serviceProvider.GetRequiredService<TweetCommands>();
+    var tweetWithHashtags = new TweetCommandsWithHashtags(
+        tweetCommands: baseService,
+        hashtagService: serviceProvider.GetRequiredService<IHashtagService>()
+        );
+    var tweetCommandsWithKafka = new TweetCommandsWithKafka(
+        tweetCommands: tweetWithHashtags,
+        options: serviceProvider.GetRequiredService<IOptions<KafkaOptions>>(),
+        kafkaProducer: serviceProvider.GetRequiredService<IKafkaProducer>(),
+        logger: serviceProvider.GetRequiredService<ILogger<TweetCommandsWithKafka>>()
+        );
+    var tweetCommandsWithTransaction = new TweetCommandsWithTransaction(
+        tweetCommands: tweetCommandsWithKafka,
+        transactionManager: serviceProvider.GetRequiredService<ITransactionManager>()
+        );
+    return tweetCommandsWithKafka;
+});
+
+builder.Services.AddScoped<ITweetQueries, TweetQueries>();
+
+// LikeService
+builder.Services.AddScoped<LikeService>();
+
+builder.Services.AddScoped<ILikeService>(serviceProvider =>
+{
+    var baseService = serviceProvider.GetRequiredService<LikeService>();
+
+    var likeServiceWithTrendFiller = new LikeServiceWithTrendFiller(
+        likeService: baseService,
+        trendFiller: serviceProvider.GetRequiredService<TrendFiller>()
+        );
+    var likeServiceWithKafka = new LikeServiceWithKafka(
+        likeService: likeServiceWithTrendFiller,
+        kafkaProducer: serviceProvider.GetRequiredService<IKafkaProducer>(),
+        options: serviceProvider.GetRequiredService<IOptions<KafkaOptions>>(),
+        logger: serviceProvider.GetRequiredService<ILogger<LikeServiceWithKafka>>()
+        );
+    var likeServiceWithTransaction = new LikeServiceWithTransaction(
+        likeService: likeServiceWithKafka,
+        transactionManager: serviceProvider.GetRequiredService<ITransactionManager>()
+        );
+    return likeServiceWithKafka;
+});
+
+// TrendService
+builder.Services.AddScoped<TrendCalculator>();
+builder.Services.AddScoped<ITrendService, TrendService>();
+
+// Health Checks
+builder.Services.AddHealthChecks()
+    .AddNpgSql(builder.Configuration.GetConnectionString("PostgreSQL")!)
+    .AddRedis(builder.Configuration["Redis:ConnectionString"]!)
+    .AddCheck<DatabaseHealthCheck>("Database")
+    .AddCheck<TweetServiceHealthCheck>("TweetService")
+    .AddCheck<LikeServiceHealthCheck>("LikeService")
+    .AddCheck<TrendServiceHealthCheck>("TrendService");
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<TweetDbContext>();
+    await db.Database.MigrateAsync();
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+app.UseRouting();
+app.UseAuthorization();
+app.MapControllers();
+app.MapHealthChecks("/health");
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast")
-.WithOpenApi();
+app.UseMiddleware<PaginationValidationMiddleware>();
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}

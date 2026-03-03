@@ -1,0 +1,22 @@
+{
+  "maxFeedSize": 1000,
+
+  "followingsMaxCount": 30,
+  "tweetsByEachFollowingMaxCount": 10,
+  "allFollowingsTweetsMaxCount": 500,
+
+  "trendTweetsMaxCount": 400,
+
+  "trendCategoriesMaxCount": 5,
+  "trendTweetsInCategoryMaxCount": 100,
+
+  "feedTtlInHours": 24,
+
+  "score": {
+    "likeWeight": 1.0,
+    "retweetWeight": 2.0,
+    "maxNoveltyFactor": 1000,
+    "noveltyFactorExpiryInHours": 48,
+    "timeDecayFactor": 0.85
+  }
+}

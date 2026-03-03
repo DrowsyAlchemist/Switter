@@ -2,7 +2,7 @@
 using System.Text.Json;
 using UserService.Interfaces.Infrastructure;
 
-namespace AuthService.Services.Infrastructure
+namespace UserService.Services.Infrastructure
 {
     public class KafkaProducer : IKafkaProducer
     {

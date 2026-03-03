@@ -12,13 +12,13 @@ using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Конфигурация
+// Configuration
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// База данных
+// Data base
 builder.Services.AddDbContext<AuthDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("PostgreSQL")));
 
@@ -26,7 +26,7 @@ builder.Services.AddDbContext<AuthDbContext>(options =>
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
     ConnectionMultiplexer.Connect(builder.Configuration["Redis:ConnectionString"]!));
 
-// Сервисы
+// Services
 builder.Services.AddScoped<IAccessTokenService, AccessTokenService>();
 builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
@@ -39,16 +39,27 @@ builder.Services.AddSingleton<IKafkaProducerService, KafkaProducerService>();
 builder.Services.AddHealthChecks()
     .AddNpgSql(builder.Configuration.GetConnectionString("PostgreSQL")!)
     .AddRedis(builder.Configuration["Redis:ConnectionString"]!)
+    .AddCheck<DatabaseHealthCheck>("Database")
     .AddCheck<TokenServiceHealthCheck>("JwtService")
-    .AddCheck<DatabaseHealthCheck>("Database");
+    .AddCheck<AuthHealthCheck>("AuthService");
 
 var app = builder.Build();
 
-// Миграция базы данных
-using (var scope = app.Services.CreateScope())
+// Migrations
+try
 {
-    var db = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
-    db.Database.Migrate();
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
+        Console.WriteLine("Attempting database migration...");
+        db.Database.Migrate();
+        Console.WriteLine("Database migration completed successfully");
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Database migration failed: {ex.Message}");
+    Console.WriteLine("Continuing without database migration...");
 }
 
 if (app.Environment.IsDevelopment())

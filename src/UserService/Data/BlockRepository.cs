@@ -7,15 +7,17 @@ namespace UserService.Data
     public class BlockRepository : IBlockRepository
     {
         private readonly UserDbContext _context;
+        private readonly ILogger<BlockRepository> _logger;
 
-        public BlockRepository(UserDbContext context)
+        public BlockRepository(UserDbContext context, ILogger<BlockRepository> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         public async Task<Block> AddAsync(Guid blockerId, Guid blockedId)
         {
-            var block = new Block
+            try
             {
                 BlockerId = blockerId,
                 BlockedId = blockedId
@@ -32,19 +34,33 @@ namespace UserService.Data
                 .AsNoTracking()
                 .FirstOrDefaultAsync(f => f.BlockerId == blockerId && f.BlockedId == blockedId);
 
-            return block;
+                return block;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Db is unavailable");
+                throw new Exception("Db is unavailable", ex);
+            }
         }
 
         public async Task DeleteAsync(Guid blockerId, Guid blockedId)
         {
-            var block = await _context.Blocks
-                .FirstOrDefaultAsync(f => f.BlockerId == blockerId && f.BlockedId == blockedId);
+            try
+            {
+                var block = await _context.Blocks
+                    .FirstOrDefaultAsync(f => f.BlockerId == blockerId && f.BlockedId == blockedId);
 
-            if (block == null)
-                throw new ArgumentException("Block is not found.");
+                if (block == null)
+                    throw new ArgumentException("Block is not found.");
 
-            _context.Blocks.Remove(block);
-            await _context.SaveChangesAsync();
+                _context.Blocks.Remove(block);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Db is unavailable");
+                throw new Exception("Db is unavailable", ex);
+            }
         }
 
         public async Task<IEnumerable<UserProfile>> GetBlockedAsync(Guid blockerId, int page, int pageSize)
@@ -70,8 +86,16 @@ namespace UserService.Data
 
         public async Task<bool> IsBlockedAsync(Guid blockerId, Guid blockedId)
         {
-            return await _context.Blocks
-                .AnyAsync(b => b.BlockerId == blockerId && b.BlockedId == blockedId);
+            try
+            {
+                return await _context.Blocks
+                    .AnyAsync(b => b.BlockerId == blockerId && b.BlockedId == blockedId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Db is unavailable");
+                throw new Exception("Db is unavailable", ex);
+            }
         }
     }
 }
