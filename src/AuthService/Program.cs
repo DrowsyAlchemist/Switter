@@ -4,6 +4,7 @@ using AuthService.Interfaces.Auth;
 using AuthService.Interfaces.Infrastructure;
 using AuthService.Interfaces.Jwt;
 using AuthService.Models;
+using AuthService.Models.Options;
 using AuthService.Services.Auth;
 using AuthService.Services.Infrastructure;
 using AuthService.Services.Jwt;
@@ -12,19 +13,26 @@ using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Options
+builder.Configuration.AddJsonFile("Configuration/KafkaConfig.json");
+builder.Services.Configure<KafkaOptions>(builder.Configuration);
+
 // Configuration
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Data base
+// Database
 builder.Services.AddDbContext<AuthDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("PostgreSQL")));
 
 // Redis
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
     ConnectionMultiplexer.Connect(builder.Configuration["Redis:ConnectionString"]!));
+
+// Kafka
+builder.Services.AddSingleton<IKafkaProducerService, KafkaProducerService>();
 
 // Services
 builder.Services.AddScoped<IAccessTokenService, AccessTokenService>();
@@ -33,7 +41,6 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IRedisService, RedisService>();
-builder.Services.AddSingleton<IKafkaProducerService, KafkaProducerService>();
 
 // Health Checks
 builder.Services.AddHealthChecks()

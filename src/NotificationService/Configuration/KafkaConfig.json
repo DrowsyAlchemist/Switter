@@ -1,9 +1,18 @@
 {
   "bootstrapServers": "localhost:9092",
-  "groupId": "notification-service-group",
 
-  "TweetEventsName": "tweet-event",
-  "UserEventsName": "user-event",
+  "authEvents": {
+    "userRegisteredEventName": "user-registered"
+  },
+
+  "userEvents": {
+    "profileChangedEventName": "profile-changed",
+    "profileDeletedEventName": "profile-deleted",
+    "userFollowedEventName": "user-followed",
+    "userUnfollowedEventName": "user-unfollowed",
+    "userBlockedEventName": "user-blocked",
+    "userUnblockedEventName": "user-unblocked"
+  },
 
   "tweetEvents": {
     "tweetCreatedEventName": "tweet-created",
@@ -12,13 +21,5 @@
     "tweetDeletedEventName": "tweet-deleted",
     "likeSetEventName": "like-set",
     "likeCanceledEventName": "like-canceled"
-  },
-
-  "userEvents": {
-    "profileChangedEventName": "profile-changed",
-    "profileDeletedEventName": "profile-deleted",
-    "userFollowedEventName": "user-followed",
-    "userUnfollowedEventName": "user-unfollowed",
-    "userBlockedEventName": "user-blocked"
   }
 }

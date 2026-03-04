@@ -1,4 +1,4 @@
-﻿namespace TweetService.Models.Options
+﻿namespace AuthService.Models.Options
 {
     public class KafkaOptions
     {

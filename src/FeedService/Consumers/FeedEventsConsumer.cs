@@ -28,12 +28,12 @@ namespace FeedService.Consumers
             var options = kafkaOptions.Value;
 
             _tweetCreatedEventName = options.TweetEvents.TweetCreatedEventName;
-            _retweetCreatedEventName = options.TweetEvents.RetweetCreatedEventName;
+            _retweetCreatedEventName = options.TweetEvents.RetweetEventName;
             _likeSetEventName = options.TweetEvents.LikeSetEventName;
 
-            _userFollowedEventName = options.ProfileEvents.UserFollowedEventName;
-            _userUnfollowedEventName = options.ProfileEvents.UserUnfollowedEventName;
-            _userBlockedEventName = options.ProfileEvents.UserBlockedEventName;
+            _userFollowedEventName = options.UserEvents.UserFollowedEventName;
+            _userUnfollowedEventName = options.UserEvents.UserUnfollowedEventName;
+            _userBlockedEventName = options.UserEvents.UserBlockedEventName;
         }
 
         protected override IEnumerable<string> GetTopics()

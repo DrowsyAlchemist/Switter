@@ -19,7 +19,7 @@ namespace TweetService.Consumers
             var config = new ConsumerConfig
             {
                 BootstrapServers = Options.BootstrapServers,
-                GroupId = Options.GroupId,
+                GroupId = "tweet-service-group",
                 AutoOffsetReset = AutoOffsetReset.Latest,
                 EnableAutoOffsetStore = false,
                 EnableAutoCommit = false,

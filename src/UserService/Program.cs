@@ -8,6 +8,7 @@ using UserService.Interfaces.Commands;
 using UserService.Interfaces.Data;
 using UserService.Interfaces.Infrastructure;
 using UserService.Interfaces.Queries;
+using UserService.Models.Options;
 using UserService.Services;
 using UserService.Services.Commands;
 using UserService.Services.Decorators;
@@ -19,6 +20,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// Options
+builder.Configuration.AddJsonFile("Configuration/KafkaConfig.json");
+builder.Services.Configure<KafkaOptions>(builder.Configuration);
 
 // Redis
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>

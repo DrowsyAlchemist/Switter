@@ -16,8 +16,8 @@ namespace TweetService.Consumers
             : base(options, logger)
         {
             _serviceProvider = serviceProvider;
-            _profileChangedTopicName = options.Value.ProfileEvents.ProfileChangedEventName;
-            _profileDeletedTopicName = options.Value.ProfileEvents.ProfileDeletedEventName;
+            _profileChangedTopicName = options.Value.UserEvents.ProfileChangedEventName;
+            _profileDeletedTopicName = options.Value.UserEvents.ProfileDeletedEventName;
         }
 
         protected override IEnumerable<string> GetTopics()
