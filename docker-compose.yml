@@ -7,7 +7,7 @@ services:
 
   postgres:
     image: postgres:15-alpine
-    container_name: switter-postgres
+    container_name: postgres
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -28,13 +28,9 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: switter-redis
+    container_name: redis
     command: >
       redis-server
-      --appendonly yes
-      --appendfsync everysec
-      --maxmemory 512mb
-      --maxmemory-policy allkeys-lru
       --requirepass ${REDIS_PASSWORD}
     volumes:
       - redis_data:/data
@@ -51,7 +47,7 @@ services:
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.0
-    container_name: switter-zookeeper
+    container_name: zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
@@ -68,20 +64,23 @@ services:
 
   kafka:
     image: confluentinc/cp-kafka:7.3.0
-    container_name: switter-kafka
+    container_name: kafka
     depends_on:
         - zookeeper
     environment:
         KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-        KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+        KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+        KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
         KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
         KAFKA_NUM_PARTITIONS: 3
         KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+        KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+        KAFKA_OFFSETS_RETENTION_MINUTES: 10000 
+        KAFKA_LOG_RETENTION_HOURS: 168        
     volumes:
       - kafka_data:/var/lib/kafka/data
     ports:
       - "9092:9092"
-      - "9093:9093"
     networks:
       - switter-network
     healthcheck:
@@ -89,6 +88,63 @@ services:
       interval: 15s
       timeout: 10s
       retries: 3
+    restart: unless-stopped
+    command: >
+      bash -c "
+      echo 'Creating topics...' &&
+      /etc/confluent/docker/run &
+      sleep 10 &&
+      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic user-registered --partitions 3 --replication-factor 1 &&
+      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic --profile-changed --partitions 3 --replication-factor 1 &&
+      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic --profile-deleted --partitions 3 --replication-factor 1 &&
+      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic --user-blocked --partitions 3 --replication-factor 1 &&
+      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic --user-unblocked --partitions 3 --replication-factor 1 &&
+      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic --user-followed --partitions 3 --replication-factor 1 &&
+      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic --user-unfollowed --partitions 3 --replication-factor 1 &&
+      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic --tweet-created --partitions 3 --replication-factor 1 &&
+      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic --retweet-created --partitions 3 --replication-factor 1 &&
+      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic --reply-created --partitions 3 --replication-factor 1 &&
+      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic --tweet-deleted --partitions 3 --replication-factor 1 &&
+      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic --like-set --partitions 3 --replication-factor 1 &&
+      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic --like-canceled --partitions 3 --replication-factor 1 &&
+      wait"
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+    ports:
+      - "8080:80"
+    depends_on:
+      - postgres
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: redis-commander
+    environment:
+      REDIS_HOSTS: ${REDIS_COMMANDER_HOSTS}
+      HTTP_USER: ${REDIS_COMMANDER_USER}
+      HTTP_PASSWORD: ${REDIS_COMMANDER_PASSWORD}
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    environment:
+      KAFKA_CLUSTERS_0_NAME: switter-cluster
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: ${KAFKA_HOST}:${KAFKA_PORT}
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    ports:
+      - "8083:8080"
+    networks:
+      - switter-network
+    depends_on:
+      - kafka
     restart: unless-stopped
    
 volumes:

@@ -2,28 +2,31 @@ services:
 
   # apigateway:
   #   build:
-  #     context: .  
-  #     dockerfile: src/ApiGateway/Dockerfile
+  #     context: ./src/ApiGateway
+  #     dockerfile: Dockerfile
+  #   container_name: apigateway
   #   environment:
   #     - ASPNETCORE_ENVIRONMENT=Development
   #     - ASPNETCORE_URLS=http://+:80
-  #     - Logging:LogLevel:Default=Information
+  #     - Jwt:Secret=${JWT_SECRET}
+  #     - Jwt:Issuer=switter-dev
+  #     - Jwt:Audience=switter-dev
   #   ports:
   #     - "5000:80"  
-  #   volumes:
-  #     - ./src/ApiGateway:/app  
-  #     - ~/.aspnet/https:/https:ro  
   #   depends_on:
   #     - authservice
   #     - userservice
   #     - tweetservice
-  #     - chatservice
+  #     #- chatservice
+  #   networks:
+  #     - switter-network
   #   restart: unless-stopped
 
   authservice:
     build:
       context: ./src/AuthService
       dockerfile: Dockerfile
+    container_name: authservice
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
@@ -38,34 +41,36 @@ services:
     depends_on:
       - postgres
       - redis
+      - kafka
     networks: 
       - switter-network
     restart: unless-stopped
 
-  # userservice:
-  #   build:
-  #     context: .
-  #     dockerfile: src/UserService/Dockerfile
-  #   environment:
-  #     - ASPNETCORE_ENVIRONMENT=Development
-  #     - ASPNETCORE_URLS=http://+:80
-  #     - ConnectionStrings:PostgreSQL=Host=${POSTGRES_HOST};Port=${POSTGRES_PORT};Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
-  #     - Redis:ConnectionString=${REDIS_HOST}:${REDIS_PORT},password=${REDIS_PASSWORD},abortConnect=false
-  #     - Kafka:BootstrapServers=${KAFKA_HOST}:${KAFKA_PORT}
-  #   ports:
-  #     - "5002:80"
-  #   volumes:
-  #     - ./src/UserService:/app
-  #   depends_on:
-  #     - postgres
-  #     - redis
-  #     - kafka
-  #   restart: unless-stopped
+  userservice:
+    build:
+      context: ./src/UserService
+      dockerfile: Dockerfile
+    container_name: userservice
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings:PostgreSQL=Host=${POSTGRES_HOST};Port=${POSTGRES_PORT};Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      - Redis:ConnectionString=${REDIS_HOST}:${REDIS_PORT},password=${REDIS_PASSWORD},abortConnect=false
+      - Kafka:BootstrapServers=${KAFKA_HOST}:${KAFKA_PORT}
+    ports:
+      - "5002:80"
+    depends_on:
+      - postgres
+      - redis
+      - kafka
+    networks: 
+      - switter-network
+    restart: unless-stopped
 
   # tweetservice:
   #   build:
-  #     context: .
-  #     dockerfile: src/TweetService/Dockerfile
+  #     context: ./src/TweetService
+  #     dockerfile: Dockerfile
   #   environment:
   #     - ASPNETCORE_ENVIRONMENT=Development
   #     - ASPNETCORE_URLS=http://+:80
@@ -74,18 +79,18 @@ services:
   #     - Kafka:BootstrapServers=${KAFKA_HOST}:${KAFKA_PORT}
   #   ports:
   #     - "5003:80"
-  #   volumes:
-  #     - ./src/TweetService:/app
   #   depends_on:
   #     - postgres
   #     - redis
   #     - kafka
+  #   networks: 
+  #     - switter-network
   #   restart: unless-stopped
 
   # feedservice:
   #   build:
-  #     context: .
-  #     dockerfile: src/FeedService/Dockerfile
+  #     context: ./src/FeedService
+  #     dockerfile: Dockerfile
   #   environment:
   #     - ASPNETCORE_ENVIRONMENT=Development
   #     - ASPNETCORE_URLS=http://+:80
@@ -93,11 +98,30 @@ services:
   #     - Kafka:BootstrapServers=${KAFKA_HOST}:${KAFKA_PORT}
   #   ports:
   #     - "5004:80"
-  #   volumes:
-  #     - ./src/FeedService:/app
   #   depends_on:
   #     - redis
   #     - kafka
+  #   networks: 
+  #     - switter-network
+  #   restart: unless-stopped
+
+  # notificationservice:
+  #   build:
+  #     context: ./src/NotificationService
+  #     dockerfile: Dockerfile
+  #   environment:
+  #     - ASPNETCORE_ENVIRONMENT=Development
+  #     - ASPNETCORE_URLS=http://+:80
+  #     - Redis:ConnectionString=${REDIS_HOST}:${REDIS_PORT},password=${REDIS_PASSWORD},abortConnect=false
+  #     - Kafka:BootstrapServers=${KAFKA_HOST}:${KAFKA_PORT}
+  #   ports:
+  #     - "5007:80"
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #     - kafka
+  #   networks: 
+  #     - switter-network
   #   restart: unless-stopped
 
   # chatservice:
@@ -113,49 +137,8 @@ services:
   #   ports:
   #     - "5005:80"
   #     - "5006:5006"  
-  #   volumes:
-  #     - ./src/ChatService:/app
   #   depends_on:
   #     - postgres
   #     - redis
   #     - kafka
   #   restart: unless-stopped
-
-  # notificationservice:
-  #   build:
-  #     context: .
-  #     dockerfile: src/NotificationService/Dockerfile
-  #   environment:
-  #     - ASPNETCORE_ENVIRONMENT=Development
-  #     - ASPNETCORE_URLS=http://+:80
-  #     - Redis:ConnectionString=${REDIS_HOST}:${REDIS_PORT},password=${REDIS_PASSWORD},abortConnect=false
-  #     - Kafka:BootstrapServers=${KAFKA_HOST}:${KAFKA_PORT}
-  #   ports:
-  #     - "5007:80"
-  #   volumes:
-  #     - ./src/NotificationService:/app
-  #   depends_on:
-  #     - redis
-  #     - kafka
-  #   restart: unless-stopped
-
-  postgres:
-    command: >
-      postgres
-      -c shared_preload_libraries=pg_stat_statements
-      -c pg_stat_statements.track=all
-      -c max_connections=100 
-
-  redis:
-    command: >
-      redis-server
-      --appendonly yes 
-      --maxmemory 256mb 
-      --maxmemory-policy allkeys-lru 
-
-  kafka:
-    environment:
-      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
-      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
-      - KAFKA_DELETE_TOPIC_ENABLE=true
-      - KAFKA_NUM_PARTITIONS=3  
