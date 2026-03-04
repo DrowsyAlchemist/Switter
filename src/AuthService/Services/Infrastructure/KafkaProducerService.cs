@@ -1,5 +1,8 @@
 ﻿using AuthService.Interfaces.Infrastructure;
+using AuthService.Models.Options;
 using Confluent.Kafka;
+using Microsoft.Extensions.Options;
+using System.Text.Json;
 
 namespace AuthService.Services.Infrastructure
 {
@@ -8,25 +11,26 @@ namespace AuthService.Services.Infrastructure
         private readonly IProducer<Null, string> _producer;
         private readonly ILogger<KafkaProducerService> _logger;
 
-        public KafkaProducerService(IConfiguration configuration, ILogger<KafkaProducerService> logger)
+        public KafkaProducerService(IOptions<KafkaOptions> options, ILogger<KafkaProducerService> logger)
         {
             var config = new ProducerConfig
             {
-                BootstrapServers = configuration["Kafka:BootstrapServers"]
+                BootstrapServers = options.Value.BootstrapServers,
             };
-
             _producer = new ProducerBuilder<Null, string>(config).Build();
             _logger = logger;
         }
 
-        public async Task ProduceAsync(string topic, string message)
+        public async Task ProduceAsync<T>(string topic, T message) where T : class
         {
             if (string.IsNullOrEmpty(topic)) throw new ArgumentException("Topic required");
-            if (string.IsNullOrEmpty(message)) throw new ArgumentException("Message required");
+            if (message == null) throw new ArgumentException("Message required");
 
             try
             {
-                var result = await _producer.ProduceAsync(topic, new Message<Null, string> { Value = message });
+                var jsonMessage = JsonSerializer.Serialize(message);
+                var kafkaEvent = new Message<Null, string> { Value = jsonMessage };
+                var result = await _producer.ProduceAsync(topic, kafkaEvent);
                 _logger.LogInformation("Message sent to {Topic} [Partition: {Partition}]", result.Topic, result.Partition);
             }
             catch (ProduceException<Null, string> ex)

@@ -84,10 +84,11 @@ services:
     networks:
       - switter-network
     healthcheck:
-      test: kafka-topics.sh --bootstrap-server localhost:9092 --list
-      interval: 15s
-      timeout: 10s
-      retries: 3
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     restart: unless-stopped
     command: >
       bash -c "
@@ -95,18 +96,18 @@ services:
       /etc/confluent/docker/run &
       sleep 10 &&
       kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic user-registered --partitions 3 --replication-factor 1 &&
-      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic --profile-changed --partitions 3 --replication-factor 1 &&
-      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic --profile-deleted --partitions 3 --replication-factor 1 &&
-      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic --user-blocked --partitions 3 --replication-factor 1 &&
-      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic --user-unblocked --partitions 3 --replication-factor 1 &&
-      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic --user-followed --partitions 3 --replication-factor 1 &&
-      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic --user-unfollowed --partitions 3 --replication-factor 1 &&
-      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic --tweet-created --partitions 3 --replication-factor 1 &&
-      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic --retweet-created --partitions 3 --replication-factor 1 &&
-      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic --reply-created --partitions 3 --replication-factor 1 &&
-      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic --tweet-deleted --partitions 3 --replication-factor 1 &&
-      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic --like-set --partitions 3 --replication-factor 1 &&
-      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic --like-canceled --partitions 3 --replication-factor 1 &&
+      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic profile-changed --partitions 3 --replication-factor 1 &&
+      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic profile-deleted --partitions 3 --replication-factor 1 &&
+      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic user-blocked --partitions 3 --replication-factor 1 &&
+      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic user-unblocked --partitions 3 --replication-factor 1 &&
+      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic user-followed --partitions 3 --replication-factor 1 &&
+      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic user-unfollowed --partitions 3 --replication-factor 1 &&
+      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic tweet-created --partitions 3 --replication-factor 1 &&
+      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic retweet-created --partitions 3 --replication-factor 1 &&
+      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic reply-created --partitions 3 --replication-factor 1 &&
+      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic tweet-deleted --partitions 3 --replication-factor 1 &&
+      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic like-set --partitions 3 --replication-factor 1 &&
+      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic like-canceled --partitions 3 --replication-factor 1 &&
       wait"
 
   pgadmin:

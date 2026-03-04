@@ -39,9 +39,12 @@ services:
     ports:
       - "5001:80"
     depends_on:
-      - postgres
-      - redis
-      - kafka
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     networks: 
       - switter-network
     restart: unless-stopped
@@ -60,9 +63,12 @@ services:
     ports:
       - "5002:80"
     depends_on:
-      - postgres
-      - redis
-      - kafka
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     networks: 
       - switter-network
     restart: unless-stopped

@@ -1,83 +1,32 @@
-﻿using Confluent.Kafka;
+﻿using Microsoft.Extensions.Options;
+using NotificationService.Consumers;
 using System.Text.Json;
-using System.Threading.Channels;
 using UserService.Interfaces.Data;
 using UserService.KafkaEvents.AuthEvents;
 using UserService.Models;
+using UserService.Models.Options;
 
 namespace UserService.Consumers
 {
-    public class AuthEventsConsumer : BackgroundService
+    public class AuthEventsConsumer : EventsConsumer
     {
-        private readonly IConsumer<Ignore, string> _consumer;
         private readonly IServiceProvider _serviceProvider;
-        private readonly ILogger<AuthEventsConsumer> _logger;
-        private readonly Channel<string> _messageChannel;
 
-        public AuthEventsConsumer(IConfiguration configuration, IServiceProvider serviceProvider,
-                                ILogger<AuthEventsConsumer> logger)
+        public AuthEventsConsumer(
+            IServiceProvider serviceProvider,
+            IOptions<KafkaOptions> kafkaOptions,
+            ILogger<AuthEventsConsumer> logger)
+            : base(kafkaOptions, logger)
         {
             _serviceProvider = serviceProvider;
-            _logger = logger;
-            _messageChannel = Channel.CreateUnbounded<string>();
-
-            var config = new ConsumerConfig
-            {
-                BootstrapServers = configuration["Kafka:BootstrapServers"],
-                GroupId = "user-service-group",
-                AutoOffsetReset = AutoOffsetReset.Earliest,
-                AllowAutoCreateTopics = true
-            };
-            _consumer = new ConsumerBuilder<Ignore, string>(config).Build();
         }
 
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        protected override IEnumerable<string> GetTopics()
         {
-            var consumingTask = Task.Run(async () =>
-            {
-                _consumer.Subscribe("user-registered-event");
-
-                while (!stoppingToken.IsCancellationRequested)
-                {
-                    try
-                    {
-                        var consumeResult = _consumer.Consume(TimeSpan.FromMilliseconds(1000));
-                        if (consumeResult != null)
-                        {
-                            await _messageChannel.Writer.WriteAsync(consumeResult.Message.Value, stoppingToken);
-                        }
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        break;
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Error consuming from Kafka");
-                        await Task.Delay(5000, stoppingToken);
-                    }
-                }
-            }, stoppingToken);
-
-            var processingTask = Task.Run(async () =>
-            {
-                await foreach (var message in _messageChannel.Reader.ReadAllAsync(stoppingToken))
-                {
-                    try
-                    {
-                        await ProcessMessageAsync(message);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Error processing message");
-                    }
-                }
-            }, stoppingToken);
-
-            await Task.WhenAll(consumingTask, processingTask);
+            return [Options.AuthEvents.UserRegisteredEventName];
         }
 
-        private async Task ProcessMessageAsync(string message)
+        protected override async Task ProcessMessageAsync(string topic, string message, CancellationToken cancellationToken)
         {
             using var scope = _serviceProvider.CreateScope();
             var profilesRepository = scope.ServiceProvider.GetRequiredService<IProfilesRepository>();
@@ -95,20 +44,13 @@ namespace UserService.Consumers
                         UpdatedAt = userEvent.Timestamp
                     };
                     await profilesRepository.AddAsync(profile);
-                    _logger.LogInformation("Created profile for user {UserId}", userEvent.UserId);
+                    Logger.LogInformation("Created profile for user {UserId}", userEvent.UserId);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing user event");
+                Logger.LogError(ex, "Error processing user event");
             }
-        }
-
-        public override void Dispose()
-        {
-            _consumer?.Close();
-            _consumer?.Dispose();
-            base.Dispose();
         }
     }
 }

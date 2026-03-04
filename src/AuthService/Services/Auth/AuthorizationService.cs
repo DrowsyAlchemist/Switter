@@ -33,7 +33,6 @@ namespace AuthService.Services.Auth
             };
 
             var authResponse = await GenerateAuthResponseAsync(user, remoteIp);
-
             await _userRepository.CreateUserAsync(user);
             return authResponse;
         }
