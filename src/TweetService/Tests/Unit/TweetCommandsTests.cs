@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+﻿#if DEBUG
+using AutoMapper;
 using FluentAssertions;
 using Moq;
 using TweetService.DTOs;
@@ -446,3 +447,4 @@ namespace TweetService.Tests.Unit
         }
     }
 }
+#endif

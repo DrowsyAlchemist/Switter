@@ -1,4 +1,5 @@
-﻿using FluentAssertions;
+﻿#if DEBUG
+using FluentAssertions;
 using Moq;
 using TweetService.Exceptions;
 using TweetService.Interfaces.Data.Repositories;
@@ -308,3 +309,4 @@ namespace TweetService.Tests.Unit
         }
     }
 }
+#endif

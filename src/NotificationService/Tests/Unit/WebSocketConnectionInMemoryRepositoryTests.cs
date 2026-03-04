@@ -1,4 +1,5 @@
-﻿using FluentAssertions;
+﻿#if DEBUG
+using FluentAssertions;
 using Moq;
 using NotificationService.Interfaces;
 using NotificationService.Services;
@@ -321,3 +322,4 @@ namespace NotificationService.Tests.Unit
         }
     }
 }
+#endif

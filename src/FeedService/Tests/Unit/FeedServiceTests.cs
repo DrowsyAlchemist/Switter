@@ -1,4 +1,5 @@
-﻿using FeedService.DTOs;
+﻿#if DEBUG
+using FeedService.DTOs;
 using FeedService.Interfaces.Data;
 using FeedService.Interfaces.Infrastructure;
 using FeedService.Interfaces;
@@ -160,9 +161,10 @@ namespace FeedService.Tests.Unit
             var result = await _feedService.GetFeedAsync(userId, query);
 
             // Assert
-            result.Items.Should().HaveCount(2); 
+            result.Items.Should().HaveCount(2);
             result.Items[0].Id.Should().Be(Guid.Parse("22222222-2222-2222-2222-222222222222"));
             result.Items[1].Id.Should().Be(Guid.Parse("44444444-4444-4444-4444-444444444444"));
         }
     }
 }
+#endif

@@ -1,4 +1,5 @@
-﻿using FluentAssertions;
+﻿#if DEBUG
+using FluentAssertions;
 using Moq;
 using Xunit;
 using TweetService.DTOs;
@@ -258,3 +259,4 @@ namespace TweetService.Tests.Unit
         }
     }
 }
+# endif

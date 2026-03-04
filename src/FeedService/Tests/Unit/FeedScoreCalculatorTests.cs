@@ -1,4 +1,5 @@
-﻿using FeedService.Models.Options;
+﻿#if DEBUG
+using FeedService.Models.Options;
 using FeedService.Services;
 using FluentAssertions;
 using Microsoft.Extensions.Options;
@@ -120,3 +121,4 @@ namespace FeedService.Tests.Unit
         }
     }
 }
+#endif

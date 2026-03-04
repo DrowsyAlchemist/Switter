@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+﻿#if DEBUG
+using AutoMapper;
 using FluentAssertions;
 using Moq;
 using Xunit;
@@ -453,3 +454,4 @@ namespace UserService.Tests.Unit.Queries
         }
     }
 }
+#endif
