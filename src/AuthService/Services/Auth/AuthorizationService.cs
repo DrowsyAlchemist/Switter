@@ -7,7 +7,7 @@ using AuthService.Models;
 
 namespace AuthService.Services.Auth
 {
-    internal class AuthorizationService : IAuthorizationService
+    public class AuthorizationService : IAuthorizationService
     {
         private readonly ITokenService _tokenService;
         private readonly IUserRepository _userRepository;

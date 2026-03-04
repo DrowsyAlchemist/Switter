@@ -1,6 +1,6 @@
 ﻿using AuthService.Data;
 using AuthService.DTOs.Auth;
-using AuthService.Interfaces.Auth;
+using AuthService.Services.Auth;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
@@ -9,10 +9,10 @@ namespace AuthService.HealthChecks
     public class AuthHealthCheck : IHealthCheck
     {
         private readonly ILogger<AuthHealthCheck> _logger;
-        private readonly IAuthorizationService _authorizationService;
+        private readonly AuthorizationService _authorizationService;
         private readonly AuthDbContext _authDbContext;
 
-        public AuthHealthCheck(ILogger<AuthHealthCheck> logger, IAuthorizationService authorizationService, AuthDbContext authDbContext)
+        public AuthHealthCheck(ILogger<AuthHealthCheck> logger, AuthorizationService authorizationService, AuthDbContext authDbContext)
         {
             _logger = logger;
             _authorizationService = authorizationService;
