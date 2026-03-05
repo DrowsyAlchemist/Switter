@@ -1,32 +1,32 @@
 services:
 
-  # apigateway:
-  #   build:
-  #     context: ./src/ApiGateway
-  #     dockerfile: Dockerfile
-  #   container_name: apigateway
-  #   environment:
-  #     - ASPNETCORE_ENVIRONMENT=Development
-  #     - ASPNETCORE_URLS=http://+:80
-  #     - Jwt:Secret=${JWT_SECRET}
-  #     - Jwt:Issuer=switter-dev
-  #     - Jwt:Audience=switter-dev
-  #   ports:
-  #     - "5000:80"  
-  #   depends_on:
-  #     - authservice
-  #     - userservice
-  #     - tweetservice
-  #     #- chatservice
-  #   networks:
-  #     - switter-network
-  #   restart: unless-stopped
+  apigateway:
+    build:
+      context: ./src/ApiGateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+      - Jwt:Secret=${JWT_SECRET}
+      - Jwt:Issuer=${JWT_ISSUER}
+      - Jwt:Audience=${JWT_AUDIENCE}
+    ports:
+      - "5000:80"  
+    depends_on:
+      - authservice
+      - userservice
+      - tweetservice
+      #- chatservice
+    networks:
+      - switter-network
+    restart: unless-stopped
 
   authservice:
     build:
       context: ./src/AuthService
       dockerfile: Dockerfile
-    container_name: authservice
+    container_name: auth-service
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
@@ -53,7 +53,7 @@ services:
     build:
       context: ./src/UserService
       dockerfile: Dockerfile
-    container_name: userservice
+    container_name: user-service
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
@@ -69,71 +69,92 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      kafka-setup:  
+        condition: service_completed_successfully
     networks: 
       - switter-network
     restart: unless-stopped
 
-  # tweetservice:
-  #   build:
-  #     context: ./src/TweetService
-  #     dockerfile: Dockerfile
-  #   environment:
-  #     - ASPNETCORE_ENVIRONMENT=Development
-  #     - ASPNETCORE_URLS=http://+:80
-  #     - ConnectionStrings:PostgreSQL=Host=${POSTGRES_HOST};Port=${POSTGRES_PORT};Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
-  #     - Redis:ConnectionString=${REDIS_HOST}:${REDIS_PORT},password=${REDIS_PASSWORD},abortConnect=false
-  #     - Kafka:BootstrapServers=${KAFKA_HOST}:${KAFKA_PORT}
-  #   ports:
-  #     - "5003:80"
-  #   depends_on:
-  #     - postgres
-  #     - redis
-  #     - kafka
-  #   networks: 
-  #     - switter-network
-  #   restart: unless-stopped
+  tweetservice:
+    build:
+      context: ./src/TweetService
+      dockerfile: Dockerfile
+    container_name: tweet-service
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings:PostgreSQL=Host=${POSTGRES_HOST};Port=${POSTGRES_PORT};Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      - Redis:ConnectionString=${REDIS_HOST}:${REDIS_PORT},password=${REDIS_PASSWORD},abortConnect=false
+      - Kafka:BootstrapServers=${KAFKA_HOST}:${KAFKA_PORT}
+    ports:
+      - "5003:80"
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      kafka-setup:  
+        condition: service_completed_successfully
+    networks: 
+      - switter-network
+    restart: unless-stopped
 
-  # feedservice:
-  #   build:
-  #     context: ./src/FeedService
-  #     dockerfile: Dockerfile
-  #   environment:
-  #     - ASPNETCORE_ENVIRONMENT=Development
-  #     - ASPNETCORE_URLS=http://+:80
-  #     - Redis:ConnectionString=${REDIS_HOST}:${REDIS_PORT},password=${REDIS_PASSWORD},abortConnect=false
-  #     - Kafka:BootstrapServers=${KAFKA_HOST}:${KAFKA_PORT}
-  #   ports:
-  #     - "5004:80"
-  #   depends_on:
-  #     - redis
-  #     - kafka
-  #   networks: 
-  #     - switter-network
-  #   restart: unless-stopped
+  feedservice:
+    build:
+      context: ./src/FeedService
+      dockerfile: Dockerfile
+    container_name: feed-service
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+      - Redis:ConnectionString=${REDIS_HOST}:${REDIS_PORT},password=${REDIS_PASSWORD},abortConnect=false
+      - Kafka:BootstrapServers=${KAFKA_HOST}:${KAFKA_PORT}
+    ports:
+      - "5004:80"
+    depends_on:
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      kafka-setup:  
+        condition: service_completed_successfully
+    networks: 
+      - switter-network
+    restart: unless-stopped
 
-  # notificationservice:
-  #   build:
-  #     context: ./src/NotificationService
-  #     dockerfile: Dockerfile
-  #   environment:
-  #     - ASPNETCORE_ENVIRONMENT=Development
-  #     - ASPNETCORE_URLS=http://+:80
-  #     - Redis:ConnectionString=${REDIS_HOST}:${REDIS_PORT},password=${REDIS_PASSWORD},abortConnect=false
-  #     - Kafka:BootstrapServers=${KAFKA_HOST}:${KAFKA_PORT}
-  #   ports:
-  #     - "5007:80"
-  #   depends_on:
-  #     - postgres
-  #     - redis
-  #     - kafka
-  #   networks: 
-  #     - switter-network
-  #   restart: unless-stopped
+  notificationservice:
+    build:
+      context: ./src/NotificationService
+      dockerfile: Dockerfile
+    container_name: notification-service
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings:PostgreSQL=Host=${POSTGRES_HOST};Port=${POSTGRES_PORT};Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      - Redis:ConnectionString=${REDIS_HOST}:${REDIS_PORT},password=${REDIS_PASSWORD},abortConnect=false
+      - Kafka:BootstrapServers=${KAFKA_HOST}:${KAFKA_PORT}
+    ports:
+      - "5007:80"
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      kafka-setup:  
+        condition: service_completed_successfully
+    networks: 
+      - switter-network
+    restart: unless-stopped
 
   # chatservice:
   #   build:
   #     context: .
   #     dockerfile: src/ChatService/Dockerfile
+  #   container_name: chat-service
   #   environment:
   #     - ASPNETCORE_ENVIRONMENT=Development
   #     - ASPNETCORE_URLS=http://+:80

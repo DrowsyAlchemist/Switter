@@ -39,8 +39,21 @@ namespace NotificationService.Consumers
             if (topics == null || topics.Any() == false)
                 throw new ArgumentException(nameof(topics));
 
-            _consumer.Subscribe(topics);
-            Logger.LogInformation("Kafka consumer started for topics: {topics}", string.Join(", ", topics));
+            while(!stoppingToken.IsCancellationRequested)
+            {
+                try
+                {
+                    Logger.LogInformation("Attempting to subscribe to topics: {topics}", string.Join(", ", topics));
+                    _consumer.Subscribe(topics);
+                    Logger.LogInformation("Successfully subscribed to topics: {topics}", string.Join(", ", topics));
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogWarning(ex, "Failed to subscribe to topics {topics}. Retrying in 10 seconds...", string.Join(", ", topics));
+                    await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
+                }
+            }
 
             var task = Task.Run(async () =>
             {

@@ -66,13 +66,11 @@ var app = builder.Build();
 // Migrations
 try
 {
-    using (var scope = app.Services.CreateScope())
-    {
-        var db = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
-        Console.WriteLine("Attempting database migration...");
-        db.Database.Migrate();
-        Console.WriteLine("Database migration completed successfully");
-    }
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
+    Console.WriteLine("Attempting database migration...");
+    db.Database.Migrate();
+    Console.WriteLine("Database migration completed successfully");
 }
 catch (Exception ex)
 {

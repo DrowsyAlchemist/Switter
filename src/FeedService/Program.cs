@@ -53,7 +53,8 @@ builder.Services.AddScoped<IFeedEventProcessor, FeedEventProcessor>();
 builder.Services.AddScoped<IFeedService, FeedService.Services.FeedService>();
 
 // Health Checks
-// ...
+builder.Services.AddHealthChecks()
+    .AddRedis(builder.Configuration["Redis:ConnectionString"]!);
 
 // Controllers
 builder.Services.AddControllers();
@@ -72,6 +73,6 @@ if (app.Environment.IsDevelopment())
 app.UseRouting();
 app.UseAuthorization();
 app.MapControllers();
-//app.MapHealthChecks("/health");
+app.MapHealthChecks("/health");
 
 app.Run();

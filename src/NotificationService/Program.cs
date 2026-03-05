@@ -1,4 +1,3 @@
-using FluentAssertions.Common;
 using Microsoft.EntityFrameworkCore;
 using NotificationService.Consumers;
 using NotificationService.Data;

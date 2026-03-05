@@ -1,6 +1,4 @@
-﻿using Bogus;
-using FluentAssertions.Common;
-using StackExchange.Redis;
+﻿using StackExchange.Redis;
 using TweetService.Interfaces.Infrastructure;
 
 namespace TweetService.Services.Infrastructure
@@ -50,7 +48,7 @@ namespace TweetService.Services.Infrastructure
             try
             {
                 var startDateTime = DateTime.UtcNow - period;
-                long startTimeStamp = startDateTime.ToDateTimeOffset().ToUnixTimeMilliseconds();
+                long startTimeStamp = new DateTimeOffset(startDateTime).ToUnixTimeMilliseconds();
                 var db = _redis.GetDatabase();
                 string startId = $"{startTimeStamp}-0";
 

@@ -1,5 +1,4 @@
-﻿using Azure;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using TweetService.Interfaces.Data.Repositories;
 using TweetService.Models;
 

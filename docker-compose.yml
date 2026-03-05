@@ -46,7 +46,7 @@ services:
     restart: unless-stopped
 
   zookeeper:
-    image: confluentinc/cp-zookeeper:7.4.0
+    image: confluentinc/cp-zookeeper:7.3.0
     container_name: zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
@@ -59,15 +59,16 @@ services:
       test: echo stat | nc localhost 2181
       interval: 10s
       timeout: 5s
-      retries: 3
-    restart: unless-stopped
+      retries: 5
 
   kafka:
     image: confluentinc/cp-kafka:7.3.0
     container_name: kafka
     depends_on:
-        - zookeeper
+      zookeeper:
+        condition: service_healthy
     environment:
+        KAFKA_BROKER_ID: 1
         KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
         KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
         KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
@@ -76,7 +77,9 @@ services:
         KAFKA_DEFAULT_REPLICATION_FACTOR: 1
         KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
         KAFKA_OFFSETS_RETENTION_MINUTES: 10000 
-        KAFKA_LOG_RETENTION_HOURS: 168        
+        KAFKA_LOG_RETENTION_HOURS: 168     
+        KAFKA_DELETE_TOPIC_ENABLE: "true"
+        KAFKA_BROKER_ID_GENERATION_ENABLE: "false"
     volumes:
       - kafka_data:/var/lib/kafka/data
     ports:
@@ -85,30 +88,38 @@ services:
       - switter-network
     healthcheck:
       test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list || exit 1"]
-      interval: 10s
+      interval: 15s
       timeout: 5s
       retries: 10
-      start_period: 30s
+      start_period: 10s
     restart: unless-stopped
+
+  kafka-setup:
+    image: confluentinc/cp-kafka:7.3.0
+    container_name: kafka-setup
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - switter-network
     command: >
-      bash -c "
-      echo 'Creating topics...' &&
-      /etc/confluent/docker/run &
-      sleep 10 &&
-      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic user-registered --partitions 3 --replication-factor 1 &&
-      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic profile-changed --partitions 3 --replication-factor 1 &&
-      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic profile-deleted --partitions 3 --replication-factor 1 &&
-      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic user-blocked --partitions 3 --replication-factor 1 &&
-      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic user-unblocked --partitions 3 --replication-factor 1 &&
-      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic user-followed --partitions 3 --replication-factor 1 &&
-      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic user-unfollowed --partitions 3 --replication-factor 1 &&
-      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic tweet-created --partitions 3 --replication-factor 1 &&
-      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic retweet-created --partitions 3 --replication-factor 1 &&
-      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic reply-created --partitions 3 --replication-factor 1 &&
-      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic tweet-deleted --partitions 3 --replication-factor 1 &&
-      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic like-set --partitions 3 --replication-factor 1 &&
-      kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic like-canceled --partitions 3 --replication-factor 1 &&
-      wait"
+        bash -c "
+        echo 'Waiting for Kafka to be ready...' &&
+        cub kafka-ready -b kafka:9092 1 30 &&
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic user-registered --partitions 3 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic profile-changed --partitions 3 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic profile-deleted --partitions 3 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic user-blocked --partitions 3 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic user-unblocked --partitions 3 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic user-followed --partitions 3 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic user-unfollowed --partitions 3 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic tweet-created --partitions 3 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic retweet-created --partitions 3 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic reply-created --partitions 3 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic tweet-deleted --partitions 3 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic like-set --partitions 3 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic like-canceled --partitions 3 --replication-factor 1 &&
+        echo 'All topics created successfully'"
 
   pgadmin:
     image: dpage/pgadmin4
@@ -151,10 +162,10 @@ services:
 volumes:
   postgres_data:
     driver: local
-    name: switter-postgres-data
+    name: postgres_data
   redis_data:
     driver: local
-    name: switter-redis-data
+    name: redis_data
   kafka_data:
     driver: local
-    name: switter-kafka-data
+    name: kafka_data
