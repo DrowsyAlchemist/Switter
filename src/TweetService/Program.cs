@@ -164,6 +164,7 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    app.MapGet("/", () => Results.Redirect("/swagger"));
 }
 
 app.UseRouting();
@@ -172,5 +173,10 @@ app.MapControllers();
 app.MapHealthChecks("/health");
 
 app.UseMiddleware<PaginationValidationMiddleware>();
+
+app.MapGet("/ping", () =>
+{
+    return "pong";
+});
 
 app.Run();

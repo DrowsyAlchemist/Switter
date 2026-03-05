@@ -87,6 +87,7 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    app.MapGet("/", () => Results.Redirect("/swagger"));
 }
 
 app.Services.GetRequiredService<LikeSetEventHandler>();
@@ -100,5 +101,10 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHub<NotificationHub>("/notificationHub");
 app.MapHealthChecks("/health");
+
+app.MapGet("/ping", () =>
+{
+    return "pong";
+});
 
 app.Run();
