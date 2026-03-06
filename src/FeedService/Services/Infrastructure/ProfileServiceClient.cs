@@ -1,4 +1,5 @@
 ﻿using FeedService.Interfaces.Infrastructure;
+using System.Net.Http;
 using System.Text.Json;
 
 namespace FeedService.Services.Infrastructure
@@ -35,6 +36,7 @@ namespace FeedService.Services.Infrastructure
                 return [];
             }
         }
+
         public async Task<IEnumerable<Guid>> GetFollowingsAsync(Guid userId, int count)
         {
             try
@@ -60,6 +62,20 @@ namespace FeedService.Services.Infrastructure
             {
                 _logger.LogError(ex, "Error getting blocked user ids for user {UserId}", blockerId);
                 return [];
+            }
+        }
+
+        public async Task<bool> CheckConnectionAsync()
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync($"/ping");
+                var content = await response.Content.ReadAsStringAsync();
+                return content != null && content == "pong";
+            }
+            catch
+            {
+                return false;
             }
         }
 

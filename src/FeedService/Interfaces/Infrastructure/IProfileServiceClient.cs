@@ -5,5 +5,6 @@
         Task<IEnumerable<Guid>> GetFollowersAsync(Guid followingId);
         Task<IEnumerable<Guid>> GetFollowingsAsync(Guid followerId, int count);
         Task<IEnumerable<Guid>> GetBlocked(Guid blockerId);
+        Task<bool>CheckConnectionAsync();
     }
 }

@@ -10,5 +10,6 @@ namespace FeedService.Interfaces.Infrastructure
         Task<List<string>> GetTrendCategoriesAsync(int count);
         Task<List<Guid>> GetTrendTweetsIdsAsync(int count);
         Task<List<Guid>> GetTrendTweetsIdsAsync(string hashtag, int count);
+        Task<bool> CheckConnectionAsync();
     }
 }

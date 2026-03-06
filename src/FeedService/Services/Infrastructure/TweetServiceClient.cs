@@ -110,6 +110,22 @@ namespace FeedService.Services.Infrastructure
             return trendTweetIds;
         }
 
+        public async Task<bool> CheckConnectionAsync()
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync($"/ping");
+                _logger.LogInformation($"TweetService response: {response}");
+                var content = await response.Content.ReadAsStringAsync();
+                _logger.LogInformation($"TweetService response content: {content}");
+                return content != null && content == "pong";
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         private async Task<string> GetResponse(HttpRequestMessage request)
         {
             var response = await _httpClient.SendAsync(request);

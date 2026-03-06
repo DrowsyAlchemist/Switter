@@ -1,5 +1,6 @@
 using FeedService.Consumers;
 using FeedService.Data;
+using FeedService.HealthChecks;
 using FeedService.Interfaces;
 using FeedService.Interfaces.Data;
 using FeedService.Interfaces.Infrastructure;
@@ -22,13 +23,13 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton<IAuthTokenService, AuthTokenService>();
 builder.Services.AddHttpClient<ITweetServiceClient, TweetServiceClient>(client =>
 {
-    client.BaseAddress = new Uri("https://localhost:80");//////
+    client.BaseAddress = new Uri("http://tweet-service:80");
     client.DefaultRequestHeaders.Add("Accept", "application/json");
     client.Timeout = TimeSpan.FromSeconds(30);
 });
 builder.Services.AddHttpClient<IProfileServiceClient, ProfileServiceClient>(client =>
 {
-    client.BaseAddress = new Uri("https://localhost:80");//////
+    client.BaseAddress = new Uri("http://user-service:80");
     client.DefaultRequestHeaders.Add("Accept", "application/json");
     client.Timeout = TimeSpan.FromSeconds(30);
 });
@@ -54,7 +55,9 @@ builder.Services.AddScoped<IFeedService, FeedService.Services.FeedService>();
 
 // Health Checks
 builder.Services.AddHealthChecks()
-    .AddRedis(builder.Configuration["Redis:ConnectionString"]!);
+    .AddRedis(builder.Configuration["Redis:ConnectionString"]!)
+    .AddCheck<UserClientHealthCheck>("UserClient")
+    .AddCheck<TweetClientHealthCheck>("TweetClient");
 
 // Controllers
 builder.Services.AddControllers();
