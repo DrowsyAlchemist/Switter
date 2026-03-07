@@ -40,6 +40,15 @@ builder.Services.Configure<AppUrls>(builder.Configuration);
 builder.Configuration.AddJsonFile("Configuration/TrendsConfig.json");
 builder.Services.Configure<TrendsOptions>(builder.Configuration);
 
+// HttpClients
+builder.Services.AddHttpClient<IUserServiceClient, UserServiceClient>(client =>
+{
+    var userServiceUrl = builder.Configuration["userServiceUrl"] ?? throw new Exception("User service url not found.");
+    client.BaseAddress = new Uri(userServiceUrl);
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+
 // Redis
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
     ConnectionMultiplexer.Connect(builder.Configuration["Redis:ConnectionString"]!));
@@ -72,7 +81,6 @@ builder.Services.AddAutoMapper(cfg =>
 
 builder.Services.AddScoped<IUserTweetRelationshipService, UserTweetRelationshipService>();
 builder.Services.AddScoped<EnrichTweetsWithUserRelationshipActionFilter>();
-builder.Services.AddHttpClient<IUserServiceClient, UserServiceClient>();
 builder.Services.AddScoped<TrendFiller>();
 
 // HashtagService
@@ -150,7 +158,8 @@ builder.Services.AddHealthChecks()
     .AddCheck<DatabaseHealthCheck>("Database")
     .AddCheck<TweetServiceHealthCheck>("TweetService")
     .AddCheck<LikeServiceHealthCheck>("LikeService")
-    .AddCheck<TrendServiceHealthCheck>("TrendService");
+    .AddCheck<TrendServiceHealthCheck>("TrendService")
+    .AddCheck<UserClientHealthCheck>("UserClient");
 
 var app = builder.Build();
 

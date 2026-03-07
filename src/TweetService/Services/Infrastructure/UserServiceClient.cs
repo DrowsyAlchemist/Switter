@@ -8,14 +8,15 @@ namespace TweetService.Services.Infrastructure
 {
     public class UserServiceClient : IUserServiceClient
     {
+        private const string GetUserProfileEndpoint = "/api/UserProfile";
         private readonly HttpClient _httpClient;
-        private readonly string _getUserProfileUrl;
         private readonly ILogger<UserServiceClient> _logger;
+        private readonly string _getUserProfileUrl;
 
         public UserServiceClient(HttpClient httpClient, IOptions<AppUrls> appUrls, ILogger<UserServiceClient> logger)
         {
             _httpClient = httpClient;
-            _getUserProfileUrl = appUrls.Value.GetUserProfileUrl;
+            _getUserProfileUrl = appUrls.Value.UserServiceUrl + GetUserProfileEndpoint;
             _logger = logger;
         }
 
@@ -23,7 +24,7 @@ namespace TweetService.Services.Infrastructure
         {
             try
             {
-                var response = await _httpClient.GetAsync($"{_getUserProfileUrl}{userId}");
+                var response = await _httpClient.GetAsync($"{_getUserProfileUrl}/{userId}");
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -37,6 +38,20 @@ namespace TweetService.Services.Infrastructure
             {
                 _logger.LogError(ex, "Error getting user info for {UserId}", userId);
                 return null;
+            }
+        }
+
+        public async Task<bool> CheckConnectionAsync()
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync($"/ping");
+                var content = await response.Content.ReadAsStringAsync();
+                return content != null && content == "pong";
+            }
+            catch
+            {
+                return false;
             }
         }
     }

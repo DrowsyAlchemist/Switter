@@ -1,4 +1,4 @@
-﻿namespace TweetService.Models.Options
+﻿namespace NotificationService.Models.Options
 {
     public class AppUrls
     {

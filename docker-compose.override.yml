@@ -83,6 +83,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
+      - UserServiceUrl=http://user-service:80
       - ConnectionStrings:PostgreSQL=Host=${POSTGRES_HOST};Port=${POSTGRES_PORT};Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
       - Redis:ConnectionString=${REDIS_HOST}:${REDIS_PORT},password=${REDIS_PASSWORD},abortConnect=false
       - Kafka:BootstrapServers=${KAFKA_HOST}:${KAFKA_PORT}
@@ -109,6 +110,8 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
+      - UserServiceUrl=http://user-service:80
+      - TweetServiceUrl=http://tweet-service:80
       - Redis:ConnectionString=${REDIS_HOST}:${REDIS_PORT},password=${REDIS_PASSWORD},abortConnect=false
       - Kafka:BootstrapServers=${KAFKA_HOST}:${KAFKA_PORT}
     ports:
@@ -132,6 +135,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
+      - UserServiceUrl=http://user-service:80
       - ConnectionStrings:PostgreSQL=Host=${POSTGRES_HOST};Port=${POSTGRES_PORT};Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
       - Redis:ConnectionString=${REDIS_HOST}:${REDIS_PORT},password=${REDIS_PASSWORD},abortConnect=false
       - Kafka:BootstrapServers=${KAFKA_HOST}:${KAFKA_PORT}

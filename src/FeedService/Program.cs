@@ -18,18 +18,23 @@ builder.Services.Configure<KafkaOptions>(builder.Configuration);
 builder.Configuration.AddJsonFile("Configuration/FeedConfig.json");
 builder.Services.Configure<FeedOptions>(builder.Configuration);
 
+builder.Configuration.AddJsonFile("Configuration/AppUrls.json");
+builder.Services.Configure<AppUrls>(builder.Configuration);
+
 // HttpClients
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton<IAuthTokenService, AuthTokenService>();
 builder.Services.AddHttpClient<ITweetServiceClient, TweetServiceClient>(client =>
 {
-    client.BaseAddress = new Uri("http://tweet-service:80");
+    var tweetServiceUrl = builder.Configuration["tweetServiceUrl"] ?? throw new Exception("Tweet service url not found.");
+    client.BaseAddress = new Uri(tweetServiceUrl);
     client.DefaultRequestHeaders.Add("Accept", "application/json");
     client.Timeout = TimeSpan.FromSeconds(30);
 });
 builder.Services.AddHttpClient<IProfileServiceClient, ProfileServiceClient>(client =>
 {
-    client.BaseAddress = new Uri("http://user-service:80");
+    var userServiceUrl = builder.Configuration["userServiceUrl"] ?? throw new Exception("User service url not found.");
+    client.BaseAddress = new Uri(userServiceUrl);
     client.DefaultRequestHeaders.Add("Accept", "application/json");
     client.Timeout = TimeSpan.FromSeconds(30);
 });

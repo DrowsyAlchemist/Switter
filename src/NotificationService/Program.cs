@@ -22,13 +22,24 @@ builder.Services.AddSwaggerGen();
 builder.Configuration.AddJsonFile("Configuration/KafkaConfig.json");
 builder.Services.Configure<KafkaOptions>(builder.Configuration);
 
+builder.Configuration.AddJsonFile("Configuration/AppUrls.json");
+builder.Services.Configure<AppUrls>(builder.Configuration);
+
+// HttpClients 
+builder.Services.AddHttpClient<IProfileServiceClient, ProfileServiceClient>(client =>
+{
+    var userServiceUrl = builder.Configuration["userServiceUrl"] ?? throw new Exception("User service url not found.");
+    client.BaseAddress = new Uri(userServiceUrl);
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+
 // Kafka 
 builder.Services.AddHostedService<NotificationEventsConsumer>();
 
 // Database
 builder.Services.AddDbContext<NotificationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("PostgreSQL")), ServiceLifetime.Scoped);
-
 
 // Repositories
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
@@ -58,7 +69,6 @@ builder.Services.AddScoped<INotificationDeliveryService, NotificationDeliverySer
 builder.Services.AddScoped<INotificationService, NotificationService.Services.NotificationService>();
 builder.Services.AddScoped<INotificationSettingsService, NotificationSettingsService>();
 
-builder.Services.AddHttpClient<IProfileServiceClient, ProfileServiceClient>();
 builder.Services.AddSingleton<INotificationEventsProcessor, NotificationEventsProcessor>();
 
 builder.Services.AddSingleton<LikeSetEventHandler>();
@@ -71,7 +81,8 @@ builder.Services.AddSingleton<FollowEventHandler>();
 builder.Services.AddHealthChecks()
     .AddNpgSql(builder.Configuration.GetConnectionString("PostgreSQL")!)
     .AddCheck<DatabaseHealthCheck>("Database")
-    .AddCheck<DeliveryServiceHealthCheck>("NotificationDeliveryService");
+    .AddCheck<DeliveryServiceHealthCheck>("NotificationDeliveryService")
+    .AddCheck<UserClientHealthCheck>("UserClient");
 
 builder.Services.AddAuthentication();
 

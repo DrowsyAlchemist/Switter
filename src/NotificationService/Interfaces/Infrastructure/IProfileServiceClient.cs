@@ -6,5 +6,6 @@ namespace NotificationService.Interfaces.Infrastructure
     {
         Task<UserInfo?> GetUserInfoAsync(Guid userId);
         Task<List<Guid>> GetFollowersIds(Guid userId);
+        Task<bool> CheckConnectionAsync();
     }
 }

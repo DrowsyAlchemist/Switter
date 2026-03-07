@@ -1,4 +1,4 @@
-﻿namespace TweetService.Models.Options
+﻿namespace FeedService.Models.Options
 {
     public class AppUrls
     {

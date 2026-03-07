@@ -62,5 +62,19 @@ namespace NotificationService.Services.Infrastructure
                 return [];
             }
         }
+
+        public async Task<bool> CheckConnectionAsync()
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync($"/ping");
+                var content = await response.Content.ReadAsStringAsync();
+                return content != null && content == "pong";
+            }
+            catch
+            {
+                return false;
+            }
+        }
     }
 }

@@ -1,0 +1,7 @@
+{
+  "authServiceUrl": "http://auth-service:80",
+  "userServiceUrl": "http://user-service:80",
+  "tweetServiceUrl": "http://tweet-service:80",
+  "feedServiceUrl": "http://feed-service:80",
+  "notificationServiceUrl": "http://notification-service:80"
+}
